@@ -1,26 +1,269 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-obsidian: #050404;
+  --color-charcoal: #0F0E0D;
+  --color-charcoal-light: #1A1816;
+  --color-clay: #A65D3D;
+  --color-clay-muted: #8A5A44;
+  --color-stone: #9CA3AF;
+  --color-stone-warm: #8C8682;
+  --color-rice-paper: #EAE8E4;
+  --color-border-subtle: #262320;
+  
+  --font-family-sans: var(--font-manrope), sans-serif;
+  --font-family-serif: var(--font-playfair), serif;
+  
+  --animate-fade-in-down: fadeInDown 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  --animate-fade-in-up: fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  --animate-fade-in: fadeIn 1.5s ease-out forwards;
+  --animate-slow-pan: panImage 40s linear infinite alternate;
+  --animate-float-slow: float 8s ease-in-out infinite;
+  --animate-float-delayed: float 8s ease-in-out 4s infinite;
+  --animate-pulse-glow: pulseGlow 4s ease-in-out infinite;
+  --animate-grain-shift: grainShift 8s steps(10) infinite;
+  --animate-reveal-curtain-up: revealCurtainUp 1.2s cubic-bezier(0.77, 0, 0.175, 1) forwards;
+  --animate-bounce-slow: bounce 3s infinite;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+@keyframes fadeInUp {
+  0% { opacity: 0; transform: translateY(40px); filter: blur(10px); }
+  100% { opacity: 1; transform: translateY(0); filter: blur(0); }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@keyframes fadeInDown {
+  0% { opacity: 0; transform: translateY(-40px); filter: blur(5px); }
+  100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes panImage {
+  0% { transform: scale(1.1) translate(0%, 0%); }
+  100% { transform: scale(1.25) translate(-2%, -2%); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.8; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+@keyframes grainShift {
+  0% { transform: translate(0, 0); }
+  10% { transform: translate(-5%, -5%); }
+  20% { transform: translate(-10%, 5%); }
+  30% { transform: translate(5%, -10%); }
+  40% { transform: translate(-5%, 15%); }
+  50% { transform: translate(-10%, 5%); }
+  60% { transform: translate(15%, 0); }
+  70% { transform: translate(0, 10%); }
+  80% { transform: translate(-15%, 0); }
+  90% { transform: translate(10%, 5%); }
+  100% { transform: translate(5%, 0); }
+}
+
+@keyframes revealCurtainUp {
+  0% { clip-path: inset(100% 0 0 0); }
+  100% { clip-path: inset(0 0 0 0); }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-manrope), sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.font-serif {
+  font-family: var(--font-playfair), serif;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0F0E0D;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #262320;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #A65D3D;
+}
+
+@supports (animation-timeline: view()) {
+  .timeline-entry {
+    animation-timeline: view();
+    animation-range: entry 0% cover 30%;
+    animation-fill-mode: both;
+  }
+
+  .timeline-center {
+    animation-timeline: view();
+    animation-range: entry 10% cover 50%;
+    animation-fill-mode: both;
+  }
+
+  .timeline-cover {
+    animation-timeline: view();
+    animation-range: cover 0% cover 100%;
+    animation-fill-mode: both;
+  }
+
+  .effect-blur-in {
+    animation-name: blurIn;
+  }
+
+  .effect-slide-up {
+    animation-name: slideUpFade;
+  }
+
+  .effect-curtain-up {
+    animation-name: curtainUp;
+  }
+
+  .effect-parallax-bg {
+    animation-name: parallaxY;
+    animation-range: cover 0% cover 100%;
+  }
+
+  .effect-parallax-text {
+    animation-name: parallaxText;
+    animation-range: entry 0% exit 100%;
+  }
+
+  .effect-scale-up {
+    animation-name: scaleUpReveal;
+  }
+
+  .effect-stagger-1 {
+    animation-delay: 0.1s;
+  }
+
+  .effect-stagger-2 {
+    animation-delay: 0.2s;
+  }
+
+  .effect-stagger-3 {
+    animation-delay: 0.3s;
+  }
+
+  @keyframes blurIn {
+    0% {
+      opacity: 0;
+      filter: blur(15px);
+      transform: translateY(30px);
+    }
+
+    100% {
+      opacity: 1;
+      filter: blur(0);
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideUpFade {
+    0% {
+      opacity: 0;
+      transform: translateY(50px);
+    }
+
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes curtainUp {
+    0% {
+      clip-path: inset(100% 0 0 0);
+      transform: scale(1.05);
+    }
+
+    100% {
+      clip-path: inset(0 0 0 0);
+      transform: scale(1);
+    }
+  }
+
+  @keyframes parallaxY {
+    0% {
+      transform: translateY(-10%);
+      scale: 1.1;
+    }
+
+    100% {
+      transform: translateY(10%);
+      scale: 1.1;
+    }
+  }
+
+  @keyframes parallaxText {
+    0% {
+      transform: translateY(20px);
+    }
+
+    100% {
+      transform: translateY(-20px);
+    }
+  }
+
+  @keyframes scaleUpReveal {
+    0% {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+}
+
+.hover-underline-expand {
+  position: relative;
+}
+
+.hover-underline-expand::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  transform: scaleX(0);
+  height: 1px;
+  bottom: 0;
+  left: 0;
+  background-color: currentColor;
+  transform-origin: bottom right;
+  transition: transform 0.4s cubic-bezier(0.86, 0, 0.07, 1);
+}
+
+.hover-underline-expand:hover::after {
+  transform: scaleX(1);
+  transform-origin: bottom left;
+}
+
+.reveal-fallback {
+  opacity: 0;
+  animation: fadeIn 1s forwards;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
 }
