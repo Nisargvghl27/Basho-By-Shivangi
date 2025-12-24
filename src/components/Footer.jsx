@@ -32,7 +32,7 @@ export default function Footer() {
     { label: "All Ceramics", href: "#" },
     { label: "Tableware", href: "#" },
     { label: "Vases", href: "#" },
-    { label: "Workshops", href: "#" }
+    { label: "Workshops", href: "/workshops" }
   ];
 
   const supportLinks = [
