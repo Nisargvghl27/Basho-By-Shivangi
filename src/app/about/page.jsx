@@ -102,6 +102,17 @@ export default function AboutPage() {
 
     return (
         <div className="bg-charcoal min-h-screen selection:bg-clay selection:text-charcoal relative overflow-hidden">
+            {/* Grain Texture Overlay */}
+            <div className="fixed inset-0 opacity-[0.12] pointer-events-none z-0">
+                <div
+                    className="absolute inset-0 animate-grain-shift"
+                    style={{
+                        backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' /%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' /%3E%3C/svg%3E")',
+                        backgroundSize: '200px 200px'
+                    }}
+                />
+            </div>
+
             {/* Ambient Cursor Glow */}
             <div
                 className="fixed w-96 h-96 rounded-full pointer-events-none z-50 transition-all duration-300 ease-out mix-blend-screen opacity-20"
@@ -236,8 +247,9 @@ export default function AboutPage() {
                 <section id="story" className="py-32 relative overflow-hidden" data-animate>
                     {/* Background Effects */}
                     <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-clay/5 rounded-full blur-[120px] animate-pulse-slow" />
+                    <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-clay/3 rounded-full blur-[100px] animate-pulse-slow" style={{ animationDelay: '2s' }} />
 
-                    <div className="max-w-7xl mx-auto px-6 md:px-12">
+                    <div className="max-w-7xl mx-auto px-4 md:px-12 lg:px-24 relative z-10">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
 
                             {/* Image Collage */}
@@ -323,7 +335,7 @@ export default function AboutPage() {
 
                 {/* --- JOURNEY TIMELINE --- */}
                 <section className="py-32 bg-charcoal-light relative overflow-hidden" data-animate>
-                    <div className="max-w-7xl mx-auto px-6 md:px-12">
+                    <div className="max-w-7xl mx-auto px-4 md:px-12 lg:px-24">
                         <div className="text-center mb-20">
                             <h2 className="font-serif text-5xl text-rice-paper mb-4">The Journey</h2>
                             <p className="text-stone-warm text-lg">From spark to flame, from dream to reality</p>
@@ -379,7 +391,7 @@ export default function AboutPage() {
 
                 {/* --- PHILOSOPHY CARDS --- */}
                 <section id="philosophy" className="py-32 relative overflow-hidden" data-animate>
-                    <div className="max-w-7xl mx-auto px-6 md:px-12">
+                    <div className="max-w-7xl mx-auto px-4 md:px-12 lg:px-24">
                         <div className="text-center mb-20">
                             <span className="text-clay text-xs font-bold uppercase tracking-[0.3em] mb-4 block">Japanese Aesthetics</span>
                             <h2 className="font-serif text-5xl text-rice-paper mb-6">Our Guiding Principles</h2>
@@ -440,7 +452,7 @@ export default function AboutPage() {
                         <div className="absolute bottom-20 right-20 w-96 h-96 border border-clay/30 rounded-full animate-spin-slower" />
                     </div>
 
-                    <div className="max-w-7xl mx-auto px-6 md:px-12">
+                    <div className="max-w-7xl mx-auto px-4 md:px-12 lg:px-24 relative z-10">
                         <div className="text-center mb-20">
                             <span className="text-clay text-xs font-bold uppercase tracking-[0.3em] mb-4 block">The Making</span>
                             <h2 className="font-serif text-5xl text-rice-paper mb-6">From Earth to Art</h2>
@@ -498,8 +510,9 @@ export default function AboutPage() {
                 {/* --- FOUNDER VISION SECTION --- */}
                 <section className="py-32 bg-charcoal relative overflow-hidden" data-animate id="founder">
                     <div className="absolute top-1/2 left-0 w-1/3 h-96 bg-clay/5 rounded-full blur-[150px]" />
+                    <div className="absolute bottom-1/2 right-0 w-1/4 h-80 bg-clay/3 rounded-full blur-[120px]" />
 
-                    <div className="max-w-5xl mx-auto px-6 md:px-12 text-center">
+                    <div className="max-w-5xl mx-auto px-4 md:px-12 lg:px-24 text-center relative z-10">
                         <div className="mb-12">
                             <div className="w-32 h-32 mx-auto mb-8 rounded-full overflow-hidden border-4 border-clay/30">
                                 <img
@@ -578,6 +591,18 @@ export default function AboutPage() {
             transform: translateY(0);
           }
         }
+        @keyframes grain-shift {
+          0%, 100% { transform: translate(0, 0); }
+          10% { transform: translate(-5%, -5%); }
+          20% { transform: translate(-10%, 5%); }
+          30% { transform: translate(5%, -10%); }
+          40% { transform: translate(-5%, 15%); }
+          50% { transform: translate(-10%, 5%); }
+          60% { transform: translate(15%, 0); }
+          70% { transform: translate(0, 10%); }
+          80% { transform: translate(-15%, 0); }
+          90% { transform: translate(10%, 5%); }
+        }
         @keyframes grain {
           0%, 100% { transform: translate(0, 0); }
           10% { transform: translate(-5%, -10%); }
@@ -617,6 +642,9 @@ export default function AboutPage() {
         }
         .animate-fade-in-up {
           animation: fade-in-up 1s ease-out;
+        }
+        .animate-grain-shift {
+          animation: grain-shift 12s ease-in-out infinite;
         }
         .animate-pulse-slow {
           animation: pulse-slow 8s ease-in-out infinite;
