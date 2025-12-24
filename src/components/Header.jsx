@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 const navLinks = [
   { label: "Shop", href: "/shop" },
@@ -21,7 +22,7 @@ export default function Header() {
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, []); 
 
   return (
     <header
@@ -39,25 +40,27 @@ export default function Header() {
       <div className="relative flex items-center justify-between px-6 md:px-12 max-w-[1440px] mx-auto">
         
         {/* --- Brand / Logo --- */}
-        <a 
-          href="/" 
-          className="flex items-center gap-3 group relative"
-          onMouseEnter={() => setActiveLink("")}
-        >
-          {/* Subtle glow effect on hover */}
-          <div className="absolute -inset-2 bg-clay/0 rounded-full blur-xl transition-all duration-700 group-hover:bg-clay/5" />
-          
-          {/* Logo Icon: Organic, slow rotation with scale */}
-          <div className="relative size-8 text-clay transition-all duration-[2200ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:rotate-180 group-hover:scale-110">
-            <svg viewBox="0 0 48 48" fill="currentColor" className="drop-shadow-sm">
-              <path d="M8.57829 8.57829C5.52816 11.6284 3.451 15.5145 2.60947 19.7452C1.76794 23.9758 2.19984 28.361 3.85056 32.3462C5.50128 36.3314 8.29667 39.7376 11.8832 42.134C15.4698 44.5305 19.6865 45.8096 24 45.8096C28.3135 45.8096 32.5302 44.5305 36.1168 42.134C39.7033 39.7375 42.4987 36.3314 44.1494 32.3462C45.8002 28.361 46.2321 23.9758 45.3905 19.7452C44.549 15.5145 42.4718 11.6284 39.4217 8.57829L24 24L8.57829 8.57829Z" />
-            </svg>
-          </div>
-
-          <h1 className="relative text-xl font-serif font-bold tracking-tight text-rice-paper transition-all duration-700 group-hover:text-clay/95 group-hover:tracking-wide">
-            Clay & Soul
-          </h1>
-        </a>
+<a 
+  href="/" 
+  className="flex items-center gap-3 group relative"
+  onMouseEnter={() => setActiveLink("")}
+>
+  {/* Subtle glow effect on hover */}
+  <div className="absolute -inset-2 bg-clay/0 rounded-lg blur-xl transition-all duration-700 group-hover:bg-clay/5" />
+  
+  {/* Logo Image */}
+  {/* I set w-32 h-10 (approx 128px x 40px) as a standard logo size. Adjust 'w-32' to fit your logo's aspect ratio. */}
+  <div className="relative w-32 h-10 transition-all duration-500 ease-out group-hover:scale-105 group-hover:brightness-110">
+    <Image 
+      src="/images/logo.jpg" 
+      alt="Clay & Soul" 
+      fill 
+      sizes="(max-width: 768px) 100vw, 150px"
+      className="object-contain object-left drop-shadow-sm"
+      priority // Loads the logo immediately since it's above the fold
+    />
+  </div>
+</a>
 
         {/* --- Primary Navigation --- */}
         <nav className="hidden md:flex items-center gap-10">
