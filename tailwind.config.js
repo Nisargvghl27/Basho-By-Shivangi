@@ -18,6 +18,10 @@ module.exports = {
         "stone-warm": "#8C8682",
         "rice-paper": "#EAE8E4",
         "border-subtle": "#262320",
+        "charcoal": '#1C1B1A',
+        'rice-paper': '#EAE8E4',
+        "clay": '#A65D3D',
+        "stone": '#8C8682',
       },
       fontFamily: {
         "sans": ["var(--font-manrope)", "sans-serif"],
@@ -45,6 +49,7 @@ module.exports = {
         'grain-shift': 'grainShift 8s steps(10) infinite',
         'reveal-curtain-up': 'revealCurtainUp 1.2s cubic-bezier(0.77, 0, 0.175, 1) forwards',
         'bounce-slow': 'bounce 3s infinite',
+        'fade-in': 'fadeIn 0.5s ease-out forwards',
       },
       keyframes: {
         fadeInUp: {
