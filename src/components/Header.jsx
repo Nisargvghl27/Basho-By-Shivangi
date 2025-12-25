@@ -78,13 +78,13 @@ export default function Header() {
             <div className="absolute -inset-2 bg-clay/0 rounded-lg blur-xl transition-all duration-700 group-hover:bg-clay/5" />
 
             {/* Logo Image Container */}
-            <div className="relative w-32 h-10 transition-all duration-500 ease-out group-hover:scale-105 group-hover:brightness-110">
+            <div className="relative w-64 h-20 transition-all duration-500 ease-out group-hover:scale-105 group-hover:brightness-150">
               <Image
-                src="/images/logo.jpg"
+                src="/images/bgr_logo.png"
                 alt="Clay & Soul"
                 fill
-                sizes="(max-width: 768px) 120px, 150px"
-                className="object-contain object-left drop-shadow-sm"
+                sizes="(max-width: 768px) 200px, 256px"
+                className="object-contain object-left brightness-200 drop-shadow-lg"
                 priority
               />
             </div>
