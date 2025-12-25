@@ -91,7 +91,6 @@ export default function Header() {
           </Link>
 
           {/* --- Desktop Primary Navigation (Hidden on Mobile) --- */}
-          {/* Added 'ml-16' here to nudge links to the right */}
           <nav className="hidden md:flex items-center gap-10 ml-16">
             {navLinks.map((link) => (
               <Link
@@ -146,11 +145,11 @@ export default function Header() {
               )}
             </Link>
 
-            {/* Wishlist */}
+            {/* Wishlist - REMOVED 'hidden sm:block' so it shows on mobile now */}
             <Link
               href="/wishlist"
               aria-label="View Wishlist"
-              className="relative group text-stone-warm transition-all duration-500 hover:text-rice-paper hover:-translate-y-0.5 hidden sm:block"
+              className="relative group text-stone-warm transition-all duration-500 hover:text-rice-paper hover:-translate-y-0.5"
             >
                <span className="absolute inset-0 rounded-full bg-clay/0 scale-100 transition-all duration-700 group-hover:scale-150 group-hover:bg-clay/5 group-hover:opacity-0" />
                <span className="material-symbols-outlined text-[20px] font-light relative drop-shadow-sm">favorite</span>
@@ -163,7 +162,7 @@ export default function Header() {
                )}
             </Link>
 
-            {/* Profile / Login */}
+            {/* Profile / Login (Kept hidden on mobile, assuming you want this in the drawer or just less clutter) */}
             <Link
               href="/auth/login"
               aria-label="Sign In"
