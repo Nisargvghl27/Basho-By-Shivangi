@@ -2,9 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import Image from "next/image"; // Imported Image component
+import { usePathname } from 'next/navigation';
+import { useCart } from '../context/CartContext';
+import { useWishlist } from '../context/WishlistContext';
 
 const navLinks = [
+  { label: "Home", href: "/" },
   { label: "Shop", href: "/shop" },
   { label: "Workshops", href: "/workshops" },
   { label: "Journal", href: "/journal" },
@@ -12,11 +16,18 @@ const navLinks = [
 ];
 
 export default function Header() {
+  const pathname = usePathname();
+  
+  // --- 1. State Declarations ---
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeLink, setActiveLink] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
+  // --- 2. Context Access ---
+  const { cartItems } = useCart();
+  const { wishlistItems } = useWishlist();
 
-  // Handle scroll detection for the glass effect
+  // --- 3. Scroll Detection Effect ---
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
@@ -25,7 +36,7 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Prevent body scroll when mobile menu is open
+  // --- 4. Body Lock Effect (For Mobile Menu) ---
   useEffect(() => {
     if (isMobileMenuOpen) {
       document.body.style.overflow = "hidden";
@@ -33,6 +44,10 @@ export default function Header() {
       document.body.style.overflow = "unset";
     }
   }, [isMobileMenuOpen]);
+
+  // Helper to calculate total cart quantity
+  const cartCount = cartItems?.reduce((total, item) => total + item.quantity, 0) || 0;
+  const wishlistCount = wishlistItems?.length || 0;
 
   return (
     <>
@@ -51,22 +66,24 @@ export default function Header() {
         />
 
         <div className="relative flex items-center justify-between px-6 md:px-12 max-w-[1440px] mx-auto">
-          {/* --- Brand / Logo --- */}
+          
+          {/* --- Brand / Logo (Using Next/Image) --- */}
           <Link
             href="/"
             className="flex items-center gap-3 group relative z-50"
             onMouseEnter={() => setActiveLink("")}
-            onClick={() => setIsMobileMenuOpen(false)} // Close menu on click
+            onClick={() => setIsMobileMenuOpen(false)}
           >
             {/* Subtle glow effect on hover */}
             <div className="absolute -inset-2 bg-clay/0 rounded-lg blur-xl transition-all duration-700 group-hover:bg-clay/5" />
 
+            {/* Logo Image Container */}
             <div className="relative w-32 h-10 transition-all duration-500 ease-out group-hover:scale-105 group-hover:brightness-110">
               <Image
                 src="/images/logo.jpg"
                 alt="Clay & Soul"
                 fill
-                sizes="(max-width: 768px) 100vw, 150px"
+                sizes="(max-width: 768px) 120px, 150px"
                 className="object-contain object-left drop-shadow-sm"
                 priority
               />
@@ -97,6 +114,7 @@ export default function Header() {
 
           {/* --- Action Icons & Mobile Toggle --- */}
           <div className="flex items-center gap-5 md:gap-8 z-50">
+            
             {/* Search */}
             <button
               aria-label="Search"
@@ -109,7 +127,8 @@ export default function Header() {
             </button>
 
             {/* Cart Bag */}
-            <button
+            <Link
+              href="/cart"
               aria-label="View Cart"
               className="relative group text-stone-warm transition-all duration-500 hover:text-rice-paper hover:-translate-y-0.5"
             >
@@ -117,12 +136,33 @@ export default function Header() {
               <span className="material-symbols-outlined text-[20px] font-light relative drop-shadow-sm">
                 shopping_bag
               </span>
-              <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-clay to-clay/90 text-[9px] font-bold text-white shadow-[0_2px_8px_rgba(0,0,0,0.15)] opacity-0 scale-75 translate-y-1 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-y-0">
-                2
-              </span>
-            </button>
+              
+              {/* Dynamic Badge */}
+              {cartCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-clay to-clay/90 text-[9px] font-bold text-white shadow-[0_2px_8px_rgba(0,0,0,0.15)] opacity-100 scale-100 translate-y-0 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
 
-            {/* Profile / Login (Hidden on very small screens if desired, or kept) */}
+            {/* Wishlist */}
+            <Link
+              href="/wishlist"
+              aria-label="View Wishlist"
+              className="relative group text-stone-warm transition-all duration-500 hover:text-rice-paper hover:-translate-y-0.5 hidden sm:block"
+            >
+               <span className="absolute inset-0 rounded-full bg-clay/0 scale-100 transition-all duration-700 group-hover:scale-150 group-hover:bg-clay/5 group-hover:opacity-0" />
+               <span className="material-symbols-outlined text-[20px] font-light relative drop-shadow-sm">favorite</span>
+               
+               {/* Dynamic Badge */}
+               {wishlistCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-clay to-clay/90 text-[9px] font-bold text-white shadow-[0_2px_8px_rgba(0,0,0,0.15)]">
+                  {wishlistCount}
+                </span>
+               )}
+            </Link>
+
+            {/* Profile / Login */}
             <Link
               href="/auth/login"
               aria-label="Sign In"
@@ -170,7 +210,6 @@ export default function Header() {
       {/* --- Mobile Menu (The "Undo" Sequence Effect) --- */}
       
       {/* 1. Backdrop */}
-      {/* Logic: Fades in fast, fades out slow (waits for drawer) */}
       <div 
         className={`fixed inset-0 z-40 bg-charcoal/60 backdrop-blur-[2px] transition-opacity duration-[800ms] ease-out ${
           isMobileMenuOpen ? "opacity-100 visible" : "opacity-0 invisible delay-500"
@@ -179,7 +218,6 @@ export default function Header() {
       />
 
       {/* 2. The Drawer Panel */}
-      {/* Logic: Slides in immediately on Open. Waits 400ms to slide out on Close (letting text vanish first). */}
       <div
         className={`fixed top-0 right-0 z-50 h-full w-[85%] max-w-[360px] bg-charcoal/85 backdrop-blur-2xl border-l border-white/[0.08] shadow-[-20px_0_50px_rgba(0,0,0,0.5)] rounded-tl-[40px] transform transition-transform duration-[800ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
           isMobileMenuOpen 
@@ -193,7 +231,6 @@ export default function Header() {
         <div className="relative h-full flex flex-col px-8 py-10">
           
           {/* --- Header: Close Button --- */}
-          {/* Logic: Rotates back when closing */}
           <div className="flex justify-end mb-16">
             <button 
               onClick={() => setIsMobileMenuOpen(false)}
@@ -221,8 +258,7 @@ export default function Header() {
                       ? "translate-x-0 opacity-100" 
                       : "translate-x-12 opacity-0"
                   }`}
-                  // OPEN: Staggered delay (0.1s, 0.2s, 0.3s...)
-                  // CLOSE: No delay (Vanish immediately so drawer can leave)
+                  // Staggered delay for entering, instant for leaving
                   style={{ transitionDelay: isMobileMenuOpen ? `${150 + (i * 100)}ms` : "0ms" }}
                 >
                   <span className="block text-3xl font-light tracking-[0.1em] text-stone-warm/80 transition-colors duration-300 group-hover:text-rice-paper group-hover:pl-2">
@@ -237,7 +273,6 @@ export default function Header() {
           </nav>
 
           {/* --- Footer --- */}
-          {/* Logic: Slides UP in, Falls DOWN out */}
           <div 
             className={`mt-auto flex flex-col gap-6 pt-12 border-t border-white/5 transition-all duration-700 ease-out ${
                isMobileMenuOpen 

@@ -4,6 +4,53 @@ import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
+import { useCart } from "../../context/CartContext";
+import { useWishlist } from "../../context/WishlistContext";
+// Enhanced Notification Component with animation
+const Notification = ({ message, onClose, type = 'success' }) => {
+  const [isVisible, setIsVisible] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      handleClose();
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleClose = () => {
+    setIsVisible(false);
+    setTimeout(() => {
+      onClose();
+    }, 300);
+  };
+
+  const bgColor = type === 'success' ? 'bg-charcoal-light' : 'bg-red-900';
+  const borderColor = type === 'success' ? 'border-clay/50' : 'border-red-700';
+  const icon = type === 'success' ? 'check_circle' : 'error';
+
+  return (
+    <div
+      className={`fixed bottom-8 right-8 ${bgColor} border ${borderColor} text-rice-paper px-6 py-4 rounded-xl shadow-2xl flex items-start gap-3 z-50 transition-all duration-300 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
+        }`}
+    >
+      <span className="material-symbols-outlined text-clay mt-0.5">
+        {icon}
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className="font-medium text-rice-paper">{type === 'success' ? 'Added to Cart' : 'Error'}</p>
+        <p className="text-sm text-stone-300">{message}</p>
+      </div>
+      <button
+        onClick={handleClose}
+        className="text-stone-400 hover:text-white transition-colors ml-2"
+        aria-label="Close notification"
+      >
+        <span className="material-symbols-outlined text-base">close</span>
+      </button>
+    </div>
+  );
+};
 
 const allProducts = [
   {
@@ -75,6 +122,52 @@ const allProducts = [
 const categories = ["All", "Tableware", "Vases", "Sets", "Decorative"];
 
 export default function ProductsPage() {
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
+  const { addToCart } = useCart();
+  const [notification, setNotification] = useState({
+    show: false,
+    message: '',
+    type: 'success'
+  });
+
+  const showNotification = (message, type = 'success') => {
+    setNotification({
+      show: true,
+      message,
+      type
+    });
+  };
+
+  const handleAddToCart = (e, product) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      // Convert price from string to number (remove $ and convert to number)
+      const price = parseFloat(product.price.replace('$', ''));
+
+      // Add to cart with the correct price format
+      addToCart({
+        ...product,
+        price: price,
+        quantity: 1
+      });
+
+      // Show success notification
+      setNotification({
+        show: true,
+        message: `${product.name} has been added to your cart`,
+        type: 'success'
+      });
+    } catch (error) {
+      // Show error notification if something goes wrong
+      setNotification({
+        show: true,
+        message: 'Failed to add item to cart. Please try again.',
+        type: 'error'
+      });
+    }
+  };
+
   const [isVisible, setIsVisible] = useState(false);
   const [hoveredCard, setHoveredCard] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -105,15 +198,15 @@ export default function ProductsPage() {
 
   // Filter and sort products
   const filteredProducts = allProducts.filter((product) => {
-    const matchesCategory = 
-      selectedCategory === "All" || 
+    const matchesCategory =
+      selectedCategory === "All" ||
       product.tags.some(tag => tag.toLowerCase() === selectedCategory.toLowerCase()) ||
       (selectedCategory === "Tableware" && product.tags.includes("tableware")) ||
       (selectedCategory === "Vases" && product.tags.includes("vases")) ||
       (selectedCategory === "Sets" && product.tags.includes("sets")) ||
       (selectedCategory === "Decorative" && product.tags.includes("decorative"));
-    
-    const matchesSearch = 
+
+    const matchesSearch =
       searchQuery === "" ||
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.category.toLowerCase().includes(searchQuery.toLowerCase());
@@ -134,18 +227,27 @@ export default function ProductsPage() {
   });
 
   return (
-    <div className="relative flex h-auto min-h-screen w-full flex-col bg-charcoal">
+    <div className="relative min-h-screen bg-charcoal">
       <Header />
-      
-      <section 
+
+      {/* Notification */}
+      {notification.show && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(prev => ({ ...prev, show: false }))}
+        />
+      )}
+
+      <section
         ref={sectionRef}
         className="pt-32 pb-24 px-4 md:px-12 lg:px-24 bg-charcoal relative overflow-hidden min-h-screen"
       >
         {/* Enhanced Grain Texture */}
         <div className="absolute inset-0 opacity-[0.12] pointer-events-none">
-          <div 
-            className="absolute inset-0 animate-grain-shift" 
-            style={{ 
+          <div
+            className="absolute inset-0 animate-grain-shift"
+            style={{
               backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' /%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' /%3E%3C/svg%3E")',
               backgroundSize: '200px 200px'
             }}
@@ -159,9 +261,8 @@ export default function ProductsPage() {
 
         <div className="max-w-8xl mx-auto relative z-10">
           {/* Header Section */}
-          <div className={`mb-16 transition-all duration-1000 ease-out ${
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
-          }`}>
+          <div className={`mb-16 transition-all duration-1000 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
+            }`}>
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-serif font-light text-rice-paper tracking-tight mb-6 transition-all duration-700 hover:tracking-tighter hover:text-clay/90">
               The Studio Shop
             </h1>
@@ -171,9 +272,8 @@ export default function ProductsPage() {
           </div>
 
           {/* Filters and Search Bar */}
-          <div className={`mb-12 flex flex-col md:flex-row gap-6 items-start md:items-center justify-between transition-all duration-1000 delay-200 ease-out ${
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-          }`}>
+          <div className={`mb-12 flex flex-col md:flex-row gap-6 items-start md:items-center justify-between transition-all duration-1000 delay-200 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+            }`}>
             {/* Search */}
             <div className="relative w-full md:w-auto flex-1 md:flex-initial">
               <div className="relative">
@@ -196,11 +296,10 @@ export default function ProductsPage() {
                 <button
                   key={category}
                   onClick={() => setSelectedCategory(category)}
-                  className={`px-5 py-2.5 text-xs font-bold uppercase tracking-[0.15em] transition-all duration-500 ${
-                    selectedCategory === category
+                  className={`px-5 py-2.5 text-xs font-bold uppercase tracking-[0.15em] transition-all duration-500 ${selectedCategory === category
                       ? 'bg-clay text-white border border-clay'
                       : 'bg-charcoal-light text-stone-warm border border-border-subtle hover:border-clay/40 hover:text-clay'
-                  }`}
+                    }`}
                 >
                   {category}
                 </button>
@@ -226,9 +325,8 @@ export default function ProductsPage() {
           </div>
 
           {/* Results Count */}
-          <div className={`mb-8 text-stone-warm text-sm transition-all duration-1000 delay-300 ease-out ${
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-          }`}>
+          <div className={`mb-8 text-stone-warm text-sm transition-all duration-1000 delay-300 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+            }`}>
             Showing {sortedProducts.length} {sortedProducts.length === 1 ? 'product' : 'products'}
           </div>
 
@@ -241,25 +339,39 @@ export default function ProductsPage() {
                   href={`/products/${product.id}`}
                   onMouseEnter={() => setHoveredCard(product.id)}
                   onMouseLeave={() => setHoveredCard(null)}
-                  className={`group flex flex-col gap-4 bg-charcoal-light border border-border-subtle p-4 transition-all duration-700 hover:border-clay/20 hover:bg-white/5 hover:shadow-[0_12px_40px_rgba(0,0,0,0.3)] hover:-translate-y-2 ${
-                    isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-16'
-                  }`}
+                  className={`group flex flex-col gap-4 bg-charcoal-light border border-border-subtle p-4 transition-all duration-700 hover:border-clay/20 hover:bg-white/5 hover:shadow-[0_12px_40px_rgba(0,0,0,0.3)] hover:-translate-y-2 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-16'
+                    }`}
                   style={{ transitionDelay: `${400 + index * 50}ms` }}
                 >
-                  {/* Image Container */}
-                  <div className="h-[280px] w-full overflow-hidden relative bg-black/20">
+                  {/* Image Container with Moving Background */}
+                  <div className="h-[280px] w-full overflow-hidden relative bg-black/20 group">
+                    {/* Main Image */}
                     <div
                       className="absolute inset-0 bg-cover bg-center transition-all duration-[1200ms] ease-out group-hover:scale-110 group-hover:rotate-1"
                       style={{
                         backgroundImage: `url("${product.image}")`,
                       }}
                     />
-                    
+
+                    {/* Moving Gradient Overlay */}
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+                      <div className="absolute inset-0 bg-gradient-to-br from-transparent via-clay/5 to-transparent animate-gradient-shift"></div>
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(210,180,140,0.03)_70%,transparent_100%)] opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
+                    </div>
+
+                    {/* Subtle Noise Texture */}
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity duration-1000"
+                      style={{
+                        backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' /%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' /%3E%3C/svg%3E")',
+                        backgroundSize: '200px 200px'
+                      }}
+                    ></div>
+
                     {/* Overlay with Color Shift */}
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-clay/10 transition-all duration-700" />
-                    
+
                     {/* Favorite Button */}
-                    <button 
+                    {/* <button 
                       onClick={(e) => {
                         e.preventDefault();
                         // Handle favorite
@@ -274,12 +386,44 @@ export default function ProductsPage() {
                       <span className="material-symbols-outlined text-[16px] block transition-transform duration-300 hover:scale-110">
                         favorite
                       </span>
+                    </button> */}
+                    {/* Favorite Button */}
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (isInWishlist(product.id)) {
+                          removeFromWishlist(product.id);
+                          setNotification({
+                            show: true,
+                            message: `Removed ${product.name} from wishlist`,
+                            type: 'success'
+                          });
+                        } else {
+                          addToWishlist(product);
+                          setNotification({
+                            show: true,
+                            message: `Added ${product.name} to wishlist`,
+                            type: 'success'
+                          });
+                        }
+                      }}
+                      className={`absolute top-3 right-3 bg-charcoal/80 backdrop-blur-md p-2.5 rounded-full transition-all duration-500 ${hoveredCard === product.id || isInWishlist(product.id)
+                          ? 'opacity-100 translate-y-0 scale-100'
+                          : 'opacity-0 translate-y-2 scale-75'
+                        } ${isInWishlist(product.id)
+                          ? 'text-red-500 hover:text-red-400'
+                          : 'text-stone-warm hover:text-clay'
+                        } hover:bg-charcoal hover:scale-110 hover:shadow-lg z-10`}
+                      aria-label={isInWishlist(product.id) ? "Remove from wishlist" : "Add to wishlist"}
+                    >
+                      <span className="material-symbols-outlined text-[16px] block transition-transform duration-300 hover:scale-110">
+                        {isInWishlist(product.id) ? 'favorite' : 'favorite_border'}
+                      </span>
                     </button>
 
                     {/* Quick View Overlay */}
-                    <div className={`absolute inset-0 bg-charcoal/95 backdrop-blur-sm flex items-center justify-center transition-all duration-500 ${
-                      hoveredCard === product.id ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                    }`}>
+                    <div className={`absolute inset-0 bg-charcoal/95 backdrop-blur-sm flex items-center justify-center transition-all duration-500 ${hoveredCard === product.id ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                      }`}>
                       <span className="text-white text-sm uppercase tracking-[0.2em] font-bold border border-white/20 px-6 py-3 transition-all duration-500 group-hover:bg-clay group-hover:border-clay group-hover:scale-105 group-hover:shadow-lg">
                         Quick View
                       </span>
@@ -302,12 +446,10 @@ export default function ProductsPage() {
                       <span className="text-lg font-light font-serif text-white transition-all duration-500 group-hover:text-clay group-hover:scale-105 origin-left">
                         {product.price}
                       </span>
-                      <button 
-                        onClick={(e) => {
-                          e.preventDefault();
-                          // Handle add to cart
-                        }}
-                        className="relative text-stone-warm hover:text-white transition-all duration-500 text-[10px] font-bold uppercase tracking-wider group-hover:tracking-[0.15em]"
+                      <button
+                        onClick={(e) => handleAddToCart(e, product)}
+                        className="relative text-stone-warm hover:text-clay transition-all duration-500 text-[10px] font-bold uppercase tracking-wider group-hover:tracking-[0.15em]"
+                        aria-label={`Add ${product.name} to cart`}
                       >
                         <span className="relative">
                           Add to Bag
@@ -320,9 +462,8 @@ export default function ProductsPage() {
               ))}
             </div>
           ) : (
-            <div className={`text-center py-20 transition-all duration-1000 delay-300 ease-out ${
-              isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-            }`}>
+            <div className={`text-center py-20 transition-all duration-1000 delay-300 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              }`}>
               <p className="text-stone-warm text-lg mb-4">No products found</p>
               <button
                 onClick={() => {
@@ -337,6 +478,15 @@ export default function ProductsPage() {
           )}
         </div>
       </section>
+
+      {/* Notification */}
+      {notification.show && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(prev => ({ ...prev, show: false }))}
+        />
+      )}
 
       <Footer />
 
@@ -356,6 +506,21 @@ export default function ProductsPage() {
 
         .animate-grain-shift {
           animation: grain-shift 12s ease-in-out infinite;
+        }
+        
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-fade-in-up {
+          animation: fadeInUp 0.3s ease-out forwards;
         }
       `}</style>
     </div>
