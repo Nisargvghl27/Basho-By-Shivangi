@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image"; // Imported Image component
+import Image from "next/image"; 
 import { usePathname } from 'next/navigation';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
@@ -91,7 +91,8 @@ export default function Header() {
           </Link>
 
           {/* --- Desktop Primary Navigation (Hidden on Mobile) --- */}
-          <nav className="hidden md:flex items-center gap-10">
+          {/* Added 'ml-16' here to nudge links to the right */}
+          <nav className="hidden md:flex items-center gap-10 ml-16">
             {navLinks.map((link) => (
               <Link
                 key={link.label}
