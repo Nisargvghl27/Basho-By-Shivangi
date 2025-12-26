@@ -281,20 +281,6 @@ function JournalHero() {
           </button>
         </div>
       </div>
-
-      {/* Scroll Indicator - MOVED OUTSIDE CONTENT DIV & ADDED Z-20 */}
-      <div 
-        className={`absolute z-20 bottom-16 left-1/2 -translate-x-1/2 transition-all duration-1000 delay-1000 ${
-          heroInView ? 'opacity-100' : 'opacity-0'
-        }`}
-      >
-        <div className="flex flex-col items-center gap-3">
-          <span className="text-stone-warm text-xs tracking-[0.3em] uppercase font-medium">Scroll</span>
-          <div className="relative w-6 h-10 border border-stone-warm/40 rounded-full flex items-start justify-center p-2">
-            <div className="w-1 h-2 bg-clay rounded-full animate-bounce" />
-          </div>
-        </div>
-      </div>
       
       {/* Bottom Fade */}
       <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-charcoal to-transparent pointer-events-none" />

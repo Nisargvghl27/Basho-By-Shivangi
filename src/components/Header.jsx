@@ -54,8 +54,8 @@ export default function Header() {
       <header
         className={`fixed top-0 z-50 w-full transition-all duration-[900ms] ease-[cubic-bezier(0.19,1,0.22,1)] ${
           isScrolled || isMobileMenuOpen
-            ? "bg-charcoal/80 backdrop-blur-2xl border-b border-white/[0.08] py-4 shadow-[0_8px_32px_rgba(0,0,0,0.12)]"
-            : "bg-transparent border-transparent py-6"
+            ? "bg-charcoal/80 backdrop-blur-2xl border-b border-white/[0.08] py-3 shadow-[0_8px_32px_rgba(0,0,0,0.12)]"
+            : "bg-transparent border-transparent py-5"
         }`}
       >
         {/* Subtle gradient overlay for depth */}
@@ -77,13 +77,13 @@ export default function Header() {
             {/* Subtle glow effect on hover */}
             <div className="absolute -inset-2 bg-clay/0 rounded-lg blur-xl transition-all duration-700 group-hover:bg-clay/5" />
 
-            {/* Logo Image Container */}
-            <div className="relative w-64 h-20 transition-all duration-500 ease-out group-hover:scale-105 group-hover:brightness-150">
+            {/* Logo Image Container - REDUCED HEIGHT HERE */}
+            <div className="relative w-40 h-12 md:w-48 md:h-14 transition-all duration-500 ease-out group-hover:scale-105 group-hover:brightness-150">
               <Image
                 src="/images/bgr_logo.png"
                 alt="Clay & Soul"
                 fill
-                sizes="(max-width: 768px) 200px, 256px"
+                sizes="(max-width: 768px) 160px, 192px"
                 className="object-contain object-left brightness-200 drop-shadow-lg"
                 priority
               />
@@ -145,7 +145,7 @@ export default function Header() {
               )}
             </Link>
 
-            {/* Wishlist - REMOVED 'hidden sm:block' so it shows on mobile now */}
+            {/* Wishlist */}
             <Link
               href="/wishlist"
               aria-label="View Wishlist"
@@ -162,7 +162,7 @@ export default function Header() {
                )}
             </Link>
 
-            {/* Profile / Login (Kept hidden on mobile, assuming you want this in the drawer or just less clutter) */}
+            {/* Profile / Login */}
             <Link
               href="/auth/login"
               aria-label="Sign In"
