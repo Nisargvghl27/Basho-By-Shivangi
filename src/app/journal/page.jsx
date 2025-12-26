@@ -288,6 +288,7 @@ function JournalHero() {
   );
 }
 
+
 // Category Filter
 function CategoryFilter({ activeCategory, onCategoryChange }) {
   return (
