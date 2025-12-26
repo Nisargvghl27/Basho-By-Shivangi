@@ -6,6 +6,8 @@ import Image from "next/image";
 import { usePathname } from 'next/navigation';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "../lib/firebase";
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -44,6 +46,17 @@ export default function Header() {
       document.body.style.overflow = "unset";
     }
   }, [isMobileMenuOpen]);
+
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsub();
+  }, []);
+
+
 
   // Helper to calculate total cart quantity
   const cartCount = cartItems?.reduce((total, item) => total + item.quantity, 0) || 0;
@@ -165,15 +178,32 @@ export default function Header() {
 
             {/* Profile / Login */}
             <Link
-              href="/auth/login"
-              aria-label="Sign In"
-              className="relative group hidden sm:flex items-center justify-center w-8 h-8 text-stone-warm transition-all duration-500 hover:text-rice-paper hover:-translate-y-0.5"
-            >
-              <span className="absolute inset-0 rounded-full bg-clay/0 scale-100 transition-all duration-700 group-hover:scale-150 group-hover:bg-clay/5 group-hover:opacity-0" />
-              <span className="material-symbols-outlined text-[20px] font-light relative drop-shadow-sm">
-                account_circle
-              </span>
-            </Link>
+  href={user ? "/profile" : "/auth/login"}
+  aria-label="Account"
+  className="relative group transition-all duration-500 hover:-translate-y-0.5 hidden sm:block"
+>
+  <span className="absolute inset-0 rounded-full bg-clay/0 scale-100 transition-all duration-700 group-hover:scale-150 group-hover:bg-clay/5 group-hover:opacity-0" />
+
+  {!user ? (
+    <span className="material-symbols-outlined text-[20px] font-light text-stone-warm relative drop-shadow-sm group-hover:text-rice-paper">
+      account_circle
+    </span>
+  ) : user.photoURL ? (
+    <Image
+      src={user.photoURL}
+      alt="User Profile"
+      width={28}
+      height={28}
+      className="rounded-full object-cover ring-1 ring-white/20"
+    />
+  ) : (
+    <div className="w-7 h-7 rounded-full bg-clay flex items-center justify-center text-[11px] font-bold text-charcoal">
+      {user.displayName?.charAt(0).toUpperCase() ||
+        user.email?.charAt(0).toUpperCase()}
+    </div>
+  )}
+</Link>
+
 
             {/* --- Mobile Hamburger Button --- */}
             <button

@@ -734,3 +734,25 @@
   }
 }
 
+/* ===============================
+   Profile Typography Enhancement
+   =============================== */
+
+.profile-value {
+  font-family: "Playfair Display", "Cormorant Garamond", serif;
+  letter-spacing: 0.04em;
+  color: #f5f2ed;
+}
+
+.profile-name {
+  font-size: 1.35rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+
+.profile-subtle {
+  font-size: 0.9rem;
+  font-weight: 400;
+  opacity: 0.75;
+  letter-spacing: 0.12em;
+}
