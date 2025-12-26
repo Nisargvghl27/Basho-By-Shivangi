@@ -1,46 +1,12 @@
-// import { Manrope, Playfair_Display } from "next/font/google";
-// import "./globals.css";
-
-// const manrope = Manrope({
-//   subsets: ["latin"],
-//   weight: ["200", "300", "400", "500", "600"],
-//   variable: "--font-manrope",
-// });
-
-// const playfair = Playfair_Display({
-//   subsets: ["latin"],
-//   weight: ["400", "500", "600", "700"],
-//   style: ["normal", "italic"],
-//   variable: "--font-playfair",
-// });
-
-// export const metadata = {
-//   title: "Clay & Soul - Handcrafted Pottery",
-//   description: "Handcrafted pottery for the mindful home. Embracing the soulful asymmetry of wabi-sabi.",
-// };
-
-// export default function RootLayout({ children }) {
-//   return (
-//     <html lang="en" className="dark">
-//       <head>
-//         <link
-//           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
-//           rel="stylesheet"
-//         />
-//       </head>
-//       <body className={`${manrope.variable} ${playfair.variable} font-sans bg-charcoal text-rice-paper selection:bg-clay selection:text-white transition-colors duration-500 overflow-x-hidden`}>
-//         {children}
-//       </body>
-//     </html>
-//   );
-// }
-
 "use client";
 
 import { Manrope, Playfair_Display } from "next/font/google";
 import { useState, useEffect } from "react";
+import { CartProvider } from "../context/CartContext";
+import { WishlistProvider } from '../context/WishlistContext';
 import "./globals.css";
 
+// Font configurations
 const manrope = Manrope({
   subsets: ["latin"],
   weight: ["200", "300", "400", "500", "600"],
@@ -54,6 +20,7 @@ const playfair = Playfair_Display({
   variable: "--font-playfair",
 });
 
+// CursorGlow component
 function CursorGlow({ children }) {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isVisible, setIsVisible] = useState(false);
@@ -68,12 +35,12 @@ function CursorGlow({ children }) {
       setIsVisible(false);
     };
 
-    window.addEventListener("mousemove", handleMouseMove);
-    document.body.addEventListener("mouseleave", handleMouseLeave);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseleave', handleMouseLeave);
 
     return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      document.body.removeEventListener("mouseleave", handleMouseLeave);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseleave', handleMouseLeave);
     };
   }, []);
 
@@ -117,6 +84,8 @@ function CursorGlow({ children }) {
   );
 }
 
+import { metadata } from './metadata';
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className="dark">
@@ -125,16 +94,19 @@ export default function RootLayout({ children }) {
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
           rel="stylesheet"
         />
-        <title>Clay & Soul - Handcrafted Pottery</title>
-        <meta
-          name="description"
-          content="Handcrafted pottery for the mindful home. Embracing the soulful asymmetry of wabi-sabi."
-        />
+        <title>{metadata.title}</title>
+        <meta name="description" content={metadata.description} />
       </head>
       <body
         className={`${manrope.variable} ${playfair.variable} font-sans bg-charcoal text-rice-paper selection:bg-clay selection:text-white transition-colors duration-500 overflow-x-hidden`}
       >
-        <CursorGlow>{children}</CursorGlow>
+        <WishlistProvider>
+          <CartProvider>
+            <CursorGlow>
+              {children}
+            </CursorGlow>
+          </CartProvider>
+        </WishlistProvider>
       </body>
     </html>
   );
