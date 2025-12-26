@@ -252,10 +252,6 @@ const LoginPage = () => {
             </p>
           </div>
         </div>
-
-        <footer className="page-footer">
-          <span>Handcrafted with intention</span>
-        </footer>
       </div>
     </div>
   );
