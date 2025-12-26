@@ -127,29 +127,6 @@ export default function Hero() {
             </button>
           </div>
         </div>
-
-        {/* Scroll Indicator with Enhanced Animation */}
-        <div
-          className={`absolute bottom-12 left-1/2 -translate-x-1/2 text-white/40 flex flex-col items-center gap-2 transition-all duration-1200 delay-[1400ms] ${
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-          }`}
-          style={{ opacity: fadeOpacity * 0.6 }}
-        >
-          <span className="text-[10px] uppercase tracking-widest font-light transition-all duration-500 hover:text-white/60 hover:tracking-[0.3em]">
-            Scroll
-          </span>
-          
-          {/* Animated Arrow with Organic Bounce */}
-          <div className="relative">
-            <span className="material-symbols-outlined text-2xl font-light animate-bounce-organic">
-              keyboard_arrow_down
-            </span>
-            {/* Trailing ghost arrow */}
-            <span className="material-symbols-outlined text-2xl font-light absolute inset-0 animate-bounce-organic-delayed opacity-20">
-              keyboard_arrow_down
-            </span>
-          </div>
-        </div>
       </div>
 
       <style jsx>{`
@@ -166,39 +143,8 @@ export default function Hero() {
           90% { transform: translate(10%, 5%); }
         }
 
-        @keyframes bounce-organic {
-          0%, 100% { 
-            transform: translateY(0px); 
-            opacity: 0.4;
-          }
-          50% { 
-            transform: translateY(8px); 
-            opacity: 0.6;
-          }
-        }
-
-        @keyframes bounce-organic-delayed {
-          0%, 100% { 
-            transform: translateY(-4px); 
-            opacity: 0;
-          }
-          50% { 
-            transform: translateY(4px); 
-            opacity: 0.2;
-          }
-        }
-
         .animate-grain-shift {
           animation: grain-shift 8s ease-in-out infinite;
-        }
-
-        .animate-bounce-organic {
-          animation: bounce-organic 2.5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
-        }
-
-        .animate-bounce-organic-delayed {
-          animation: bounce-organic-delayed 2.5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
-          animation-delay: 0.15s;
         }
       `}</style>
     </div>

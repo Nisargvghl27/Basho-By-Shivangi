@@ -73,13 +73,13 @@ export default function Footer() {
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-clay/15 blur-[30px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none" />
 
               {/* 2. The Logo Container */}
-              <div className="relative z-10 w-32 h-10 md:w-40 md:h-12 transition-all duration-700 ease-out group-hover:-translate-y-1 group-hover:scale-105">
+              <div className="relative z-10 w-48 h-16 md:w-56 md:h-20 transition-all duration-700 ease-out group-hover:-translate-y-1 group-hover:scale-105">
                 <Image
-                  src="/images/logo.jpg"
+                  src="/images/bgr_logo.png"
                   alt="Clay & Soul"
                   fill
-                  sizes="(max-width: 768px) 128px, 160px"
-                  className="object-contain object-left opacity-80 grayscale-[30%] transition-all duration-700 group-hover:opacity-100 group-hover:grayscale-0 group-hover:drop-shadow-[0_10px_15px_rgba(0,0,0,0.5)]"
+                  sizes="(max-width: 768px) 192px, 224px"
+                  className="object-contain object-left opacity-100 grayscale-0 brightness-200 transition-all duration-700 group-hover:brightness-150 group-hover:drop-shadow-[0_10px_15px_rgba(0,0,0,0.5)]"
                 />
               </div>
 

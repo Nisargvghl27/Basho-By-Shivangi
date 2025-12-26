@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image"; // Imported Image component
+import Image from "next/image"; 
 import { usePathname } from 'next/navigation';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
@@ -54,8 +54,8 @@ export default function Header() {
       <header
         className={`fixed top-0 z-50 w-full transition-all duration-[900ms] ease-[cubic-bezier(0.19,1,0.22,1)] ${
           isScrolled || isMobileMenuOpen
-            ? "bg-charcoal/80 backdrop-blur-2xl border-b border-white/[0.08] py-4 shadow-[0_8px_32px_rgba(0,0,0,0.12)]"
-            : "bg-transparent border-transparent py-6"
+            ? "bg-charcoal/80 backdrop-blur-2xl border-b border-white/[0.08] py-3 shadow-[0_8px_32px_rgba(0,0,0,0.12)]"
+            : "bg-transparent border-transparent py-5"
         }`}
       >
         {/* Subtle gradient overlay for depth */}
@@ -78,20 +78,20 @@ export default function Header() {
             <div className="absolute -inset-2 bg-clay/0 rounded-lg blur-xl transition-all duration-700 group-hover:bg-clay/5" />
 
             {/* Logo Image Container */}
-            <div className="relative w-32 h-10 transition-all duration-500 ease-out group-hover:scale-105 group-hover:brightness-110">
+            <div className="relative w-40 h-12 md:w-48 md:h-14 transition-all duration-500 ease-out group-hover:scale-105 group-hover:brightness-150">
               <Image
-                src="/images/logo.jpg"
+                src="/images/bgr_logo.png"
                 alt="Clay & Soul"
                 fill
-                sizes="(max-width: 768px) 120px, 150px"
-                className="object-contain object-left drop-shadow-sm"
+                sizes="(max-width: 768px) 160px, 192px"
+                className="object-contain object-left brightness-200 drop-shadow-lg"
                 priority
               />
             </div>
           </Link>
 
           {/* --- Desktop Primary Navigation (Hidden on Mobile) --- */}
-          <nav className="hidden md:flex items-center gap-10">
+          <nav className="hidden md:flex items-center gap-10 ml-16">
             {navLinks.map((link) => (
               <Link
                 key={link.label}
@@ -113,12 +113,13 @@ export default function Header() {
           </nav>
 
           {/* --- Action Icons & Mobile Toggle --- */}
-          <div className="flex items-center gap-5 md:gap-8 z-50">
+          {/* UPDATED: Added h-8 to parent and explicit sizing to children ensures alignment */}
+          <div className="flex items-center gap-3 md:gap-8 z-50 h-8">
             
             {/* Search */}
             <button
               aria-label="Search"
-              className="relative group text-stone-warm transition-all duration-500 hover:text-rice-paper hover:-translate-y-0.5"
+              className="relative group flex items-center justify-center w-8 h-8 text-stone-warm transition-all duration-500 hover:text-rice-paper hover:-translate-y-0.5"
             >
               <span className="absolute inset-0 rounded-full bg-clay/0 scale-100 transition-all duration-700 group-hover:scale-150 group-hover:bg-clay/5 group-hover:opacity-0" />
               <span className="material-symbols-outlined text-[20px] font-light relative drop-shadow-sm">
@@ -130,7 +131,7 @@ export default function Header() {
             <Link
               href="/cart"
               aria-label="View Cart"
-              className="relative group text-stone-warm transition-all duration-500 hover:text-rice-paper hover:-translate-y-0.5"
+              className="relative group flex items-center justify-center w-8 h-8 text-stone-warm transition-all duration-500 hover:text-rice-paper hover:-translate-y-0.5"
             >
               <span className="absolute inset-0 rounded-full bg-clay/0 scale-100 transition-all duration-700 group-hover:scale-150 group-hover:bg-clay/5 group-hover:opacity-0" />
               <span className="material-symbols-outlined text-[20px] font-light relative drop-shadow-sm">
@@ -139,7 +140,7 @@ export default function Header() {
               
               {/* Dynamic Badge */}
               {cartCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-clay to-clay/90 text-[9px] font-bold text-white shadow-[0_2px_8px_rgba(0,0,0,0.15)] opacity-100 scale-100 translate-y-0 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]">
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-clay to-clay/90 text-[9px] font-bold text-white shadow-[0_2px_8px_rgba(0,0,0,0.15)] opacity-100 scale-100 translate-y-0 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]">
                   {cartCount}
                 </span>
               )}
@@ -149,14 +150,14 @@ export default function Header() {
             <Link
               href="/wishlist"
               aria-label="View Wishlist"
-              className="relative group text-stone-warm transition-all duration-500 hover:text-rice-paper hover:-translate-y-0.5 hidden sm:block"
+              className="relative group flex items-center justify-center w-8 h-8 text-stone-warm transition-all duration-500 hover:text-rice-paper hover:-translate-y-0.5"
             >
                <span className="absolute inset-0 rounded-full bg-clay/0 scale-100 transition-all duration-700 group-hover:scale-150 group-hover:bg-clay/5 group-hover:opacity-0" />
                <span className="material-symbols-outlined text-[20px] font-light relative drop-shadow-sm">favorite</span>
                
                {/* Dynamic Badge */}
                {wishlistCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-clay to-clay/90 text-[9px] font-bold text-white shadow-[0_2px_8px_rgba(0,0,0,0.15)]">
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-clay to-clay/90 text-[9px] font-bold text-white shadow-[0_2px_8px_rgba(0,0,0,0.15)]">
                   {wishlistCount}
                 </span>
                )}
@@ -166,7 +167,7 @@ export default function Header() {
             <Link
               href="/auth/login"
               aria-label="Sign In"
-              className="relative group text-stone-warm transition-all duration-500 hover:text-rice-paper hover:-translate-y-0.5 hidden sm:block"
+              className="relative group hidden sm:flex items-center justify-center w-8 h-8 text-stone-warm transition-all duration-500 hover:text-rice-paper hover:-translate-y-0.5"
             >
               <span className="absolute inset-0 rounded-full bg-clay/0 scale-100 transition-all duration-700 group-hover:scale-150 group-hover:bg-clay/5 group-hover:opacity-0" />
               <span className="material-symbols-outlined text-[20px] font-light relative drop-shadow-sm">
