@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from 'next/navigation';
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import { useCart } from "../../context/CartContext";
@@ -9,7 +10,7 @@ import { useWishlist } from "../../context/WishlistContext";
 // Enhanced Notification Component with animation
 const Notification = ({ message, onClose, type = 'success' }) => {
   const [isVisible, setIsVisible] = useState(true);
-  
+
   useEffect(() => {
     const timer = setTimeout(() => {
       handleClose();
@@ -30,10 +31,9 @@ const Notification = ({ message, onClose, type = 'success' }) => {
   const icon = type === 'success' ? 'check_circle' : 'error';
 
   return (
-    <div 
-      className={`fixed bottom-8 right-8 ${bgColor} border ${borderColor} text-rice-paper px-6 py-4 rounded-xl shadow-2xl flex items-start gap-3 z-50 transition-all duration-300 transform ${
-        isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
-      }`}
+    <div
+      className={`fixed bottom-8 right-8 ${bgColor} border ${borderColor} text-rice-paper px-6 py-4 rounded-xl shadow-2xl flex items-start gap-3 z-50 transition-all duration-300 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
+        }`}
     >
       <span className="material-symbols-outlined text-clay mt-0.5">
         {icon}
@@ -42,7 +42,7 @@ const Notification = ({ message, onClose, type = 'success' }) => {
         <p className="font-medium text-rice-paper">{type === 'success' ? 'Added to Cart' : 'Error'}</p>
         <p className="text-sm text-stone-300">{message}</p>
       </div>
-      <button 
+      <button
         onClick={handleClose}
         className="text-stone-400 hover:text-white transition-colors ml-2"
         aria-label="Close notification"
@@ -124,7 +124,8 @@ const categories = ["All", "Tableware", "Vases", "Sets", "Decorative"];
 
 export default function ProductsPage() {
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
-  const { addToCart } = useCart();
+  const { addToCart, cartItems } = useCart();
+  const router = useRouter();
   const [notification, setNotification] = useState({
     show: false,
     message: '',
@@ -145,14 +146,14 @@ export default function ProductsPage() {
     try {
       // Convert price from string to number (remove $ and convert to number)
       const price = parseFloat(product.price.replace('$', ''));
-      
+
       // Add to cart with the correct price format
       addToCart({
         ...product,
         price: price,
         quantity: 1
       });
-      
+
       // Show success notification
       setNotification({
         show: true,
@@ -199,15 +200,15 @@ export default function ProductsPage() {
 
   // Filter and sort products
   const filteredProducts = allProducts.filter((product) => {
-    const matchesCategory = 
-      selectedCategory === "All" || 
+    const matchesCategory =
+      selectedCategory === "All" ||
       product.tags.some(tag => tag.toLowerCase() === selectedCategory.toLowerCase()) ||
       (selectedCategory === "Tableware" && product.tags.includes("tableware")) ||
       (selectedCategory === "Vases" && product.tags.includes("vases")) ||
       (selectedCategory === "Sets" && product.tags.includes("sets")) ||
       (selectedCategory === "Decorative" && product.tags.includes("decorative"));
-    
-    const matchesSearch = 
+
+    const matchesSearch =
       searchQuery === "" ||
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.category.toLowerCase().includes(searchQuery.toLowerCase());
@@ -230,25 +231,25 @@ export default function ProductsPage() {
   return (
     <div className="relative min-h-screen bg-charcoal">
       <Header />
-      
+
       {/* Notification */}
       {notification.show && (
-        <Notification 
-          message={notification.message} 
+        <Notification
+          message={notification.message}
           type={notification.type}
-          onClose={() => setNotification(prev => ({ ...prev, show: false }))} 
+          onClose={() => setNotification(prev => ({ ...prev, show: false }))}
         />
       )}
-      
-      <section 
+
+      <section
         ref={sectionRef}
         className="pt-32 pb-24 px-4 md:px-12 lg:px-24 bg-charcoal relative overflow-hidden min-h-screen"
       >
         {/* Enhanced Grain Texture */}
         <div className="absolute inset-0 opacity-[0.12] pointer-events-none">
-          <div 
-            className="absolute inset-0 animate-grain-shift" 
-            style={{ 
+          <div
+            className="absolute inset-0 animate-grain-shift"
+            style={{
               backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' /%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' /%3E%3C/svg%3E")',
               backgroundSize: '200px 200px'
             }}
@@ -262,9 +263,8 @@ export default function ProductsPage() {
 
         <div className="max-w-8xl mx-auto relative z-10">
           {/* Header Section */}
-          <div className={`mb-16 transition-all duration-1000 ease-out ${
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
-          }`}>
+          <div className={`mb-16 transition-all duration-1000 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
+            }`}>
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-serif font-light text-rice-paper tracking-tight mb-6 transition-all duration-700 hover:tracking-tighter hover:text-clay/90">
               The Studio Shop
             </h1>
@@ -274,9 +274,8 @@ export default function ProductsPage() {
           </div>
 
           {/* Filters and Search Bar */}
-          <div className={`mb-12 flex flex-col md:flex-row gap-6 items-start md:items-center justify-between transition-all duration-1000 delay-200 ease-out ${
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-          }`}>
+          <div className={`mb-12 flex flex-col md:flex-row gap-6 items-start md:items-center justify-between transition-all duration-1000 delay-200 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+            }`}>
             {/* Search */}
             <div className="relative w-full md:w-auto flex-1 md:flex-initial">
               <div className="relative">
@@ -299,11 +298,10 @@ export default function ProductsPage() {
                 <button
                   key={category}
                   onClick={() => setSelectedCategory(category)}
-                  className={`px-5 py-2.5 text-xs font-bold uppercase tracking-[0.15em] transition-all duration-500 ${
-                    selectedCategory === category
+                  className={`px-5 py-2.5 text-xs font-bold uppercase tracking-[0.15em] transition-all duration-500 ${selectedCategory === category
                       ? 'bg-clay text-white border border-clay'
                       : 'bg-charcoal-light text-stone-warm border border-border-subtle hover:border-clay/40 hover:text-clay'
-                  }`}
+                    }`}
                 >
                   {category}
                 </button>
@@ -329,9 +327,8 @@ export default function ProductsPage() {
           </div>
 
           {/* Results Count */}
-          <div className={`mb-8 text-stone-warm text-sm transition-all duration-1000 delay-300 ease-out ${
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-          }`}>
+          <div className={`mb-8 text-stone-warm text-sm transition-all duration-1000 delay-300 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+            }`}>
             Showing {sortedProducts.length} {sortedProducts.length === 1 ? 'product' : 'products'}
           </div>
 
@@ -339,43 +336,41 @@ export default function ProductsPage() {
           {sortedProducts.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {sortedProducts.map((product, index) => (
-                <Link
+                <div
                   key={product.id}
-                  href={`/products/${product.id}`}
                   onMouseEnter={() => setHoveredCard(product.id)}
                   onMouseLeave={() => setHoveredCard(null)}
-                  className={`group flex flex-col gap-4 bg-charcoal-light border border-border-subtle p-4 transition-all duration-700 hover:border-clay/20 hover:bg-white/5 hover:shadow-[0_12px_40px_rgba(0,0,0,0.3)] hover:-translate-y-2 ${
-                    isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-16'
-                  }`}
+                  className={`group flex flex-col gap-4 bg-charcoal-light border border-border-subtle p-4 transition-all duration-700 hover:border-clay/20 hover:bg-white/5 hover:shadow-[0_12px_40px_rgba(0,0,0,0.3)] hover:-translate-y-2 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-16'}`}
                   style={{ transitionDelay: `${400 + index * 50}ms` }}
+                  onClick={() => router.push(`/shop/products/${product.id}`)}
                 >
                   {/* Image Container with Moving Background */}
                   <div className="h-[280px] w-full overflow-hidden relative bg-black/20 group">
                     {/* Main Image */}
-                    <div 
+                    <div
                       className="absolute inset-0 bg-cover bg-center transition-all duration-[1200ms] ease-out group-hover:scale-110 group-hover:rotate-1"
                       style={{
                         backgroundImage: `url("${product.image}")`,
                       }}
                     />
-                    
+
                     {/* Moving Gradient Overlay */}
                     <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
                       <div className="absolute inset-0 bg-gradient-to-br from-transparent via-clay/5 to-transparent animate-gradient-shift"></div>
                       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(210,180,140,0.03)_70%,transparent_100%)] opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
                     </div>
-                    
+
                     {/* Subtle Noise Texture */}
-                    <div className="absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity duration-1000" 
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity duration-1000"
                       style={{
                         backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' /%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' /%3E%3C/svg%3E")',
                         backgroundSize: '200px 200px'
                       }}
                     ></div>
-                    
+
                     {/* Overlay with Color Shift */}
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-clay/10 transition-all duration-700" />
-                    
+
                     {/* Favorite Button */}
                     {/* <button 
                       onClick={(e) => {
@@ -394,9 +389,9 @@ export default function ProductsPage() {
                       </span>
                     </button> */}
                     {/* Favorite Button */}
-                    <button 
+                    <button
                       onClick={(e) => {
-                        e.preventDefault();
+                        e.stopPropagation();
                         if (isInWishlist(product.id)) {
                           removeFromWishlist(product.id);
                           setNotification({
@@ -413,15 +408,13 @@ export default function ProductsPage() {
                           });
                         }
                       }}
-                      className={`absolute top-3 right-3 bg-charcoal/80 backdrop-blur-md p-2.5 rounded-full transition-all duration-500 ${
-                        hoveredCard === product.id || isInWishlist(product.id)
-                          ? 'opacity-100 translate-y-0 scale-100' 
+                      className={`absolute top-3 right-3 bg-charcoal/80 backdrop-blur-md p-2.5 rounded-full transition-all duration-500 ${hoveredCard === product.id || isInWishlist(product.id)
+                          ? 'opacity-100 translate-y-0 scale-100'
                           : 'opacity-0 translate-y-2 scale-75'
-                      } ${
-                        isInWishlist(product.id) 
-                          ? 'text-red-500 hover:text-red-400' 
+                        } ${isInWishlist(product.id)
+                          ? 'text-red-500 hover:text-red-400'
                           : 'text-stone-warm hover:text-clay'
-                      } hover:bg-charcoal hover:scale-110 hover:shadow-lg z-10`}
+                        } hover:bg-charcoal hover:scale-110 hover:shadow-lg z-10`}
                       aria-label={isInWishlist(product.id) ? "Remove from wishlist" : "Add to wishlist"}
                     >
                       <span className="material-symbols-outlined text-[16px] block transition-transform duration-300 hover:scale-110">
@@ -430,13 +423,27 @@ export default function ProductsPage() {
                     </button>
 
                     {/* Quick View Overlay */}
-                    <div className={`absolute inset-0 bg-charcoal/95 backdrop-blur-sm flex items-center justify-center transition-all duration-500 ${
-                      hoveredCard === product.id ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                    }`}>
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/shop/products/${product.id}`);
+                      }}
+                      className={`absolute inset-0 bg-charcoal/95 backdrop-blur-sm flex items-center justify-center transition-all duration-500 ${hoveredCard === product.id ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          router.push(`/shop/products/${product.id}`);
+                        }
+                      }}
+                    >
                       <span className="text-white text-sm uppercase tracking-[0.2em] font-bold border border-white/20 px-6 py-3 transition-all duration-500 group-hover:bg-clay group-hover:border-clay group-hover:scale-105 group-hover:shadow-lg">
                         Quick View
                       </span>
                     </div>
+
                   </div>
 
                   {/* Product Info */}
@@ -455,25 +462,44 @@ export default function ProductsPage() {
                       <span className="text-lg font-light font-serif text-white transition-all duration-500 group-hover:text-clay group-hover:scale-105 origin-left">
                         {product.price}
                       </span>
-                      <button 
-                        onClick={(e) => handleAddToCart(e, product)}
-                        className="relative text-stone-warm hover:text-clay transition-all duration-500 text-[10px] font-bold uppercase tracking-wider group-hover:tracking-[0.15em]"
-                        aria-label={`Add ${product.name} to cart`}
-                      >
-                        <span className="relative">
-                          Add to Bag
-                          <span className="absolute bottom-0 left-0 h-[1px] w-0 bg-clay transition-all duration-500 group-hover:w-full" />
-                        </span>
-                      </button>
+                      {cartItems.some(item => item.id === product.id) ? (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            router.push('/cart');
+                          }}
+                          className="relative text-stone-warm hover:text-clay transition-all duration-500 text-[10px] font-bold uppercase tracking-wider group-hover:tracking-[0.15em]"
+                          aria-label={`View cart for ${product.name}`}
+                        >
+                          <span className="relative">
+                            View Cart
+                            <span className="absolute bottom-0 left-0 h-[1px] w-0 bg-clay transition-all duration-500 group-hover:w-full" />
+                          </span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddToCart(e, product);
+                          }}
+                          className="relative text-stone-warm hover:text-clay transition-all duration-500 text-[10px] font-bold uppercase tracking-wider group-hover:tracking-[0.15em]"
+                          aria-label={`Add ${product.name} to cart`}
+                        >
+                          <span className="relative">
+                            Add to Bag
+                            <span className="absolute bottom-0 left-0 h-[1px] w-0 bg-clay transition-all duration-500 group-hover:w-full" />
+                          </span>
+                        </button>
+                      )}
                     </div>
                   </div>
-                </Link>
+                </div>
               ))}
             </div>
           ) : (
-            <div className={`text-center py-20 transition-all duration-1000 delay-300 ease-out ${
-              isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-            }`}>
+            <div className={`text-center py-20 transition-all duration-1000 delay-300 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              }`}>
               <p className="text-stone-warm text-lg mb-4">No products found</p>
               <button
                 onClick={() => {
@@ -491,10 +517,10 @@ export default function ProductsPage() {
 
       {/* Notification */}
       {notification.show && (
-        <Notification 
-          message={notification.message} 
+        <Notification
+          message={notification.message}
           type={notification.type}
-          onClose={() => setNotification(prev => ({ ...prev, show: false }))} 
+          onClose={() => setNotification(prev => ({ ...prev, show: false }))}
         />
       )}
 
