@@ -237,6 +237,109 @@ body {
   position: relative;
 }
 
+/* Image Zoom Effect - More subtle */
+.image-zoom-container {
+  overflow: hidden;
+  position: relative;
+}
+
+.image-zoom-container .zoom-target {
+  transition: transform 0.5s ease-out;
+  transform-origin: center;
+}
+
+.image-zoom-container:hover .zoom-target {
+  transform: scale(1.02);
+}
+
+/* Archive Wash Effect - More subtle */
+.archive-wash {
+  position: relative;
+}
+
+.archive-wash::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(166, 93, 61, 0.05);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.archive-wash:hover::before {
+  opacity: 1;
+}
+
+/* Button Glow Effect - More subtle */
+.btn-glow {
+  transition: all 0.3s ease;
+}
+
+.btn-glow:hover {
+  box-shadow: 0 0 10px rgba(166, 93, 61, 0.3);
+}
+
+.btn-glow:active {
+  transform: scale(0.98);
+}
+
+
+/* Card Lift Effect - More subtle */
+.hover-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.card-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-shine::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.03) 50%, rgba(255,255,255,0) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.card-shine:hover::after {
+  opacity: 1;
+}
+
+/* Tab Indicator Effect */
+.tab-indicator {
+  position: relative;
+}
+
+.tab-indicator::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: #A65D3D;
+  transition: width 0.3s ease;
+}
+
+.tab-indicator.active::after {
+  width: 100%;
+}
+
 .hover-underline-expand::after {
   content: '';
   position: absolute;

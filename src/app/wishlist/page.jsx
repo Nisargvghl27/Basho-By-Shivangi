@@ -3,13 +3,16 @@
 
 import { useState } from 'react';
 import { useWishlist } from '../../context/WishlistContext';
+import { useCart } from '../../context/CartContext';
 import Link from 'next/link';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 
 export default function WishlistPage() {
   const { wishlistItems, removeFromWishlist, isInWishlist, addToWishlist } = useWishlist();
+  const { addToCart } = useCart();
   const [hoveredCard, setHoveredCard] = useState(null);
+  const [addedToCart, setAddedToCart] = useState({});
   const [notificationMessage, setNotificationMessage] = useState('');
   const [showNotification, setShowNotification] = useState(false);
 
@@ -69,31 +72,54 @@ export default function WishlistPage() {
                       {item.name}
                     </h3>
                     <p className="text-stone-warm text-sm mt-1">{item.category}</p>
-                    <div className="mt-auto pt-3 flex justify-between items-center">
-                      <span className="text-clay text-lg font-medium">{item.price}</span>
+                    <div className="mt-auto pt-3 flex flex-col gap-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-lg font-light font-serif text-white transition-all duration-500 group-hover:scale-105 origin-left self-center">{item.price}</span>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (isInWishlist(item.id)) {
+                              removeFromWishlist(item.id);
+                              setNotificationMessage(`Removed ${item.name} from wishlist`);
+                            } else {
+                              addToWishlist(item);
+                              setNotificationMessage(`Added ${item.name} to wishlist`);
+                            }
+                            setShowNotification(true);
+                            setTimeout(() => setShowNotification(false), 3000);
+                          }}
+                          className={`p-2 rounded-full transition-all duration-300 ${
+                            isInWishlist(item.id) 
+                              ? 'text-red-500 hover:text-red-400' 
+                              : 'text-stone-warm hover:text-clay'
+                          }`}
+                          aria-label={isInWishlist(item.id) ? "Remove from wishlist" : "Add to wishlist"}
+                        >
+                          <span className="material-symbols-outlined text-xl">
+                            {isInWishlist(item.id) ? 'favorite' : 'favorite_border'}
+                          </span>
+                        </button>
+                      </div>
                       <button
                         onClick={(e) => {
                           e.preventDefault();
-                          if (isInWishlist(item.id)) {
-                            removeFromWishlist(item.id);
-                            setNotificationMessage(`Removed ${item.name} from wishlist`);
-                          } else {
-                            addToWishlist(item);
-                            setNotificationMessage(`Added ${item.name} to wishlist`);
+                          if (!addedToCart[item.id]) {
+                            addToCart(item);
+                            setAddedToCart(prev => ({ ...prev, [item.id]: true }));
+                            setNotificationMessage(`Added ${item.name} to cart`);
+                            setShowNotification(true);
+                            setTimeout(() => setShowNotification(false), 3000);
                           }
-                          setShowNotification(true);
-                          setTimeout(() => setShowNotification(false), 3000);
                         }}
-                        className={`p-2 rounded-full transition-all duration-300 ${
-                          isInWishlist(item.id) 
-                            ? 'text-red-500 hover:text-red-400' 
-                            : 'text-stone-warm hover:text-clay'
+                        disabled={addedToCart[item.id]}
+                        className={`w-full py-2 px-3 rounded-lg font-medium text-sm transition-all duration-300 ${
+                          addedToCart[item.id]
+                            ? 'bg-green-600 text-white cursor-not-allowed'
+                            : 'bg-clay hover:bg-clay/90 text-white shadow-lg hover:shadow-clay/20'
                         }`}
-                        aria-label={isInWishlist(item.id) ? "Remove from wishlist" : "Add to wishlist"}
+                        aria-label="Add to cart"
                       >
-                        <span className="material-symbols-outlined text-xl">
-                          {isInWishlist(item.id) ? 'favorite' : 'favorite_border'}
-                        </span>
+                        {addedToCart[item.id] ? 'Added to cart' : 'Add to Cart'}
                       </button>
                     </div>
                   </div>
