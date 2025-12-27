@@ -7,10 +7,15 @@
 // }
 {
   "compilerOptions": {
+<<<<<<< HEAD
     "baseUrl": "src",
+=======
+    "baseUrl": ".",
+>>>>>>> origin/krish
     "paths": {
       "@/*": ["*"]
     }
-  }
+  },
+  "exclude": ["node_modules", ".next"]
 }
 
