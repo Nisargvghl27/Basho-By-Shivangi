@@ -340,9 +340,13 @@ export default function ProductsPage() {
                   key={product.id}
                   onMouseEnter={() => setHoveredCard(product.id)}
                   onMouseLeave={() => setHoveredCard(null)}
+<<<<<<< HEAD
                   className={`group flex flex-col gap-4 bg-charcoal-light border border-border-subtle p-4 transition-all duration-700 hover:border-clay/20 hover:bg-white/5 hover:shadow-[0_12px_40px_rgba(0,0,0,0.3)] hover:-translate-y-2 ${
                     isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-16'
                   }`}
+=======
+                  className={`group flex flex-col gap-4 bg-charcoal-light border border-border-subtle p-4 transition-all duration-700 hover:border-clay/20 hover:bg-white/5 hover:shadow-[0_12px_40px_rgba(0,0,0,0.3)] hover:-translate-y-2 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-16'}`}
+>>>>>>> origin/main
                   style={{ transitionDelay: `${400 + index * 50}ms` }}
                   onClick={() => router.push(`/shop/products/${product.id}`)}
                 >
@@ -425,9 +429,28 @@ export default function ProductsPage() {
                     </button>
 
                     {/* Quick View Overlay */}
+<<<<<<< HEAD
                     <div className={`absolute inset-0 bg-charcoal/95 backdrop-blur-sm flex items-center justify-center transition-all duration-500 ${
                       hoveredCard === product.id ? 'opacity-100' : 'opacity-0 pointer-events-none'
                     }`}>
+=======
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/shop/products/${product.id}`);
+                      }}
+                      className={`absolute inset-0 bg-charcoal/95 backdrop-blur-sm flex items-center justify-center transition-all duration-500 ${hoveredCard === product.id ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          router.push(`/shop/products/${product.id}`);
+                        }
+                      }}
+                    >
+>>>>>>> origin/main
                       <span className="text-white text-sm uppercase tracking-[0.2em] font-bold border border-white/20 px-6 py-3 transition-all duration-500 group-hover:bg-clay group-hover:border-clay group-hover:scale-105 group-hover:shadow-lg">
                         Quick View
                       </span>
@@ -451,6 +474,7 @@ export default function ProductsPage() {
                       <span className="text-lg font-light font-serif text-white transition-all duration-500 group-hover:text-clay group-hover:scale-105 origin-left">
                         {product.price}
                       </span>
+<<<<<<< HEAD
                       <button 
                         onClick={(e) => handleAddToCart(e, product)}
                         className="relative text-stone-warm hover:text-clay transition-all duration-500 text-[10px] font-bold uppercase tracking-wider group-hover:tracking-[0.15em]"
@@ -461,6 +485,38 @@ export default function ProductsPage() {
                           <span className="absolute bottom-0 left-0 h-[1px] w-0 bg-clay transition-all duration-500 group-hover:w-full" />
                         </span>
                       </button>
+=======
+                      {cartItems.some(item => item.id === product.id) ? (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            router.push('/cart');
+                          }}
+                          className="relative text-stone-warm hover:text-clay transition-all duration-500 text-[10px] font-bold uppercase tracking-wider group-hover:tracking-[0.15em]"
+                          aria-label={`View cart for ${product.name}`}
+                        >
+                          <span className="relative">
+                            View Cart
+                            <span className="absolute bottom-0 left-0 h-[1px] w-0 bg-clay transition-all duration-500 group-hover:w-full" />
+                          </span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddToCart(e, product);
+                          }}
+                          className="relative text-stone-warm hover:text-clay transition-all duration-500 text-[10px] font-bold uppercase tracking-wider group-hover:tracking-[0.15em]"
+                          aria-label={`Add ${product.name} to cart`}
+                        >
+                          <span className="relative">
+                            Add to Bag
+                            <span className="absolute bottom-0 left-0 h-[1px] w-0 bg-clay transition-all duration-500 group-hover:w-full" />
+                          </span>
+                        </button>
+                      )}
+>>>>>>> origin/main
                     </div>
                   </div>
                 </div>
