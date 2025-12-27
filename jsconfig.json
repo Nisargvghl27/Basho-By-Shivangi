@@ -7,11 +7,7 @@
 // }
 {
   "compilerOptions": {
-<<<<<<< HEAD
-    "baseUrl": "src",
-=======
     "baseUrl": ".",
->>>>>>> origin/krish
     "paths": {
       "@/*": ["*"]
     }
