@@ -81,7 +81,7 @@ export default function Header() {
       <div className="relative flex items-center justify-between px-6 md:px-12 max-w-[1440px] mx-auto">
         
         {/* --- Brand / Logo --- */}
-        <a 
+        <Link 
           href="/" 
           className="flex items-center gap-3 group relative"
           onMouseEnter={() => setActiveLink("")}

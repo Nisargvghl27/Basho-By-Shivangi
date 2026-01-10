@@ -9,13 +9,11 @@
     "lint": "eslint"
   },
   "dependencies": {
-<<<<<<< HEAD
-=======
+    "@google/generative-ai": "^0.24.1",
     "firebase": "^12.7.0",
     "framer-motion": "^12.23.26",
     "lenis": "^1.3.16",
     "lucide-react": "^0.562.0",
->>>>>>> origin/main
     "next": "16.1.0",
     "react": "19.2.3",
     "react-dom": "19.2.3"
