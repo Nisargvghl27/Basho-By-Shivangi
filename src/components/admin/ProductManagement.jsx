@@ -2,344 +2,360 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { 
-  Plus, 
-  Search, 
-  Filter, 
-  Download, 
-  Upload, 
-  Edit, 
-  Trash2, 
-  Eye, 
-  Star,
-  Package,
-  DollarSign,
-  Tag,
-  ChevronLeft,
-  ChevronRight
+  Plus, Search, Edit, Trash2, Package,
+  X, Loader2
 } from "lucide-react";
-import { useSearch } from "../../context/SearchContext";
+import { fetchAllProducts, createProduct, updateProduct, deleteProduct } from "../../lib/productService";
 
 export default function ProductManagement() {
   const [products, setProducts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [selectedStatus, setSelectedStatus] = useState("all");
-  const [currentPage, setCurrentPage] = useState(1);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [showBulkUpload, setShowBulkUpload] = useState(false);
-  const { searchQuery, setSearchQuery, setSearchResults } = useSearch();
+  
+  // Form State
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingId, setEditingId] = useState(null); // Tracks if we are editing
+  
+  const [formData, setFormData] = useState({
+    name: "",
+    sku: "",
+    brand: "Basho",
+    category: "Dinnerware", 
+    subtitle: "", 
+    price: "",
+    stock: "",
+    status: "active",
+    tags: "", 
+    description: "",
+    imageUrl: "" // New field for the image URL
+  });
 
-  // Mock products data
-  const mockProducts = [
-    { id: 1, name: "Ceramic Dinner Set", sku: "CD-001", brand: "Basho", category: "Dinnerware", price: 299, stock: 45, status: "active", rating: 4.8 },
-    { id: 2, name: "Handmade Coffee Mug", sku: "CM-002", brand: "Basho", category: "Drinkware", price: 45, stock: 120, status: "active", rating: 4.9 },
-    { id: 3, name: "Artistic Vase", sku: "AV-003", brand: "Basho", category: "Decor", price: 189, stock: 23, status: "active", rating: 4.7 },
-    { id: 4, name: "Pottery Planters Set", sku: "PP-004", brand: "Basho", category: "Garden", price: 78, stock: 67, status: "active", rating: 4.6 },
-    { id: 5, name: "Tea Cups Collection", sku: "TC-005", brand: "Basho", category: "Drinkware", price: 89, stock: 34, status: "inactive", rating: 4.5 },
-    { id: 6, name: "Serving Bowls", sku: "SB-006", brand: "Basho", category: "Dinnerware", price: 156, stock: 89, status: "active", rating: 4.8 },
-    { id: 7, name: "Wall Art Plates", sku: "WP-007", brand: "Basho", category: "Decor", price: 234, stock: 12, status: "active", rating: 4.9 },
-    { id: 8, name: "Kitchen Canisters", sku: "KC-008", brand: "Basho", category: "Kitchen", price: 123, stock: 56, status: "active", rating: 4.4 },
-  ];
+  // Load Products
+  const loadProducts = async () => {
+    setIsLoading(true);
+    try {
+      const data = await fetchAllProducts();
+      setProducts(data);
+    } catch (error) {
+      console.error("Failed to load products", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    setProducts(mockProducts);
+    loadProducts();
   }, []);
 
-  // Filter products based on search and other filters
+  // Handle Input Changes
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Open Edit Modal
+  const handleEditClick = (product) => {
+    setEditingId(product.id);
+    setFormData({
+      name: product.name,
+      sku: product.sku,
+      brand: product.brand || "Basho",
+      category: product.category || "Dinnerware",
+      subtitle: product.subtitle || "",
+      price: product.price,
+      stock: product.stock,
+      status: product.status || "active",
+      tags: Array.isArray(product.tags) ? product.tags.join(', ') : (product.tags || ""),
+      description: product.description || "",
+      imageUrl: product.image || "" // Populate existing image URL
+    });
+    setShowAddModal(true);
+  };
+
+  // Reset Form
+  const resetForm = () => {
+    setEditingId(null);
+    setFormData({
+        name: "", sku: "", brand: "Basho", category: "Dinnerware",
+        subtitle: "", price: "", stock: "", status: "active", tags: "", description: "", imageUrl: ""
+    });
+    setShowAddModal(false);
+  };
+
+  // Submit (Create or Update)
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      // Process tags into array
+      const processedData = {
+        ...formData,
+        tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
+      };
+      // Remove imageUrl from processedData as it's passed separately
+      delete processedData.imageUrl;
+
+      if (editingId) {
+        // UPDATE Existing Product
+        await updateProduct(editingId, processedData, formData.imageUrl);
+      } else {
+        // CREATE New Product
+        await createProduct(processedData, formData.imageUrl);
+      }
+      
+      // Success
+      await loadProducts();
+      resetForm();
+    } catch (error) {
+      console.error(error);
+      alert("Operation failed. Check console.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Delete Product
+  const handleDelete = async (id) => {
+    if (confirm("Are you sure you want to delete this product?")) {
+      await deleteProduct(id);
+      await loadProducts();
+    }
+  };
+
+  // Filter Logic
   const filteredProducts = useMemo(() => {
     let filtered = products;
+    const lowerSearch = searchTerm.toLowerCase();
 
-    // Apply global search
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(product => 
-        product.name.toLowerCase().includes(query) ||
-        product.sku.toLowerCase().includes(query) ||
-        product.brand.toLowerCase().includes(query) ||
-        product.category.toLowerCase().includes(query)
+    if (lowerSearch) {
+      filtered = filtered.filter(p => 
+        p.name.toLowerCase().includes(lowerSearch) || 
+        p.sku?.toLowerCase().includes(lowerSearch)
       );
     }
 
-    // Apply local search
-    if (searchTerm) {
-      const query = searchTerm.toLowerCase();
-      filtered = filtered.filter(product => 
-        product.name.toLowerCase().includes(query) ||
-        product.sku.toLowerCase().includes(query) ||
-        product.brand.toLowerCase().includes(query) ||
-        product.category.toLowerCase().includes(query)
-      );
-    }
-
-    // Apply category filter
-    if (selectedCategory !== "all") {
-      filtered = filtered.filter(product => product.category === selectedCategory);
-    }
-
-    // Apply status filter
-    if (selectedStatus !== "all") {
-      filtered = filtered.filter(product => product.status === selectedStatus);
-    }
-
+    if (selectedCategory !== "all") filtered = filtered.filter(p => p.category === selectedCategory);
     return filtered;
-  }, [products, searchQuery, searchTerm, selectedCategory, selectedStatus]);
-
-  // Update search results when global search changes
-  useEffect(() => {
-    if (searchQuery) {
-      const results = filteredProducts.map(product => ({
-        id: product.id,
-        name: product.name,
-        sku: product.sku,
-        brand: product.brand,
-        category: product.category,
-        price: product.price,
-        stock: product.stock,
-        status: product.status,
-        rating: product.rating
-      }));
-      
-      setSearchResults(prev => ({
-        ...prev,
-        products: results
-      }));
-    }
-  }, [searchQuery, filteredProducts, setSearchResults]);
-
-  const itemsPerPage = 10;
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentProducts = filteredProducts.slice(startIndex, endIndex);
-
-  // Reset to first page when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, searchTerm, selectedCategory, selectedStatus]);
-
-  // Show empty state if no results
-  if (currentProducts.length === 0 && (searchQuery || searchTerm)) {
-    return (
-      <div className="text-center py-12">
-        <div className="text-gray-400 mb-4">
-          <Search className="w-12 h-12 mx-auto" />
-        </div>
-        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-          No matching records found
-        </h3>
-        <p className="text-gray-500 dark:text-gray-400">
-          Try adjusting your search or filters
-        </p>
-      </div>
-    );
-  }
+  }, [products, searchTerm, selectedCategory]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Product Management</h1>
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={() => setShowBulkUpload(true)}
-            className="flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-          >
-            <Upload className="w-4 h-4 mr-2" />
-            Bulk Upload
-          </button>
-          <button className="flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
-            <Download className="w-4 h-4 mr-2" />
-            Export
-          </button>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Product
-          </button>
-        </div>
+        <button
+          onClick={() => { resetForm(); setShowAddModal(true); }}
+          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Add Product
+        </button>
       </div>
 
       {/* Filters */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-        <div className="flex flex-col lg:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Search products..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-          
-          <div className="flex gap-3">
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">All Categories</option>
-              <option value="Dinnerware">Dinnerware</option>
-              <option value="Drinkware">Drinkware</option>
-              <option value="Decor">Decor</option>
-              <option value="Garden">Garden</option>
-              <option value="Kitchen">Kitchen</option>
-            </select>
-            
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-          </div>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 flex gap-4">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <input
+            type="text"
+            placeholder="Search products..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border rounded-lg bg-transparent"
+          />
         </div>
+        <select
+          value={selectedCategory}
+          onChange={(e) => setSelectedCategory(e.target.value)}
+          className="px-4 py-2 border rounded-lg bg-transparent"
+        >
+          <option value="all">All Categories</option>
+          <option value="Dinnerware">Dinnerware</option>
+          <option value="Drinkware">Drinkware</option>
+          <option value="Decor">Decor</option>
+          <option value="Garden">Garden</option>
+        </select>
       </div>
 
-      {/* Products Table */}
+      {/* Table */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-900">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Product
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  SKU
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Category
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Price
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Stock
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Rating
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {currentProducts.map((product) => (
-                <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10">
-                        <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
-                          <Package className="h-6 w-6 text-gray-400" />
+        {isLoading ? (
+          <div className="p-12 flex justify-center"><Loader2 className="animate-spin w-8 h-8 text-blue-500"/></div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-900">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                {filteredProducts.map((product) => (
+                  <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="h-10 w-10 rounded overflow-hidden bg-gray-100 flex-shrink-0">
+                          {product.image ? (
+                            <img src={product.image} alt="" className="h-full w-full object-cover" />
+                          ) : (
+                            <Package className="h-full w-full p-2 text-gray-400" />
+                          )}
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{product.name}</div>
+                          <div className="text-xs text-gray-500">{product.subtitle}</div>
                         </div>
                       </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                          {product.name}
-                        </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                          {product.brand}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                    {product.sku}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                    {product.category}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                    ${product.price}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                    {product.stock}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      product.status === 'active' 
-                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                        : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                    }`}>
-                      {product.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                    <div className="flex items-center">
-                      <Star className="w-4 h-4 text-yellow-400 mr-1" />
-                      {product.rating}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex items-center justify-end space-x-2">
-                      <button className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500">{product.sku}</td>
+                    <td className="px-6 py-4 text-sm text-gray-500">{product.category}</td>
+                    <td className="px-6 py-4 text-sm font-medium">${product.price}</td>
+                    <td className="px-6 py-4 text-sm text-gray-500">{product.stock}</td>
+                    <td className="px-6 py-4 text-right space-x-2">
+                      <button 
+                        onClick={() => handleEditClick(product)}
+                        className="text-blue-600 hover:text-blue-900"
+                      >
                         <Edit className="w-4 h-4" />
                       </button>
-                      <button className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
+                      <button 
+                        onClick={() => handleDelete(product.id)}
+                        className="text-red-600 hover:text-red-900"
+                      >
                         <Trash2 className="w-4 h-4" />
                       </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
-      {/* Pagination */}
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-gray-700 dark:text-gray-300">
-          Showing {startIndex + 1} to {Math.min(endIndex, filteredProducts.length)} of {filteredProducts.length} results
+      {/* MODAL (Add/Edit) */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
+              <h2 className="text-xl font-bold">{editingId ? 'Edit Product' : 'Add New Product'}</h2>
+              <button onClick={resetForm} className="p-2 hover:bg-gray-100 rounded-full">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleSubmit} className="p-6 space-y-6">
+              {/* Image URL Input & Preview */}
+              <div className="space-y-4">
+                <div className="flex justify-center">
+                    {formData.imageUrl ? (
+                      <img src={formData.imageUrl} alt="Preview" className="h-48 object-contain rounded-lg border" />
+                    ) : (
+                      <div className="h-48 w-full border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-400">
+                        <Package className="w-10 h-10 mb-2" />
+                        <p className="text-sm">Image preview will appear here</p>
+                      </div>
+                    )}
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Cloudinary Image URL</label>
+                  <input 
+                    required
+                    type="url" 
+                    name="imageUrl" 
+                    value={formData.imageUrl} 
+                    onChange={handleInputChange} 
+                    className="w-full p-2 border rounded-lg bg-transparent" 
+                    placeholder="https://res.cloudinary.com/..." 
+                  />
+                  <p className="text-xs text-gray-500">Paste the direct link to your image on Cloudinary.</p>
+                </div>
+              </div>
+
+              {/* Fields */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Product Name</label>
+                  <input required name="name" value={formData.name} onChange={handleInputChange} className="w-full p-2 border rounded-lg bg-transparent" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">SKU</label>
+                  <input required name="sku" value={formData.sku} onChange={handleInputChange} className="w-full p-2 border rounded-lg bg-transparent" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Category</label>
+                  <select name="category" value={formData.category} onChange={handleInputChange} className="w-full p-2 border rounded-lg bg-transparent">
+                    <option value="Dinnerware">Dinnerware</option>
+                    <option value="Drinkware">Drinkware</option>
+                    <option value="Decor">Decor</option>
+                    <option value="Garden">Garden</option>
+                    <option value="Sets">Sets</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Subtitle</label>
+                  <input name="subtitle" value={formData.subtitle} onChange={handleInputChange} className="w-full p-2 border rounded-lg bg-transparent" placeholder="e.g. Stoneware • Hand-dipped" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Price ($)</label>
+                  <input required type="number" name="price" value={formData.price} onChange={handleInputChange} className="w-full p-2 border rounded-lg bg-transparent" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Stock</label>
+                  <input required type="number" name="stock" value={formData.stock} onChange={handleInputChange} className="w-full p-2 border rounded-lg bg-transparent" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Status</label>
+                  <select name="status" value={formData.status} onChange={handleInputChange} className="w-full p-2 border rounded-lg bg-transparent">
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                 <label className="text-sm font-medium">Description</label>
+                 <textarea 
+                    name="description" 
+                    value={formData.description} 
+                    onChange={handleInputChange} 
+                    className="w-full p-2 border rounded-lg bg-transparent h-24" 
+                 />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Tags (comma separated)</label>
+                <input name="tags" value={formData.tags} onChange={handleInputChange} className="w-full p-2 border rounded-lg bg-transparent" placeholder="mugs, handmade, gift" />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button type="button" onClick={resetForm} className="px-4 py-2 border rounded-lg hover:bg-gray-50">Cancel</button>
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center"
+                >
+                  {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2"/> : null}
+                  {editingId ? "Update Product" : "Save Product"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
-            className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          {[...Array(totalPages)].map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setCurrentPage(i + 1)}
-              className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                currentPage === i + 1
-                  ? 'z-10 bg-blue-50 border-blue-500 text-blue-600 dark:bg-blue-900 dark:text-blue-300'
-                  : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600'
-              }`}
-            >
-              {i + 1}
-            </button>
-          ))}
-          <button
-            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-            disabled={currentPage === totalPages}
-            className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
