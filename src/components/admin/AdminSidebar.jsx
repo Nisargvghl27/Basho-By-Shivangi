@@ -14,6 +14,7 @@ import {
   Ticket, 
   BarChart3, 
   Settings,
+  CalendarDays,
   X,
   Menu
 } from "lucide-react";
@@ -21,6 +22,7 @@ import {
 const menuItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/products", label: "Products", icon: Package },
+  { href: "/admin/workshops", label: "Workshops", icon: CalendarDays }, 
   { href: "/admin/categories", label: "Categories", icon: Tags },
   { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
   { href: "/admin/users", label: "Users", icon: Users },
@@ -46,10 +48,14 @@ export default function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
       )}
 
       {/* Sidebar */}
-      <div className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
+      <div
+        className={`
+          fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 shadow-lg
+          transform transition-transform duration-300 ease-in-out
+          lg:translate-x-0 lg:static lg:inset-0
+          ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
+        `}
+      >
         <div className="flex items-center justify-between h-16 px-4 sm:px-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-center flex-1">
             <img 
@@ -70,17 +76,22 @@ export default function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
           <div className="px-2 sm:px-4 space-y-1 sm:space-y-2">
             {menuItems.map((item) => {
               const Icon = item.icon;
-              const isActive = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
-              
+              const isActive =
+                pathname === item.href ||
+                (item.href !== "/admin" && pathname.startsWith(item.href));
+
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   className={`
-                    flex items-center px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium rounded-lg transition-colors duration-200
-                    ${isActive
-                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900 dark:text-blue-200'
-                      : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                    flex items-center px-3 sm:px-4 py-2 sm:py-3
+                    text-xs sm:text-sm font-medium rounded-lg
+                    transition-colors duration-200
+                    ${
+                      isActive
+                        ? "bg-blue-50 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
+                        : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
                     }
                   `}
                   onClick={() => setSidebarOpen(false)}
