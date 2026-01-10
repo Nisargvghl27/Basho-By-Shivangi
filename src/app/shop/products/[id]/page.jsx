@@ -1,6 +1,8 @@
 // src/app/shop/products/[id]/page.jsx
 'use client';
 
+// Updated import path for CartContext
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -15,7 +17,7 @@ import { fetchProductById, getRelatedProducts } from '../../../../lib/productSer
 export default function ProductPage() {
   const params = useParams();
   const router = useRouter();
-  const { addToCart, cartItems } = useCart();
+  const { addToCart, cartItems, clearCart } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   
   // Data State
@@ -90,26 +92,16 @@ export default function ProductPage() {
     );
   }
 
-  // --- LOGIC ---
-
-  const priceNumber = Number(product.price) || 0;
-  
-  // Ensure we have an array of images. If 'images' exists use it, otherwise use single 'image'
-  const images = product.images && product.images.length > 0 
-    ? product.images 
-    : (product.image ? [product.image] : []);
-
-  const isInCart = cartItems.some(item => item.id === product.id);
-
   const handleAddToCart = () => {
     addToCart({
       id: product.id,
       name: product.name,
-      price: priceNumber,
-      image: images[0],
+      price: product.price,
+      image: images[0] ?? product.image,
       quantity: quantity
     });
     
+    // Show toast notification
     setNotification({
       show: true,
       message: `${product.name} added to cart`,
@@ -195,8 +187,8 @@ export default function ProductPage() {
             <div className="md:w-1/2">
               <div className="group bg-charcoal-light rounded-xl overflow-hidden shadow-2xl mb-4 transition-transform duration-700 ease-out hover:-translate-y-1">
                 <img 
-                  key={images[selectedImage]}
-                  src={images[selectedImage]} 
+                  key={images[selectedImage] ?? images[0] ?? product.image}
+                  src={images[selectedImage] ?? images[0] ?? product.image} 
                   alt={product.name}
                   onLoad={() => setMainImageLoaded(true)}
                   className="w-full h-auto object-cover transition-all duration-700 ease-out group-hover:scale-[1.03]"
@@ -324,19 +316,21 @@ export default function ProductPage() {
                     )}
                     
                     <button
-                      onClick={handleWishlistToggle}
-                      className={`w-full py-3 px-6 border rounded-md flex items-center justify-center gap-2 btn-glow transition-all duration-500 ease-out active:scale-[0.98] ${
-                        isInWishlist(product.id)
-                          ? 'border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20'
-                          : 'border-stone-700 text-rice-paper hover:bg-charcoal/50'
+                      onClick={handleBuyNow}
+                      disabled={product.stock <= 0}
+                      className={`w-full py-3 px-6 rounded-md text-lg font-medium transition-all duration-300 relative overflow-hidden active:scale-[0.98] border ${
+                        product.stock > 0
+                          ? 'group border-clay text-clay hover:bg-clay hover:text-white' 
+                          : 'border-stone-700 text-stone-400 cursor-not-allowed'
                       }`}
                     >
-                      <span className={`${isInWishlist(product.id) ? 'text-red-400' : ''}`}>
-                        {isInWishlist(product.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}
+                      <span className="relative z-10 flex items-center justify-center gap-2">
+                        <span className="material-symbols-outlined">bolt</span>
+                        {product.stock > 0 ? 'Buy Now' : 'Out of Stock'}
                       </span>
-                      <span className={isInWishlist(product.id) ? 'text-red-500' : 'text-clay'}>
-                        {isInWishlist(product.id) ? '❤️' : '🤍'}
-                      </span>
+                      {product.stock > 0 && (
+                        <div className="absolute inset-0 bg-clay transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
+                      )}
                     </button>
                   </div>
                 </div>
