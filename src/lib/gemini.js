@@ -1,13 +1,17 @@
-// src/lib/gemini.js
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { ragPipeline } from "./ragPipeline.js";
 
 // Your API Key
-const API_KEY = "AIzaSyDJAiVaDnsB4g9VBe9O19B_vKBHYH3TR4Y"; 
+const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY; 
 
+// Force v1 API with custom configuration
 const genAI = new GoogleGenerativeAI(API_KEY);
 
-// UPGRADE: Switched to 'gemini-2.5-pro' for higher quality, more poetic responses.
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
+// Use v1 API endpoint directly
+const model = genAI.getGenerativeModel({ 
+  model: "gemini-1.5-flash",
+  apiVersion: "v1"  // Force v1 API
+});
 
 // --- KNOWLEDGE BASE ---
 const SITE_KNOWLEDGE = `
@@ -31,68 +35,144 @@ const SITE_KNOWLEDGE = `
   - Best sellers: Morning Ritual Mug ($32), Ikebana Vase ($85).
 `;
 
-// Helper for stability
 const generateContentSafe = async (promptText) => {
-    try {
-        const result = await model.generateContent(promptText);
-        return result.response.text();
-    } catch (error) {
-        console.warn("Pro model busy, trying fallback...", error.message);
+    if (API_KEY && API_KEY !== 'your_gemini_api_key_here') {
         try {
-            // Fallback to Flash if Pro is momentarily unavailable
-            const fallbackModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-            const result = await fallbackModel.generateContent(promptText);
-            return result.response.text();
-        } catch (fallbackError) {
-            return "I am currently meditating. Please try asking again in a moment.";
+            const response = await fetch(
+  "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=" + API_KEY,
+  {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [
+        {
+          parts: [{ text: promptText }]
         }
+      ]
+    })
+  }
+);
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`API Error: ${response.status} - ${JSON.stringify(errorData)}`);
+            }
+
+            const data = await response.json();
+            return data.candidates[0].content.parts[0].text;
+            
+        } catch (error) {
+            // Handle quota exceeded gracefully
+            if (error.message.includes('quota') || error.message.includes('429') || error.message.includes('Too Many Requests')) {
+                return "I'm experiencing high demand right now. Please try again in a few moments. In the meantime, I can tell you about our workshops: We have 'Advanced Poetry Workshop' on January 14th for ₹200, and a 'Shoes' workshop on January 12th for ₹300.";
+            }
+            
+            throw new Error("Gemini API unavailable");
+        }
+    } else {
+        throw new Error("No valid API key available");
     }
 };
 
-// --- Feature 1: Chatbot (Updated for "Pro" Personality) ---
+// --- Feature 1: RAG-Powered Chatbot ---
 export const getChatResponse = async (message) => {
-  const prompt = `
-    You are the virtual soul of 'Basho', a pottery studio.
+  try {
+    // Get relevant context from RAG pipeline
+    const context = await ragPipeline.getContext(message, 3);
     
-    Your Personality:
-    - You are NOT a robot. You are a calm, thoughtful artisan.
-    - Your words are like clay: earthy, deliberate, and warm.
-    - You love 'Wabi-Sabi' (the beauty of things imperfect, impermanent, and incomplete).
-    
-    Knowledge Base:
-    ${SITE_KNOWLEDGE}
-    
-    User Input: "${message}"
-    
-    Task:
-    Answer the user comfortably and briefly (2-3 sentences). 
-    If they say "hey" or "hello", welcome them warmly to our slow-living space.
-  `;
+    const prompt = `
+      You are the virtual soul of 'Basho', a pottery studio.
+      
+      Your Personality:
+      - You are NOT a robot. You are a calm, thoughtful artisan.
+      - Your words are like clay: earthy, deliberate, and warm.
+      - You love 'Wabi-Sabi' (the beauty of things imperfect, impermanent, and incomplete).
+      
+      Knowledge Base Context:
+      ${context}
+      
+      User Input: "${message}"
+      
+      Task:
+      Answer the user comfortably and briefly (2-3 sentences) using the context above.
+      
+      Special Instructions:
+      - For WORKSHOPS: Include date, location, price, and what they'll learn
+      - For PRODUCTS: Focus on materials, craftsmanship, and wabi-sabi philosophy
+      - For EVENTS: Mention timing, location, and what makes it special
+      - If they ask "what workshops", list upcoming workshops from context
+      - If they ask "how much", provide pricing information from context
+      - If they ask "where", give location details from context
+      
+      If the context doesn't contain relevant information, respond naturally as Basho's assistant.
+      If they say "hey" or "hello", welcome them warmly to our slow-living space.
+      
+      Important:
+      - Base your answer on the provided context when relevant
+      - Be helpful and authentic to the Basho brand
+      - Keep responses concise but informative
+    `;
 
-  return await generateContentSafe(prompt);
+    return await generateContentSafe(prompt);
+  } catch (error) {
+    console.error('RAG chat failed:', error);
+    // Fallback to basic response
+    return "I'm here to help you discover the beauty of handmade pottery and our workshops. What would you like to know about our ceramics or upcoming events?";
+  }
 };
 
-// --- Feature 2: Product Storyteller ---
+// --- Feature 2: RAG-Powered Product Storyteller ---
 export const generateProductDescription = async (productDetails) => {
-  const prompt = `
-    Write a short, poetic description for this ceramic piece.
-    Details: ${JSON.stringify(productDetails)}
-    Tone: Emotional, sensory (touch, warmth), and artistic.
-  `;
-  try { return await generateContentSafe(prompt); } catch (e) { return null; }
+  try {
+    // Search for similar products or related content
+    const searchQuery = `product description ${productDetails.name || ''} ${productDetails.category || ''}`;
+    const context = await ragPipeline.getContext(searchQuery, 2);
+    
+    const prompt = `
+      Write a short, poetic description for this ceramic piece.
+      
+      Product Details: ${JSON.stringify(productDetails)}
+      
+      Similar Products Reference:
+      ${context}
+      
+      Tone: Emotional, sensory (touch, warmth), and artistic.
+      Style: Wabi-sabi inspired, focusing on imperfection and natural beauty.
+      
+      Create a unique description that captures the essence of this piece.
+    `;
+    
+    return await generateContentSafe(prompt);
+  } catch (error) {
+    console.error('RAG product description failed:', error);
+    return null;
+  }
 };
 
-// --- Feature 3: Vibe Search ---
+// --- Feature 3: RAG-Enhanced Vibe Search ---
 export const generateSearchTags = async (userQuery) => {
-  const prompt = `
-    The user wants pottery that feels like: "${userQuery}".
-    List 5 physical tags (e.g., color, texture, shape) that match this feeling.
-    Return ONLY comma-separated words.
-  `;
-  try { 
+  try {
+    // Get context about similar products or styles
+    const context = await ragPipeline.getContext(userQuery, 3);
+    
+    const prompt = `
+      The user wants pottery that feels like: "${userQuery}"
+      
+      Reference Context:
+      ${context}
+      
+      Based on the context and the user's vibe, list 5 physical tags (e.g., color, texture, shape, style, material) that match this feeling.
+      Return ONLY comma-separated words, no explanations.
+      
+      Examples: matte, textured, earthy, minimalist, hand-thrown
+    `;
+    
     const text = await generateContentSafe(prompt);
     return text.split(',').map(tag => tag.trim().toLowerCase());
-  } catch (e) { return [userQuery]; }
+  } catch (error) {
+    console.error('RAG search tags failed:', error);
+    return [userQuery];
+  }
 };
 
 // --- Feature 4: Image Tagging ---

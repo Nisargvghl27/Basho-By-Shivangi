@@ -17,7 +17,7 @@ import { fetchProductById, getRelatedProducts } from '../../../../lib/productSer
 export default function ProductPage() {
   const params = useParams();
   const router = useRouter();
-  const { addToCart, cartItems, clearCart } = useCart();
+  const { addToCart, cartItems, setCartItems, clearCart } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   
   // Data State
@@ -96,15 +96,40 @@ export default function ProductPage() {
   const isInCart = cartItems.some(item => item.id === product.id);
 
   const handleBuyNow = () => {
-    // A bit more advanced: add to cart AND redirect to checkout
-    addToCart({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image: product.images?.[0] ?? product.image,
-      quantity: quantity,
-    });
-    router.push('/checkout');
+    console.log('=== Buy Now clicked ===');
+    console.log('Current cart before:', cartItems);
+    console.log('Product to add:', product);
+    
+    if (product.stock > 0) {
+      // For Buy Now, we want to replace the quantity in cart with the selected quantity
+      const existingItem = cartItems.find(item => item.id === product.id);
+      
+      if (existingItem) {
+        // Update existing item with new quantity instead of adding to it
+        setCartItems(prevItems => 
+          prevItems.map(item => 
+            item.id === product.id 
+              ? { ...item, quantity: quantity }
+              : item
+          )
+        );
+      } else {
+        // Add new item if not in cart
+        addToCart({
+          ...product,
+          quantity: quantity
+        });
+      }
+      
+      // Navigate to checkout after a short delay to ensure cart is updated
+      setTimeout(() => {
+        console.log('Navigating to checkout...');
+        // Pass the product ID as selected item so only this item gets removed after purchase
+        router.push(`/checkout?selected=${product.id}`);
+      }, 500);
+    } else {
+      console.log('Product out of stock');
+    }
   };
 
     const handleAddToCart = () => {

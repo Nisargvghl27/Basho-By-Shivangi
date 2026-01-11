@@ -226,7 +226,8 @@ import { Manrope, Playfair_Display } from "next/font/google";
 import { useState, useEffect } from "react";
 import { CartProvider } from "../context/CartContext";
 import { WishlistProvider } from '../context/WishlistContext';
-import BashoChatbot from "../components/BashoChatbot"; 
+import { SearchProvider } from '../context/SearchContext';
+import BashoChatbot from '../components/BashoChatbot';
 import "./globals.css";
 import { metadata } from './metadata';
 
@@ -316,10 +317,12 @@ export default function RootLayout({ children }) {
       >
         <WishlistProvider>
           <CartProvider>
-            <CursorGlow>
-              {children}
-            </CursorGlow>
-            <BashoChatbot />
+            <SearchProvider>
+              <CursorGlow>
+                {children}
+              </CursorGlow>
+              <BashoChatbot />
+            </SearchProvider>
           </CartProvider>
         </WishlistProvider>
       </body>
