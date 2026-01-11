@@ -169,10 +169,10 @@ export default function ProductsPage() {
       (selectedCategory === "Decorative" && productTags.includes("decorative"));
 
     const matchesSearch =
-      searchQuery === "" ||
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (product.subtitle && product.subtitle.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      productCategory.includes(searchQuery.toLowerCase());
+      localSearchQuery === "" ||
+      product.name.toLowerCase().includes(localSearchQuery.toLowerCase()) ||
+      (product.subtitle && product.subtitle.toLowerCase().includes(localSearchQuery.toLowerCase())) ||
+      productCategory.includes(localSearchQuery.toLowerCase());
 
     return matchesCategory && matchesSearch;
   });
@@ -448,7 +448,7 @@ export default function ProductsPage() {
                   <p className="text-stone-warm text-lg mb-4">No products found</p>
                   <button
                     onClick={() => {
-                      setSearchQuery("");
+                      setLocalSearchQuery("");
                       setSelectedCategory("All");
                     }}
                     className="text-clay text-sm uppercase tracking-wider hover:underline"

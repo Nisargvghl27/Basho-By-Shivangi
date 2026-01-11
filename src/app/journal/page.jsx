@@ -1,4 +1,7 @@
 "use client";
+import { useState, useEffect, useRef } from 'react';
+import Header from '../../components/Header';
+import Footer from '../../components/Footer';
 
 
 // Mock Journal Data
