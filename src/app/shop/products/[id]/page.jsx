@@ -92,60 +92,16 @@ export default function ProductPage() {
     );
   }
 
-  // --- LOGIC ---
-
-  const priceNumber = Number(product.price) || 0;
-  
-  // Ensure we have an array of images. If 'images' exists use it, otherwise use single 'image'
-  const images = product.images && product.images.length > 0 
-    ? product.images 
-    : (product.image ? [product.image] : []);
-
-  const isInCart = cartItems.some(item => item.id === product.id);
-
-  const handleBuyNow = () => {
-    console.log('=== Buy Now clicked ===');
-    console.log('Current cart before:', cartItems);
-    console.log('Product to add:', product);
-    
-    if (product.stock > 0) {
-      // Add product to existing cart
-      addToCart({
-        ...product,
-        quantity: quantity
-      });
-      
-      // Navigate to checkout after a short delay to ensure cart is updated
-      setTimeout(() => {
-        console.log('Navigating to checkout...');
-        // Pass the product ID as selected item so only this item gets removed after purchase
-        router.push(`/checkout?selected=${product.id}`);
-      }, 500);
-    } else {
-      console.log('Product out of stock');
-    }
-  };
-
   const handleAddToCart = () => {
-    if (product.stock > 0) {
-      addToCart({
-        id: product.id,
-        name: product.name,
-        price: priceNumber,
-        image: images[0],
-        quantity: quantity
-      });
-      
-      setNotification({
-        show: true,
-        message: `${product.name} added to cart`,
-        type: 'success'
-      });
-      
-      setTimeout(() => {
-        setNotification(prev => ({ ...prev, show: false }));
-      }, 3000);
-    }
+    addToCart({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: images[0] ?? product.image,
+      quantity: quantity
+    });
+    
+    // Show toast notification
     setNotification({
       show: true,
       message: `${product.name} added to cart`,
@@ -229,25 +185,10 @@ export default function ProductPage() {
           <div className="flex flex-col md:flex-row gap-12">
             {/* Left: Product Images */}
             <div className="md:w-1/2">
-              <div className="group bg-charcoal-light rounded-xl overflow-hidden shadow-2xl mb-4 transition-transform duration-700 ease-out hover:-translate-y-1 relative">
-                {/* Wishlist Button - Top Right */}
-                <button
-                  onClick={handleWishlistToggle}
-                  className={`absolute top-4 right-4 z-10 p-3 rounded-full backdrop-blur-sm transition-all duration-300 ${
-                    isInWishlist(product.id)
-                      ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
-                      : 'bg-charcoal/50 text-rice-paper hover:bg-charcoal/70'
-                  }`}
-                  aria-label={isInWishlist(product.id) ? 'Remove from wishlist' : 'Add to wishlist'}
-                >
-                  <span className="text-xl">
-                    {isInWishlist(product.id) ? '❤️' : '🤍'}
-                  </span>
-                </button>
-                
+              <div className="group bg-charcoal-light rounded-xl overflow-hidden shadow-2xl mb-4 transition-transform duration-700 ease-out hover:-translate-y-1">
                 <img 
-                  key={images[selectedImage]}
-                  src={images[selectedImage]} 
+                  key={images[selectedImage] ?? images[0] ?? product.image}
+                  src={images[selectedImage] ?? images[0] ?? product.image} 
                   alt={product.name}
                   onLoad={() => setMainImageLoaded(true)}
                   className="w-full h-auto object-cover transition-all duration-700 ease-out group-hover:scale-[1.03]"
