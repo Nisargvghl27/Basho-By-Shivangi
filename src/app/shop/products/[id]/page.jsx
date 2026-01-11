@@ -17,7 +17,7 @@ import { fetchProductById, getRelatedProducts } from '../../../../lib/productSer
 export default function ProductPage() {
   const params = useParams();
   const router = useRouter();
-  const { addToCart, cartItems, clearCart } = useCart();
+  const { addToCart, cartItems, setCartItems, clearCart } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   
   // Data State
@@ -109,11 +109,25 @@ export default function ProductPage() {
     console.log('Product to add:', product);
     
     if (product.stock > 0) {
-      // Add product to existing cart
-      addToCart({
-        ...product,
-        quantity: quantity
-      });
+      // For Buy Now, we want to replace the quantity in cart with the selected quantity
+      const existingItem = cartItems.find(item => item.id === product.id);
+      
+      if (existingItem) {
+        // Update existing item with new quantity instead of adding to it
+        setCartItems(prevItems => 
+          prevItems.map(item => 
+            item.id === product.id 
+              ? { ...item, quantity: quantity }
+              : item
+          )
+        );
+      } else {
+        // Add new item if not in cart
+        addToCart({
+          ...product,
+          quantity: quantity
+        });
+      }
       
       // Navigate to checkout after a short delay to ensure cart is updated
       setTimeout(() => {

@@ -4,6 +4,8 @@ import { Manrope, Playfair_Display } from "next/font/google";
 import { useState, useEffect } from "react";
 import { CartProvider } from "../context/CartContext";
 import { WishlistProvider } from '../context/WishlistContext';
+import { SearchProvider } from '../context/SearchContext';
+import BashoChatbot from '../components/BashoChatbot';
 import "./globals.css";
 
 // Font configurations
@@ -102,9 +104,12 @@ export default function RootLayout({ children }) {
       >
         <WishlistProvider>
           <CartProvider>
-            <CursorGlow>
-              {children}
-            </CursorGlow>
+            <SearchProvider>
+              <CursorGlow>
+                {children}
+              </CursorGlow>
+              <BashoChatbot />
+            </SearchProvider>
           </CartProvider>
         </WishlistProvider>
       </body>
