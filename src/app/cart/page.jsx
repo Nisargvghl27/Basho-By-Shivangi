@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useCart } from "../../context/CartContext";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 
@@ -14,6 +15,7 @@ const calculateItemTotal = (price, quantity) => {
 };
 
 const CartPage = () => {
+  const router = useRouter();
   const { cartItems, updateQuantity, removeFromCart } = useCart();
   const [isClient, setIsClient] = useState(false);
   const [selectedItems, setSelectedItems] = useState([]);
@@ -387,7 +389,9 @@ const CartPage = () => {
                       disabled={selectedItems.length === 0}
                       onClick={() => {
                         if (selectedItems.length > 0) {
-                          alert(`Proceeding to checkout with ${selectedItems.length} ${selectedItems.length === 1 ? 'item' : 'items'}`);
+                          // Pass selected item IDs as query parameters
+                          const selectedParams = selectedItems.map(id => `selected=${id}`).join('&');
+                          router.push(`/checkout?${selectedParams}`);
                         }
                       }}
                     >
