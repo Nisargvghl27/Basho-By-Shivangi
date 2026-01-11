@@ -92,12 +92,27 @@ export default function ProductPage() {
     );
   }
 
-  const handleAddToCart = () => {
+  const priceNumber = Number(product.price || 0);
+  const isInCart = cartItems.some(item => item.id === product.id);
+
+  const handleBuyNow = () => {
+    // A bit more advanced: add to cart AND redirect to checkout
     addToCart({
       id: product.id,
       name: product.name,
       price: product.price,
-      image: images[0] ?? product.image,
+      image: product.images?.[0] ?? product.image,
+      quantity: quantity,
+    });
+    router.push('/checkout');
+  };
+
+    const handleAddToCart = () => {
+    addToCart({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: product.images?.[0] ?? product.image,
       quantity: quantity
     });
     
@@ -126,7 +141,7 @@ export default function ProductPage() {
         id: product.id,
         name: product.name,
         price: priceNumber,
-        image: images[0]
+        image: product.images?.[0] ?? product.image
       });
       setNotification({
         show: true,
@@ -187,17 +202,17 @@ export default function ProductPage() {
             <div className="md:w-1/2">
               <div className="group bg-charcoal-light rounded-xl overflow-hidden shadow-2xl mb-4 transition-transform duration-700 ease-out hover:-translate-y-1">
                 <img 
-                  key={images[selectedImage] ?? images[0] ?? product.image}
-                  src={images[selectedImage] ?? images[0] ?? product.image} 
+                  key={product.images?.[selectedImage] ?? product.images?.[0] ?? product.image}
+                  src={product.images?.[selectedImage] ?? product.images?.[0] ?? product.image} 
                   alt={product.name}
                   onLoad={() => setMainImageLoaded(true)}
                   className="w-full h-auto object-cover transition-all duration-700 ease-out group-hover:scale-[1.03]"
                   style={{ opacity: mainImageLoaded ? 1 : 0 }}
                 />
               </div>
-              {images.length > 1 && (
+              {product.images && product.images.length > 1 && (
                   <div className="flex space-x-2 overflow-x-auto pb-2">
-                    {images.map((img, index) => (
+                    {product.images.map((img, index) => (
                       <button
                         key={index}
                         onClick={() => {
