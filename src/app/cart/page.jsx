@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useCart } from "../../context/CartContext";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 
@@ -14,11 +15,13 @@ const calculateItemTotal = (price, quantity) => {
 };
 
 const CartPage = () => {
+  const router = useRouter();
   const { cartItems, updateQuantity, removeFromCart } = useCart();
   const [isClient, setIsClient] = useState(false);
   const [selectedItems, setSelectedItems] = useState([]);
   const [itemToRemove, setItemToRemove] = useState(null);
   const [showRemoveModal, setShowRemoveModal] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false); // [!code ++]
 
   useEffect(() => {
     setIsClient(true);
@@ -46,12 +49,20 @@ const CartPage = () => {
     setShowRemoveModal(true);
   };
 
-  const handleQuantityChange = (itemId, change) => {
+  const handleQuantityChange = async (itemId, change) => { // [!code ++]
+    if (isUpdating) return; // [!code ++]
+    
     const item = cartItems.find(item => item.id === itemId);
     if (item) {
       const newQuantity = item.quantity + change;
       if (newQuantity > 0) {
-        updateQuantity(itemId, newQuantity);
+        setIsUpdating(true); // [!code ++]
+        const result = await updateQuantity(itemId, newQuantity); // [!code ++]
+        setIsUpdating(false); // [!code ++]
+        
+        if (!result.success) { // [!code ++]
+            alert(result.message); // Simple alert for cart page error
+        }
       } else {
         setItemToRemove(itemId);
         setShowRemoveModal(true);
@@ -222,6 +233,7 @@ const CartPage = () => {
                                   }}
                                   className="px-3 py-1 text-stone-400 hover:text-white hover:bg-charcoal/50 transition-colors"
                                   aria-label="Decrease quantity"
+                                  disabled={isUpdating} // [!code ++]
                                 >
                                   -
                                 </button>
@@ -235,6 +247,7 @@ const CartPage = () => {
                                   }}
                                   className="px-3 py-1 text-stone-400 hover:text-white hover:bg-charcoal/50 transition-colors"
                                   aria-label="Increase quantity"
+                                  disabled={isUpdating} // [!code ++]
                                 >
                                   +
                                 </button>
@@ -387,7 +400,9 @@ const CartPage = () => {
                       disabled={selectedItems.length === 0}
                       onClick={() => {
                         if (selectedItems.length > 0) {
-                          alert(`Proceeding to checkout with ${selectedItems.length} ${selectedItems.length === 1 ? 'item' : 'items'}`);
+                          // Pass selected item IDs as query parameters
+                          const selectedParams = selectedItems.map(id => `selected=${id}`).join('&');
+                          router.push(`/checkout?${selectedParams}`);
                         }
                       }}
                     >

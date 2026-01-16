@@ -243,7 +243,7 @@ export default function Workshop() {
             }`}>
               <button className="group/btn relative w-full sm:w-auto bg-rice-paper text-obsidian font-bold py-4 px-10 uppercase tracking-[0.15em] text-xs shadow-lg overflow-hidden transition-all duration-500 hover:shadow-2xl hover:scale-105">
                 <span className="relative z-10 transition-colors duration-300 group-hover/btn:text-white">
-                  Reserve Spot ($120)
+                  Reserve Spot (₹1200)
                 </span>
                 
                 {/* Animated background fill */}
