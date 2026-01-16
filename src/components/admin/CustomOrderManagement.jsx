@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { 
-  FileText, Check, X, DollarSign, Loader2 
+  FileText, Check, X, IndianRupee, Loader2 
 } from "lucide-react";
 import { fetchAllRequests, updateRequestStatus } from "../../lib/customOrderService";
 
@@ -88,7 +88,7 @@ export default function CustomOrderManagement() {
                       }`}>
                         {req.status}
                       </span>
-                      {req.adminPrice && <div className="text-xs mt-1 font-bold">${req.adminPrice}</div>}
+                      {req.adminPrice && <div className="text-xs mt-1 font-bold">₹{req.adminPrice}</div>}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button 
@@ -155,9 +155,9 @@ export default function CustomOrderManagement() {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">Set Price Quote ($)</label>
+                    <label className="block text-sm font-medium mb-1">Set Price Quote (₹)</label>
                     <div className="relative">
-                      <DollarSign className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
+                      <IndianRupee className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
                       <input 
                         type="number" 
                         value={quotePrice} 

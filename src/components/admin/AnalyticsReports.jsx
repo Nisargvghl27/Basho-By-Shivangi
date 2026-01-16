@@ -19,7 +19,8 @@ import {
   CreditCard,
   Target,
   Clock,
-  Activity
+  Activity,
+  IndianRupee
 } from "lucide-react";
 
 export default function AnalyticsReports() {
@@ -48,11 +49,11 @@ export default function AnalyticsReports() {
   // Mock analytics data
   const analyticsData = {
     overview: {
-      totalRevenue: 52340,
+      totalRevenue: 5234000,
       totalOrders: 892,
       totalUsers: 3247,
       conversionRate: 3.2,
-      averageOrderValue: 58.67,
+      averageOrderValue: 5867,
       totalPageViews: 45678,
       uniqueVisitors: 12456,
       bounceRate: 42.3,
@@ -60,24 +61,24 @@ export default function AnalyticsReports() {
     },
     sales: {
       revenueByMonth: [
-        { month: "Jan", revenue: 12000, orders: 205 },
-        { month: "Feb", revenue: 15000, orders: 267 },
-        { month: "Mar", revenue: 18000, orders: 312 },
-        { month: "Apr", revenue: 16000, orders: 278 },
-        { month: "Apr", revenue: 14000, orders: 245 },
-        { month: "Jun", revenue: 17000, orders: 298 }
+        { month: "Jan", revenue: 1200000, orders: 205 },
+        { month: "Feb", revenue: 1500000, orders: 267 },
+        { month: "Mar", revenue: 1800000, orders: 312 },
+        { month: "Apr", revenue: 1600000, orders: 278 },
+        { month: "Apr", revenue: 1400000, orders: 245 },
+        { month: "Jun", revenue: 1700000, orders: 298 }
       ],
       topProducts: [
-        { name: "Ceramic Dinner Set", revenue: 8900, orders: 30, growth: 12.5 },
-        { name: "Handmade Coffee Mug", revenue: 5600, orders: 224, growth: 8.3 },
-        { name: "Artistic Vase", revenue: 4200, orders: 47, growth: -2.1 },
-        { name: "Pottery Planters Set", revenue: 3800, orders: 63, growth: 15.7 }
+        { name: "Ceramic Dinner Set", revenue: 890000, orders: 30, growth: 12.5 },
+        { name: "Handmade Coffee Mug", revenue: 560000, orders: 224, growth: 8.3 },
+        { name: "Artistic Vase", revenue: 420000, orders: 47, growth: -2.1 },
+        { name: "Pottery Planters Set", revenue: 380000, orders: 63, growth: 15.7 }
       ],
       categoryPerformance: [
-        { category: "Dinnerware", revenue: 28000, orders: 456, percentage: 53.5 },
-        { category: "Drinkware", revenue: 15000, orders: 267, percentage: 28.7 },
-        { category: "Decor", revenue: 7800, orders: 134, percentage: 14.9 },
-        { category: "Garden", revenue: 1640, orders: 35, percentage: 3.1 }
+        { category: "Dinnerware", revenue: 2800000, orders: 456, percentage: 53.5 },
+        { category: "Drinkware", revenue: 1500000, orders: 267, percentage: 28.7 },
+        { category: "Decor", revenue: 780000, orders: 134, percentage: 14.9 },
+        { category: "Garden", revenue: 164000, orders: 35, percentage: 3.1 }
       ]
     },
     traffic: {
@@ -127,7 +128,7 @@ export default function AnalyticsReports() {
         ]
       },
       behavior: {
-        avgLifetimeValue: 456.78,
+        avgLifetimeValue: 45678,
         avgPurchaseFrequency: 2.3,
         churnRate: 12.5,
         retentionRate: 87.5
@@ -149,7 +150,7 @@ export default function AnalyticsReports() {
           <div>
             <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{title}</p>
             <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
-              {format === "currency" ? `$${value.toLocaleString()}` : 
+              {format === "currency" ? `₹${value.toLocaleString()}` : 
                format === "percentage" ? `${value}%` : 
                format === "duration" ? `${Math.floor(value / 60)}m ${value % 60}s` :
                value.toLocaleString()}
@@ -223,7 +224,7 @@ export default function AnalyticsReports() {
           <nav className="flex -mb-px">
             {[
               { id: "overview", label: "Overview", icon: BarChart3 },
-              { id: "sales", label: "Sales Analytics", icon: DollarSign },
+              { id: "sales", label: "Sales Analytics", icon: IndianRupee },
               { id: "traffic", label: "Traffic & Conversion", icon: Eye },
               { id: "customers", label: "Customer Insights", icon: Users }
             ].map((tab) => {
@@ -255,7 +256,7 @@ export default function AnalyticsReports() {
                   title="Total Revenue" 
                   value={analyticsData.overview.totalRevenue} 
                   change={12.5} 
-                  icon={DollarSign} 
+                  icon={IndianRupee} 
                   color="green"
                   format="currency"
                 />
@@ -405,7 +406,7 @@ export default function AnalyticsReports() {
                             {product.name}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                            ${product.revenue.toLocaleString()}
+                            ₹{product.revenue.toLocaleString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                             {product.orders}
@@ -434,7 +435,7 @@ export default function AnalyticsReports() {
                         <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{category.category}</span>
                       </div>
                       <div className="flex items-center space-x-6">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">${category.revenue.toLocaleString()}</span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">₹{category.revenue.toLocaleString()}</span>
                         <span className="text-sm text-gray-600 dark:text-gray-400">{category.orders} orders</span>
                         <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{category.percentage}%</span>
                       </div>
@@ -551,7 +552,7 @@ export default function AnalyticsReports() {
                   title="Avg Lifetime Value" 
                   value={analyticsData.customers.behavior.avgLifetimeValue} 
                   change={8.7} 
-                  icon={DollarSign} 
+                  icon={IndianRupee} 
                   color="green"
                   format="currency"
                 />

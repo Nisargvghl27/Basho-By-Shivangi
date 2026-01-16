@@ -15,12 +15,14 @@ import {
   BarChart3, 
   Settings,
   CalendarDays,
+  Crown,
   X,
   Menu
 } from "lucide-react";
 
 const menuItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/best-seller", label: "Best Seller", icon: Crown },
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/workshops", label: "Workshops", icon: CalendarDays }, 
   { href: "/admin/categories", label: "Categories", icon: Tags },
@@ -28,8 +30,6 @@ const menuItems = [
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/payments", label: "Payments", icon: CreditCard },
   { href: "/admin/inventory", label: "Inventory", icon: Warehouse },
-  { href: "/admin/banners", label: "Banners", icon: Image },
-  { href: "/admin/coupons", label: "Coupons", icon: Ticket },
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];

@@ -4,7 +4,9 @@ import { Manrope, Playfair_Display } from "next/font/google";
 import { useState, useEffect } from "react";
 import { CartProvider } from "../context/CartContext";
 import { WishlistProvider } from '../context/WishlistContext';
+import { Toaster } from "react-hot-toast"; // [!code ++]
 import "./globals.css";
+import { metadata } from './metadata'; // Moved import up to respect module scope
 
 // Font configurations
 const manrope = Manrope({
@@ -84,8 +86,6 @@ function CursorGlow({ children }) {
   );
 }
 
-import { metadata } from './metadata';
-
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className="dark">
@@ -104,6 +104,7 @@ export default function RootLayout({ children }) {
           <CartProvider>
             <CursorGlow>
               {children}
+              <Toaster position="bottom-right" toastOptions={{ duration: 4000 }} />
             </CursorGlow>
           </CartProvider>
         </WishlistProvider>

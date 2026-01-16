@@ -2,8 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "../lib/firebase";
-
+import { doc, getDoc } from "firebase/firestore"; // [!code ++]
+import { auth, db } from "../lib/firebase"; // [!code ++]
 
 export const CartContext = createContext();
 
@@ -49,35 +49,81 @@ export const CartProvider = ({ children }) => {
     setCartSubtotal(subtotal);
   }, [cartItems, user, isInitialized]);
 
-  // ➕ ADD TO CART
-  const addToCart = (product) => {
-    setCartItems((prevItems) => {
-      const existingItem = prevItems.find(
-        (item) => item.id === product.id
-      );
+  // 🔍 Helper: Check Stock in Firestore
+  const checkStock = async (productId, requestedQuantity) => {
+    try {
+      const productRef = doc(db, "products", productId);
+      const productSnap = await getDoc(productRef);
 
+      if (!productSnap.exists()) {
+        return { available: false, stock: 0, error: "Product not found" };
+      }
+
+      const realStock = parseInt(productSnap.data().stock || 0);
+      
+      if (requestedQuantity > realStock) {
+        return { 
+          available: false, 
+          stock: realStock, 
+          error: realStock === 0 ? "Out of Stock" : `Only ${realStock} items left in stock` 
+        };
+      }
+
+      return { available: true, stock: realStock };
+    } catch (error) {
+      console.error("Stock check error:", error);
+      // Fallback: allow if check fails (or block depending on preference)
+      return { available: true }; 
+    }
+  };
+
+  // ➕ ADD TO CART (Async with Validation)
+  const addToCart = async (product) => {
+    // 1. Calculate total desired quantity
+    const existingItem = cartItems.find((item) => item.id === product.id);
+    const currentQty = existingItem ? existingItem.quantity : 0;
+    const itemsToAdd = product.quantity || 1;
+    const totalQty = currentQty + itemsToAdd;
+
+    // 2. Validate against Real-Time Stock
+    const stockCheck = await checkStock(product.id, totalQty);
+
+    if (!stockCheck.available) {
+      return { success: false, message: stockCheck.error };
+    }
+
+    // 3. Update State if valid
+    setCartItems((prevItems) => {
       if (existingItem) {
         return prevItems.map((item) =>
           item.id === product.id
-            ? {
-                ...item,
-                quantity: item.quantity + (product.quantity || 1),
-              }
+            ? { ...item, quantity: item.quantity + itemsToAdd }
             : item
         );
       }
-
-      return [...prevItems, { ...product, quantity: product.quantity || 1 }];
+      return [...prevItems, { ...product, quantity: itemsToAdd }];
     });
+
+    return { success: true, message: "Added to cart" };
   };
 
-  // 🔄 UPDATE QUANTITY
-  const updateQuantity = (productId, newQuantity) => {
+  // 🔄 UPDATE QUANTITY (Async with Validation)
+  const updateQuantity = async (productId, newQuantity) => {
     if (newQuantity < 1) {
       removeFromCart(productId);
-      return;
+      return { success: true };
     }
 
+    // 1. Check if increasing quantity
+    const currentItem = cartItems.find(item => item.id === productId);
+    if (currentItem && newQuantity > currentItem.quantity) {
+      const stockCheck = await checkStock(productId, newQuantity);
+      if (!stockCheck.available) {
+        return { success: false, message: stockCheck.error };
+      }
+    }
+
+    // 2. Update State
     setCartItems((prevItems) =>
       prevItems.map((item) =>
         item.id === productId
@@ -85,6 +131,7 @@ export const CartProvider = ({ children }) => {
           : item
       )
     );
+    return { success: true };
   };
 
   // ❌ REMOVE ITEM

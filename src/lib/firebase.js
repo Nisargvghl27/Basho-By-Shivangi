@@ -10,10 +10,12 @@ const firebaseConfig = {
   storageBucket: "basho-by-shivangi-cd894.firebasestorage.app",
   messagingSenderId: "281266048510",
   appId: "1:281266048510:web:3d44983c13560f20e544af",
-  measurementId: "G-FPEQJEWQZR"
+  measurementId: "G-FPEQJFWOZR"
 };
 
 const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+export const storage = getStorage(app);
+export { app };
