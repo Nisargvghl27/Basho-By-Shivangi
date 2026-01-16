@@ -1,20 +1,28 @@
 "use client";
 
 import { useState, useEffect } from "react";
+// 🔥 Firebase Imports
+import { 
+  collection, 
+  query, 
+  orderBy, 
+  onSnapshot, 
+  doc, 
+  updateDoc, 
+  addDoc, 
+  serverTimestamp 
+} from "firebase/firestore";
+import { db } from "../../lib/firebase";
+
 import { 
   Search, 
   Download, 
-  Eye, 
   CheckCircle, 
   XCircle, 
   Clock, 
   AlertTriangle,
-  CreditCard,
-  DollarSign,
-  Calendar,
-  FileText,
+  IndianRupee,
   TrendingUp,
-  TrendingDown,
   RefreshCw,
   ChevronLeft,
   ChevronRight
@@ -30,132 +38,81 @@ export default function PaymentManagement() {
   const [currentPage, setCurrentPage] = useState(1);
   const [showRefundModal, setShowRefundModal] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const itemsPerPage = 10;
 
+  // ==========================================
+  // 🔥 1. FETCH PAYMENTS (FROM ORDERS)
+  // ==========================================
   useEffect(() => {
-    // Mock payments data
-    const mockPayments = [
-      {
-        id: "PAY001",
-        orderId: "#12345",
-        customer: "John Doe",
-        email: "john@example.com",
-        amount: 349.97,
-        paymentMethod: "Credit Card",
-        status: "Completed",
-        transactionId: "TXN123456789",
-        date: "2024-01-15",
-        time: "14:30:00",
-        refundEligible: true
-      },
-      {
-        id: "PAY002",
-        orderId: "#12346",
-        customer: "Jane Smith",
-        email: "jane@example.com",
-        amount: 149.98,
-        paymentMethod: "PayPal",
-        status: "Completed",
-        transactionId: "PPN123456790",
-        date: "2024-01-15",
-        time: "15:45:00",
-        refundEligible: true
-      },
-      {
-        id: "PAY003",
-        orderId: "#12347",
-        customer: "Bob Johnson",
-        email: "bob@example.com",
-        amount: 74.97,
-        paymentMethod: "Debit Card",
-        status: "Pending",
-        transactionId: "DBT123456791",
-        date: "2024-01-14",
-        time: "16:20:00",
-        refundEligible: false
-      },
-      {
-        id: "PAY004",
-        orderId: "#12348",
-        customer: "Alice Brown",
-        email: "alice@example.com",
-        amount: 689.97,
-        paymentMethod: "Credit Card",
-        status: "Failed",
-        transactionId: "TXN123456792",
-        date: "2024-01-14",
-        time: "17:10:00",
-        refundEligible: false
-      },
-      {
-        id: "PAY005",
-        orderId: "#12349",
-        customer: "Charlie Wilson",
-        email: "charlie@example.com",
-        amount: 59.99,
-        paymentMethod: "UPI",
-        status: "Completed",
-        transactionId: "UPI123456793",
-        date: "2024-01-13",
-        time: "18:30:00",
-        refundEligible: true
-      }
-    ];
+    // We treat "Orders" as "Payments" for this view
+    const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
 
-    // Mock refunds data
-    const mockRefunds = [
-      {
-        id: "REF001",
-        paymentId: "PAY001",
-        orderId: "#12345",
-        customer: "John Doe",
-        originalAmount: 349.97,
-        refundAmount: 349.97,
-        reason: "Product damaged",
-        status: "Approved",
-        requestedDate: "2024-01-16",
-        processedDate: "2024-01-17",
-        refundMethod: "Credit Card"
-      },
-      {
-        id: "REF002",
-        paymentId: "PAY002",
-        orderId: "#12346",
-        customer: "Jane Smith",
-        originalAmount: 149.98,
-        refundAmount: 149.98,
-        reason: "Wrong item delivered",
-        status: "Pending",
-        requestedDate: "2024-01-17",
-        processedDate: null,
-        refundMethod: "PayPal"
-      },
-      {
-        id: "REF003",
-        paymentId: "PAY005",
-        orderId: "#12349",
-        customer: "Charlie Wilson",
-        originalAmount: 59.99,
-        refundAmount: 30.00,
-        reason: "Partial refund - one item missing",
-        status: "Rejected",
-        requestedDate: "2024-01-15",
-        processedDate: "2024-01-16",
-        refundMethod: "UPI"
-      }
-    ];
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const paymentData = snapshot.docs.map(doc => {
+        const data = doc.data();
+        const dateObj = data.createdAt?.toDate ? data.createdAt.toDate() : new Date();
+        
+        return {
+          id: doc.id,
+          orderId: data.razorpayOrderId || "COD-" + doc.id.slice(0, 6),
+          customer: `${data.shipping?.firstName || "Guest"} ${data.shipping?.lastName || ""}`.trim(),
+          email: data.shipping?.email || "N/A",
+          amount: data.total || 0,
+          paymentMethod: data.paymentMethod || "Unknown",
+          // Map Order Status/Payment Status to UI Status
+          status: data.paymentStatus === 'paid' ? 'Completed' 
+                 : data.status === 'cancelled' ? 'Failed' 
+                 : data.paymentMethod === 'cod' ? 'Pending (COD)' 
+                 : 'Pending',
+          transactionId: data.razorpayPaymentId || "N/A",
+          date: dateObj.toLocaleDateString(),
+          time: dateObj.toLocaleTimeString(),
+          refundEligible: data.paymentStatus === 'paid' // Only paid orders can be refunded
+        };
+      });
+      setPayments(paymentData);
+      setLoading(false);
+    });
 
-    setPayments(mockPayments);
-    setRefunds(mockRefunds);
+    return () => unsubscribe();
   }, []);
 
+  // ==========================================
+  // 🔥 2. FETCH REFUNDS
+  // ==========================================
+  useEffect(() => {
+    const q = query(collection(db, "refunds"), orderBy("requestedAt", "desc"));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const refundData = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          // Convert timestamp to readable string for UI
+          requestedDate: data.requestedAt?.toDate ? data.requestedAt.toDate().toLocaleDateString() : "N/A"
+        };
+      });
+      setRefunds(refundData);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // ==========================================
+  // 🔥 3. FILTERING LOGIC
+  // ==========================================
   const filteredPayments = payments.filter(payment => {
     const matchesSearch = payment.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          payment.orderId.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          payment.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          payment.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = selectedStatus === "all" || payment.status === selectedStatus;
+    
+    // Normalize status for comparison
+    const pStatus = payment.status.includes('Pending') ? 'Pending' : payment.status;
+    const matchesStatus = selectedStatus === "all" || pStatus === selectedStatus;
     const matchesMethod = selectedPaymentMethod === "all" || payment.paymentMethod === selectedPaymentMethod;
     
     return matchesSearch && matchesStatus && matchesMethod;
@@ -173,16 +130,26 @@ export default function PaymentManagement() {
   const currentItems = activeTab === "payments" 
     ? filteredPayments.slice(indexOfFirstItem, indexOfLastItem)
     : filteredRefunds.slice(indexOfFirstItem, indexOfLastItem);
+  
   const totalPages = Math.ceil(
     (activeTab === "payments" ? filteredPayments.length : filteredRefunds.length) / itemsPerPage
   );
 
-  const updateRefundStatus = (refundId, newStatus) => {
-    setRefunds(refunds.map(refund => 
-      refund.id === refundId 
-        ? { ...refund, status: newStatus, processedDate: newStatus === 'Approved' ? new Date().toISOString().split('T')[0] : null }
-        : refund
-    ));
+  // ==========================================
+  // 🔥 4. ACTIONS
+  // ==========================================
+  
+  // Approve/Reject Refund
+  const updateRefundStatus = async (refundId, newStatus) => {
+    try {
+      await updateDoc(doc(db, "refunds", refundId), {
+        status: newStatus,
+        processedAt: serverTimestamp()
+      });
+    } catch (error) {
+      console.error("Error updating refund:", error);
+      alert("Failed to update refund status");
+    }
   };
 
   const processRefund = (payment) => {
@@ -190,69 +157,71 @@ export default function PaymentManagement() {
     setShowRefundModal(true);
   };
 
+  // Helper UI functions
   const getStatusColor = (status) => {
-    switch (status) {
-      case 'Completed': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'Pending': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-      case 'Failed': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      case 'Approved': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'Rejected': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      default: return 'bg-gray-100 text-gray-800';
-    }
+    if (status.includes('Completed') || status === 'Approved') return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+    if (status.includes('Pending')) return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+    if (status === 'Failed' || status === 'Rejected') return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+    return 'bg-gray-100 text-gray-800';
   };
 
   const getStatusIcon = (status) => {
-    switch (status) {
-      case 'Completed': return <CheckCircle className="w-4 h-4" />;
-      case 'Pending': return <Clock className="w-4 h-4" />;
-      case 'Failed': return <XCircle className="w-4 h-4" />;
-      case 'Approved': return <CheckCircle className="w-4 h-4" />;
-      case 'Rejected': return <XCircle className="w-4 h-4" />;
-      default: return null;
-    }
+    if (status.includes('Completed') || status === 'Approved') return <CheckCircle className="w-4 h-4" />;
+    if (status.includes('Pending')) return <Clock className="w-4 h-4" />;
+    if (status === 'Failed' || status === 'Rejected') return <XCircle className="w-4 h-4" />;
+    return null;
   };
 
+  // ==========================================
+  // 🔥 5. REFUND MODAL COMPONENT
+  // ==========================================
   const RefundModal = ({ payment, onClose }) => {
     const [refundAmount, setRefundAmount] = useState(payment.amount);
     const [refundReason, setRefundReason] = useState("");
     const [refundMethod, setRefundMethod] = useState(payment.paymentMethod);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
       e.preventDefault();
+      setIsSubmitting(true);
       
-      const newRefund = {
-        id: `REF${Date.now()}`,
-        paymentId: payment.id,
-        orderId: payment.orderId,
-        customer: payment.customer,
-        originalAmount: payment.amount,
-        refundAmount: parseFloat(refundAmount),
-        reason: refundReason,
-        status: "Pending",
-        requestedDate: new Date().toISOString().split('T')[0],
-        processedDate: null,
-        refundMethod: refundMethod
-      };
-
-      setRefunds([newRefund, ...refunds]);
-      onClose();
+      try {
+        await addDoc(collection(db, "refunds"), {
+          paymentId: payment.id, // This is the Firestore Order ID
+          orderId: payment.orderId, // Display ID (Razorpay/COD)
+          customer: payment.customer,
+          originalAmount: parseFloat(payment.amount),
+          refundAmount: parseFloat(refundAmount),
+          reason: refundReason,
+          status: "Pending",
+          requestedAt: serverTimestamp(),
+          refundMethod: refundMethod
+        });
+        
+        onClose();
+      } catch (error) {
+        console.error("Error creating refund request:", error);
+        alert("Failed to create refund request");
+      } finally {
+        setIsSubmitting(false);
+      }
     };
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md shadow-xl">
           <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">Process Refund</h3>
           
           <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
             <p className="text-sm text-gray-600 dark:text-gray-400">Order ID: {payment.orderId}</p>
             <p className="text-sm text-gray-600 dark:text-gray-400">Customer: {payment.customer}</p>
-            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Original Amount: ${payment.amount}</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Original Amount: ₹{payment.amount}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Refund Amount
+                Refund Amount (₹)
               </label>
               <input
                 type="number"
@@ -279,6 +248,7 @@ export default function PaymentManagement() {
                 <option value="PayPal">PayPal</option>
                 <option value="UPI">UPI</option>
                 <option value="Bank Transfer">Bank Transfer</option>
+                <option value="cod">Cash (if COD)</option>
               </select>
             </div>
 
@@ -301,14 +271,16 @@ export default function PaymentManagement() {
                 type="button"
                 onClick={onClose}
                 className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
+                disabled={isSubmitting}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                disabled={isSubmitting}
               >
-                Process Refund
+                {isSubmitting ? "Processing..." : "Process Refund"}
               </button>
             </div>
           </form>
@@ -317,11 +289,25 @@ export default function PaymentManagement() {
     );
   };
 
-  // Payment statistics
-  const totalRevenue = payments.filter(p => p.status === 'Completed').reduce((sum, p) => sum + p.amount, 0);
-  const totalRefunds = refunds.filter(r => r.status === 'Approved').reduce((sum, r) => sum + r.refundAmount, 0);
-  const pendingPayments = payments.filter(p => p.status === 'Pending').length;
+  // Statistics
+  const totalRevenue = payments
+    .filter(p => p.status === 'Completed')
+    .reduce((sum, p) => sum + parseFloat(p.amount), 0);
+    
+  const totalRefundsValue = refunds
+    .filter(r => r.status === 'Approved')
+    .reduce((sum, r) => sum + parseFloat(r.refundAmount), 0);
+    
+  const pendingPayments = payments.filter(p => p.status.includes('Pending')).length;
   const pendingRefunds = refunds.filter(r => r.status === 'Pending').length;
+
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <div className="text-gray-500">Loading payment data...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -341,15 +327,15 @@ export default function PaymentManagement() {
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Revenue</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
-                ${totalRevenue.toFixed(2)}
+                ₹{totalRevenue.toLocaleString()}
               </p>
               <div className="flex items-center mt-2 text-sm text-green-600">
                 <TrendingUp className="w-4 h-4 mr-1" />
-                <span>+12.5% from last month</span>
+                <span>Real-time</span>
               </div>
             </div>
             <div className="p-3 bg-green-100 dark:bg-green-900 rounded-lg">
-              <DollarSign className="w-6 h-6 text-green-600 dark:text-green-400" />
+              <IndianRupee className="w-6 h-6 text-green-600 dark:text-green-400" />
             </div>
           </div>
         </div>
@@ -359,12 +345,8 @@ export default function PaymentManagement() {
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Refunds</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
-                ${totalRefunds.toFixed(2)}
+                ₹{totalRefundsValue.toLocaleString()}
               </p>
-              <div className="flex items-center mt-2 text-sm text-red-600">
-                <TrendingDown className="w-4 h-4 mr-1" />
-                <span>+8.3% from last month</span>
-              </div>
             </div>
             <div className="p-3 bg-red-100 dark:bg-red-900 rounded-lg">
               <RefreshCw className="w-6 h-6 text-red-600 dark:text-red-400" />
@@ -379,7 +361,7 @@ export default function PaymentManagement() {
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
                 {pendingPayments}
               </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Awaiting processing</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Including COD</p>
             </div>
             <div className="p-3 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
               <Clock className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
@@ -394,7 +376,7 @@ export default function PaymentManagement() {
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
                 {pendingRefunds}
               </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Awaiting approval</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Action Required</p>
             </div>
             <div className="p-3 bg-orange-100 dark:bg-orange-900 rounded-lg">
               <AlertTriangle className="w-6 h-6 text-orange-600 dark:text-orange-400" />
@@ -438,7 +420,7 @@ export default function PaymentManagement() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
                   type="text"
-                  placeholder={activeTab === "payments" ? "Search payments..." : "Search refunds..."}
+                  placeholder={activeTab === "payments" ? "Search by Order ID, Customer, Email..." : "Search refunds..."}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -465,10 +447,8 @@ export default function PaymentManagement() {
                   className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="all">All Methods</option>
-                  <option value="Credit Card">Credit Card</option>
-                  <option value="Debit Card">Debit Card</option>
-                  <option value="PayPal">PayPal</option>
-                  <option value="UPI">UPI</option>
+                  <option value="razorpay">Razorpay/Online</option>
+                  <option value="cod">COD</option>
                 </select>
               </div>
             )}
@@ -483,7 +463,7 @@ export default function PaymentManagement() {
                 {activeTab === "payments" ? (
                   <>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Payment ID
+                      Date
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Order ID
@@ -507,7 +487,7 @@ export default function PaymentManagement() {
                 ) : (
                   <>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Refund ID
+                      Req. Date
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Order ID
@@ -532,106 +512,111 @@ export default function PaymentManagement() {
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {currentItems.map((item) => (
-                <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                  {activeTab === "payments" ? (
-                    <>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {item.id}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                        {item.orderId}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                            {item.customer}
+              {currentItems.length > 0 ? (
+                currentItems.map((item) => (
+                  <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    {activeTab === "payments" ? (
+                      <>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                          {item.date} <br/><span className="text-xs text-gray-500">{item.time}</span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                          {item.orderId}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div>
+                            <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                              {item.customer}
+                            </div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              {item.email}
+                            </div>
                           </div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">
-                            {item.email}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
+                          ₹{item.amount}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 capitalize">
+                          {item.paymentMethod}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 py-1 text-xs rounded-full flex items-center w-fit ${getStatusColor(item.status)}`}>
+                            {getStatusIcon(item.status)}
+                            <span className="ml-1">{item.status}</span>
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex items-center space-x-2">
+                            {item.refundEligible && (
+                              <button
+                                onClick={() => processRefund(item)}
+                                title="Process Refund"
+                                className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300"
+                              >
+                                <RefreshCw className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
-                        ${item.amount}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                        {item.paymentMethod}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs rounded-full flex items-center ${getStatusColor(item.status)}`}>
-                          {getStatusIcon(item.status)}
-                          <span className="ml-1">{item.status}</span>
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex items-center space-x-2">
-                          <button className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          {item.refundEligible && item.status === 'Completed' && (
-                            <button
-                              onClick={() => processRefund(item)}
-                              className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300"
-                            >
-                              <RefreshCw className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </>
-                  ) : (
-                    <>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {item.id}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                        {item.orderId}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                        {item.customer}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
-                        ${item.refundAmount}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                        <div className="max-w-xs truncate" title={item.reason}>
-                          {item.reason}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs rounded-full flex items-center ${getStatusColor(item.status)}`}>
-                          {getStatusIcon(item.status)}
-                          <span className="ml-1">{item.status}</span>
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex items-center space-x-2">
-                          {item.status === 'Pending' && (
-                            <>
-                              <button
-                                onClick={() => updateRefundStatus(item.id, 'Approved')}
-                                className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
-                              >
-                                <CheckCircle className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => updateRefundStatus(item.id, 'Rejected')}
-                                className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                              >
-                                <XCircle className="w-4 h-4" />
-                              </button>
-                            </>
-                          )}
-                          <button className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
-                            <Eye className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </>
-                  )}
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                          {item.requestedDate}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                          {item.orderId}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                          {item.customer}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
+                          ₹{item.refundAmount}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                          <div className="max-w-xs truncate" title={item.reason}>
+                            {item.reason}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 py-1 text-xs rounded-full flex items-center w-fit ${getStatusColor(item.status)}`}>
+                            {getStatusIcon(item.status)}
+                            <span className="ml-1">{item.status}</span>
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex items-center space-x-2">
+                            {item.status === 'Pending' && (
+                              <>
+                                <button
+                                  onClick={() => updateRefundStatus(item.id, 'Approved')}
+                                  title="Approve"
+                                  className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
+                                >
+                                  <CheckCircle className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => updateRefundStatus(item.id, 'Rejected')}
+                                  title="Reject"
+                                  className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                >
+                                  <XCircle className="w-4 h-4" />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </>
+                    )}
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="7" className="px-6 py-8 text-center text-gray-500">
+                    No {activeTab} found.
+                  </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
@@ -642,14 +627,14 @@ export default function PaymentManagement() {
             <button
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
-              className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+              className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50"
             >
               Previous
             </button>
             <button
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages}
-              className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+              className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50"
             >
               Next
             </button>
@@ -657,9 +642,9 @@ export default function PaymentManagement() {
           <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
             <div>
               <p className="text-sm text-gray-700 dark:text-gray-300">
-                Showing <span className="font-medium">{indexOfFirstItem + 1}</span> to{' '}
-                <span className="font-medium">{Math.min(indexOfLastItem, currentItems.length)}</span> of{' '}
-                <span className="font-medium">{currentItems.length}</span> results
+                Showing <span className="font-medium">{filteredPayments.length > 0 ? indexOfFirstItem + 1 : 0}</span> to{' '}
+                <span className="font-medium">{Math.min(indexOfLastItem, activeTab === "payments" ? filteredPayments.length : filteredRefunds.length)}</span> of{' '}
+                <span className="font-medium">{activeTab === "payments" ? filteredPayments.length : filteredRefunds.length}</span> results
               </p>
             </div>
             <div>
@@ -667,27 +652,14 @@ export default function PaymentManagement() {
                 <button
                   onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
-                  className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600"
+                  className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50"
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
-                {[...Array(totalPages)].map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setCurrentPage(i + 1)}
-                    className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                      currentPage === i + 1
-                        ? 'z-10 bg-blue-50 border-blue-500 text-blue-600 dark:bg-blue-900 dark:text-blue-300'
-                        : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600'
-                    }`}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
                 <button
                   onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
-                  className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600"
+                  disabled={currentPage === totalPages || totalPages === 0}
+                  className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50"
                 >
                   <ChevronRight className="w-5 h-5" />
                 </button>

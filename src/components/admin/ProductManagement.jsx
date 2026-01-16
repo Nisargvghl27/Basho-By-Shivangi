@@ -216,7 +216,7 @@ export default function ProductManagement() {
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">{product.sku}</td>
                     <td className="px-6 py-4 text-sm text-gray-500">{product.category}</td>
-                    <td className="px-6 py-4 text-sm font-medium">${product.price}</td>
+                    <td className="px-6 py-4 text-sm font-medium">₹{product.price}</td>
                     <td className="px-6 py-4 text-sm text-gray-500">{product.stock}</td>
                     <td className="px-6 py-4 text-right space-x-2">
                       <button 
@@ -310,7 +310,7 @@ export default function ProductManagement() {
 
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Price ($)</label>
+                  <label className="text-sm font-medium">Price (₹)</label>
                   <input required type="number" name="price" value={formData.price} onChange={handleInputChange} className="w-full p-2 border rounded-lg bg-transparent" />
                 </div>
                 <div className="space-y-2">

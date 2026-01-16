@@ -13,6 +13,15 @@ import { fetchAllProducts } from "../../lib/productService";
 const Notification = ({ message, onClose, type = 'success' }) => {
   const [isVisible, setIsVisible] = useState(true);
 
+  
+  const handleClose = () => {
+    setIsVisible(false);
+    setTimeout(() => {
+      onClose();
+      
+    }, 300);
+  };
+  
   useEffect(() => {
     const timer = setTimeout(() => {
       handleClose();
@@ -20,14 +29,6 @@ const Notification = ({ message, onClose, type = 'success' }) => {
 
     return () => clearTimeout(timer);
   }, []);
-
-  const handleClose = () => {
-    setIsVisible(false);
-    setTimeout(() => {
-      onClose();
-    }, 300);
-  };
-
   const bgColor = type === 'success' ? 'bg-charcoal-light' : 'bg-red-900';
   const borderColor = type === 'success' ? 'border-clay/50' : 'border-red-700';
   const icon = type === 'success' ? 'check_circle' : 'error';
@@ -97,7 +98,7 @@ export default function ProductsPage() {
           ...p,
           // Ensure price is a number for logic, create formatted string for display
           price: Number(p.price),
-          priceFormatted: p.priceFormatted || `$${Number(p.price).toFixed(2)}`,
+          priceFormatted: p.priceFormatted || `₹${Number(p.price).toFixed(2)}`,
           // Ensure tags is an array
           tags: Array.isArray(p.tags) ? p.tags : (p.tags ? p.tags.split(',') : [])
         }));

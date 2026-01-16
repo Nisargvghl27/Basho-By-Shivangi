@@ -6,14 +6,15 @@ import { useRouter } from "next/navigation";
 import AuthVisual from "../AuthVisual";
 import "../auth.css";
 
-// 🔥 Firebase
+// 🔥 Firebase Imports
 import {
   signInWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithPopup,
   sendPasswordResetEmail,
 } from "firebase/auth";
-import { auth } from "../../../lib/firebase";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore"; // [!code ++]
+import { auth, db } from "../../../lib/firebase"; // [!code ++]
 
 const LoginPage = () => {
   const router = useRouter();
@@ -26,6 +27,37 @@ const LoginPage = () => {
   const [focusedField, setFocusedField] = useState(null);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  // 🛠️ Helper: Ensure User Exists in Firestore (Upsert)
+  const ensureUserInFirestore = async (user) => {
+    try {
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (!userSnap.exists()) {
+        // Create new user doc if missing
+        await setDoc(userRef, {
+          uid: user.uid,
+          name: user.displayName || user.email.split('@')[0], // Fallback name
+          email: user.email,
+          role: "Customer",
+          status: "Active",
+          joinDate: serverTimestamp(),
+          lastLogin: serverTimestamp(),
+          totalOrders: 0,
+          totalSpent: 0,
+          phone: user.phoneNumber || "N/A"
+        });
+      } else {
+        // Update lastLogin for existing users
+        await setDoc(userRef, {
+          lastLogin: serverTimestamp()
+        }, { merge: true });
+      }
+    } catch (error) {
+      console.error("Error saving user to DB:", error);
+    }
+  };
 
   // =========================
   // EMAIL + PASSWORD LOGIN
@@ -40,13 +72,19 @@ const LoginPage = () => {
 
     try {
       setLoading(true);
-      await signInWithEmailAndPassword(
+      // 1. Authenticate
+      const userCredential = await signInWithEmailAndPassword(
         auth,
         formData.email,
         formData.password
       );
+
+      // 2. 🔥 Save/Update in Firestore
+      await ensureUserInFirestore(userCredential.user);
+
       router.push("/shop");
     } catch (error) {
+      console.error(error);
       alert("Invalid email or password");
     } finally {
       setLoading(false);
@@ -67,7 +105,12 @@ const LoginPage = () => {
         prompt: "select_account",
       });
 
-      await signInWithPopup(auth, provider);
+      // 1. Authenticate
+      const result = await signInWithPopup(auth, provider);
+      
+      // 2. 🔥 Save/Update in Firestore
+      await ensureUserInFirestore(result.user);
+
       router.push("/shop");
     } catch (error) {
       // Ignore harmless popup close error
@@ -185,7 +228,7 @@ const LoginPage = () => {
               </button>
             </div>
 
-            {/* 🔒 SIGN IN BUTTON — UI UNCHANGED */}
+            {/* 🔒 SIGN IN BUTTON */}
             <button
               type="submit"
               className="primary-button"
@@ -213,7 +256,7 @@ const LoginPage = () => {
             <span className="line" />
           </div>
 
-          {/* 🔵 GOOGLE BUTTON — UI & LOGO UNCHANGED */}
+          {/* 🔵 GOOGLE BUTTON */}
           <button
             className="social-button"
             style={{ animationDelay: "0.6s" }}
