@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
-import { getFirestore, collection, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { app } from '../../../lib/firebase';
 import Razorpay from 'razorpay';
 
 const db = getFirestore(app);
 
-// Initialize Razorpay with hardcoded test credentials for development
+// Initialize Razorpay using ONLY environment variables for security
 const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_S2B1iwpQLEtmSM',
-  key_secret: process.env.RAZORPAY_KEY_SECRET || 'wsl3TkC3BRcDZdRxGqKxu8J6',
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
 export async function POST(request) {
@@ -19,7 +19,8 @@ export async function POST(request) {
     const { items, shipping, total, amount, receipt } = data;
     
     // Validate required fields
-    const orderAmount = amount || total * 100; // Convert to paise
+    // Convert to paise (Razorpay expects amount in smallest currency unit)
+    const orderAmount = amount || (total * 100); 
     const orderReceipt = receipt || `order_${Date.now()}`;
     
     if (!orderAmount || orderAmount <= 0) {
@@ -29,25 +30,23 @@ export async function POST(request) {
       );
     }
     
-    let razorpayOrder;
+    // Create order with Razorpay
+    const razorpayOrder = await razorpay.orders.create({
+      amount: Math.round(orderAmount), // Ensure integer paise
+      currency: 'INR',
+      receipt: orderReceipt,
+      notes: {
+        customerName: `${shipping?.firstName || ''} ${shipping?.lastName || ''}`.trim(),
+        customerEmail: shipping?.email || '',
+        itemCount: items?.length || 0,
+      },
+    });
 
-// Create order with real Razorpay (no fallback)
-razorpayOrder = await razorpay.orders.create({
-  amount: Math.round(orderAmount), // Ensure integer paise
-  currency: 'INR',
-  receipt: orderReceipt,
-  notes: {
-    customerName: `${shipping?.firstName || ''} ${shipping?.lastName || ''}`.trim(),
-    customerEmail: shipping?.email || '',
-    itemCount: items?.length || 0,
-  },
-});
-
-    // Create order in Firestore
+    // Create order document in Firestore with pending status
     const orderRef = await addDoc(collection(db, 'orders'), {
       items: items || [],
       shipping: shipping || {},
-      total: total || amount / 100,
+      total: total || (amount / 100),
       status: 'pending',
       paymentStatus: 'pending',
       razorpayOrderId: razorpayOrder.id,
@@ -55,22 +54,29 @@ razorpayOrder = await razorpay.orders.create({
       currency: 'INR',
     });
 
-    // Return the real Razorpay order
+    // Return the created Razorpay order to the client
     return NextResponse.json(razorpayOrder);
+
   } catch (error) {
-    // Check if it's a credentials error
-    if (error.message.includes('key_id') || error.message.includes('key_secret') || error.message.includes('authentication')) {
+    console.error('Razorpay Order Creation Error:', error);
+
+    // Check if it's a credentials error (often happens if env vars are missing)
+    if (error.message && (
+        error.message.includes('key_id') || 
+        error.message.includes('key_secret') || 
+        error.message.includes('authentication')
+      )) {
       return NextResponse.json(
         { 
           error: 'Invalid Razorpay credentials', 
-          details: 'Please check your Razorpay API keys',
+          details: 'Please check your Razorpay API keys in environment variables',
           credentialsMissing: true
         },
         { status: 401 }
       );
     }
     
-    // Return specific error information
+    // Return generic error for other issues
     return NextResponse.json(
       { 
         error: 'Failed to create Razorpay order', 

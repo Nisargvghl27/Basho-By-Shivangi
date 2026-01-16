@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Header from '../../components/Header';
@@ -8,7 +8,8 @@ import Footer from '../../components/Footer';
 import { useCart } from '../../context/CartContext';
 import { loadRazorpay } from '../../utils/razorpayUtils';
 
-export default function CheckoutPage() {
+// --- 1. The Content Component (Contains your main logic) ---
+function CheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { cartItems, cartSubtotal, clearCart, removeFromCart } = useCart();
@@ -995,5 +996,21 @@ export default function CheckoutPage() {
       </main>
       <Footer />
     </div>
+  );
+}
+
+// --- 2. The Default Export (Wrapper) ---
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-charcoal flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-clay border-t-transparent mx-auto mb-4"></div>
+          <p className="text-rice-paper">Loading checkout...</p>
+        </div>
+      </div>
+    }>
+      <CheckoutContent />
+    </Suspense>
   );
 }
