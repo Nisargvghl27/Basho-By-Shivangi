@@ -49,7 +49,7 @@ const BookingModal = ({ workshop, onClose, onSuccess }) => {
       }
 
       // 2. Calculate Total Amount
-      const totalAmount = workshop.price * formData.attendees;
+      const totalAmount = workshop.price * formData.attendees * 100; // Convert to paise for Razorpay
 
       // 3. Create Order on Backend
       const orderResponse = await fetch('/api/create-razorpay-order', {
@@ -58,6 +58,7 @@ const BookingModal = ({ workshop, onClose, onSuccess }) => {
         body: JSON.stringify({ 
           amount: totalAmount,
           currency: 'INR',
+          receipt: `workshop_${Date.now()}`, // Shorter receipt (max 40 chars)
           // Pass customer details for Razorpay Dashboard Notes
           shipping: {
             firstName: formData.name,
@@ -75,12 +76,12 @@ const BookingModal = ({ workshop, onClose, onSuccess }) => {
 
       // 4. Configure Razorpay Options
       const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, 
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY, 
         amount: orderData.amount,
         currency: orderData.currency,
         name: "Basho Pottery", 
         description: `Booking: ${workshop.title} (${formData.attendees} seats)`,
-        image: "/logo.png", // Ensure you have a logo in public folder
+        image: "/images/bgr_logo.png", // Use existing bgr_logo.png
         order_id: orderData.id,
         handler: async function (response) {
           try {
@@ -166,128 +167,195 @@ const BookingModal = ({ workshop, onClose, onSuccess }) => {
     }
   };
 
+  React.useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, []);
+
   if (!workshop) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+    <div 
+      // Changed to fixed inset-0 to cover the whole screen
+      // Standardized to onClick for consistent behavior
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" 
+      onClick={onClose}
+    >
+      <div 
+        className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200"
+        // Prevent clicks inside modal from closing it
+        onClick={(e) => e.stopPropagation()}
+      >
         
         {/* Header */}
-        <div className="bg-[#A0522D] p-6 text-white flex justify-between items-start">
-          <div>
-            <h2 className="text-2xl font-serif font-bold">{workshop.title}</h2>
-            <p className="text-white/80 text-sm mt-1">Complete your reservation</p>
+        <div className="bg-gradient-to-r from-[#A0522D] to-[#7A3E1B] p-6 text-white relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+          <div className="relative z-10">
+            <h2 className="text-2xl font-serif font-bold tracking-wide">
+              {workshop.title}
+            </h2>
+            <p className="text-white/90 text-sm mt-1">
+              Complete your reservation in just a few steps
+            </p>
           </div>
+          
+          {/* FIXED CLOSE BUTTON */}
           <button 
-            onClick={onClose}
-            className="p-2 hover:bg-white/20 rounded-full transition-colors"
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation(); // Stop click from hitting backdrop
+              onClose();
+            }}
+            className="absolute top-5 right-5 p-2 hover:bg-white/20 rounded-full transition-all z-20"
+            aria-label="Close modal"
           >
             <X size={20} />
           </button>
         </div>
 
         {/* Workshop Summary */}
-        <div className="bg-stone-50 p-4 border-b border-stone-100 flex gap-4 text-sm text-stone-600">
-          <div className="flex items-center gap-2">
-            <Calendar size={16} className="text-[#A0522D]" />
-            <span>{new Date(workshop.date).toLocaleDateString()}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Clock size={16} className="text-[#A0522D]" />
-            <span>{workshop.time}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Users size={16} className="text-[#A0522D]" />
-            <span>{workshop.seats} Seats Left</span>
+        <div className="bg-stone-50 p-4 border-b border-stone-200">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+            <div className="flex items-center gap-3 bg-white p-3 rounded-xl shadow-sm">
+              <div className="w-10 h-10 bg-[#A0522D]/10 rounded-full flex items-center justify-center">
+                <Calendar size={18} className="text-[#A0522D]" />
+              </div>
+              <div>
+                <p className="text-stone-500 text-xs uppercase tracking-wide">Date</p>
+                <p className="font-semibold text-stone-800">
+                  {new Date(workshop.date).toLocaleDateString()}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 bg-white p-3 rounded-xl shadow-sm">
+              <div className="w-10 h-10 bg-[#A0522D]/10 rounded-full flex items-center justify-center">
+                <Clock size={18} className="text-[#A0522D]" />
+              </div>
+              <div>
+                <p className="text-stone-500 text-xs uppercase tracking-wide">Time</p>
+                <p className="font-semibold text-stone-800">{workshop.time}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 bg-white p-3 rounded-xl shadow-sm">
+              <div className="w-10 h-10 bg-[#A0522D]/10 rounded-full flex items-center justify-center">
+                <Users size={18} className="text-[#A0522D]" />
+              </div>
+              <div>
+                <p className="text-stone-500 text-xs uppercase tracking-wide">Available</p>
+                <p className="font-semibold text-stone-800">
+                  {workshop.seats} Seats
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Form */}
-        <form onSubmit={handlePayment} className="p-6 space-y-4">
+        <form onSubmit={handlePayment} className="p-4 space-y-4">
           
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-stone-700">Name</label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-stone-900 uppercase tracking-wide flex items-center gap-2">
+                <div className="w-2 h-2 bg-[#A0522D] rounded-full"></div>
+                Name
+              </label>
               <input
                 type="text"
                 name="name"
                 required
                 value={formData.name}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-[#A0522D] focus:border-transparent outline-none transition-all"
-                placeholder="Your Name"
+                className="w-full px-4 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#A0522D] focus:border-transparent outline-none transition-all shadow-sm"
+                placeholder="Your Full Name"
               />
             </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-stone-700">Phone</label>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-stone-900 uppercase tracking-wide flex items-center gap-2">
+                <div className="w-2 h-2 bg-[#A0522D] rounded-full"></div>
+                Phone
+              </label>
               <input
                 type="tel"
                 name="phone"
                 required
                 value={formData.phone}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-[#A0522D] focus:border-transparent outline-none transition-all"
+                className="w-full px-4 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#A0522D] focus:border-transparent outline-none transition-all shadow-sm"
                 placeholder="+91 98765 43210"
               />
             </div>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-stone-700">Email Address</label>
+          <div className="space-y-2">
+            <label className="text-sm font-semibold text-stone-900 uppercase tracking-wide flex items-center gap-2">
+              <div className="w-2 h-2 bg-[#A0522D] rounded-full"></div>
+              Email Address
+            </label>
             <input
               type="email"
               name="email"
               required
               value={formData.email}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-[#A0522D] focus:border-transparent outline-none transition-all"
+              className="w-full px-4 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#A0522D] focus:border-transparent outline-none transition-all shadow-sm"
               placeholder="you@example.com"
             />
           </div>
 
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-stone-700">Number of Attendees</label>
+          <div className="space-y-2">
+            <label className="text-sm font-semibold text-stone-900 uppercase tracking-wide flex items-center gap-2">
+              <div className="w-2 h-2 bg-[#A0522D] rounded-full"></div>
+              Number of Attendees
+            </label>
             <div className="relative">
-              <Users size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+              <Users size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-600" />
               <input
                 type="number"
                 name="attendees"
                 min="1"
-                max={workshop.seats || 5} // Limit max selection to available seats
+                max={workshop.seats || 5}
                 required
                 value={formData.attendees}
                 onChange={handleChange}
-                className="w-full pl-10 pr-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-[#A0522D] focus:border-transparent outline-none transition-all"
+                className="w-full pl-12 pr-4 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#A0522D] focus:border-transparent outline-none transition-all shadow-sm text-black"
               />
             </div>
           </div>
 
-          <div className="pt-4 border-t border-stone-100 mt-4">
-            <div className="flex justify-between items-center mb-6">
-              <span className="text-stone-600">Total Amount</span>
-              <span className="text-2xl font-bold text-[#A0522D]">
+          <div className="bg-gradient-to-r from-stone-50 to-stone-100 p-5 rounded-2xl border border-stone-200 shadow-sm">
+          <div className="flex justify-between items-center mb-3">
+            <div>
+              <p className="text-sm text-stone-500 uppercase tracking-wide">
+                Total Amount
+              </p>
+              <p className="text-2xl font-bold text-[#A0522D]">
                 ₹{(workshop.price * formData.attendees).toLocaleString()}
-              </span>
+              </p>
             </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-[#A0522D] hover:bg-[#8B4513] text-white py-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <>
-                  <Loader2 size={20} className="animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                'Pay & Book Now'
-              )}
-            </button>
-            <p className="text-xs text-center text-stone-400 mt-3">
-              Secure payment powered by Razorpay
-            </p>
           </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-[#A0522D] hover:bg-[#8B4513] text-white py-3.5 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {loading ? (
+              <>
+                <Loader2 size={20} className="animate-spin" />
+                Processing...
+              </>
+            ) : (
+              'Pay & Book Now'
+            )}
+          </button>
+
+          <p className="text-xs text-center text-stone-600 mt-3">
+            Secure payment powered by Razorpay
+          </p>
+        </div>
         </form>
       </div>
     </div>

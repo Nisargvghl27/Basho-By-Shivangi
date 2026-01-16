@@ -15,12 +15,14 @@ import {
   BarChart3, 
   Settings,
   CalendarDays,
+  Crown,
   X,
   Menu
 } from "lucide-react";
 
 const menuItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/best-seller", label: "Best Seller", icon: Crown },
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/workshops", label: "Workshops", icon: CalendarDays }, 
   { href: "/admin/categories", label: "Categories", icon: Tags },
