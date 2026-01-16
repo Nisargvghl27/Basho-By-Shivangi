@@ -12,13 +12,47 @@ import {
 
 const workshopRef = collection(db, "workshops");
 
-// READ
+// READ ALL
 export const fetchAllWorkshops = async () => {
   const snapshot = await getDocs(workshopRef);
   return snapshot.docs.map(doc => ({
     id: doc.id,
     ...doc.data(),
   }));
+};
+
+// GET UPCOMING WORKSHOP (Prioritizes "Featured", then falls back to nearest date)
+export const getUpcomingWorkshop = async () => {
+  try {
+    // 1. Get all workshops
+    const allWorkshops = await fetchAllWorkshops();
+    
+    // 2. Get today's date in YYYY-MM-DD format
+    const today = new Date().toISOString().split("T")[0];
+
+    // 3. Find specific FEATURED workshop (Future date only)
+    const featuredWorkshop = allWorkshops.find(w => 
+      w.status === "active" && 
+      w.date >= today && 
+      w.isFeatured === true
+    );
+
+    // If a featured workshop exists, return it immediately
+    if (featuredWorkshop) {
+      return featuredWorkshop;
+    }
+
+    // 4. Fallback: If no featured workshop, get the NEAREST upcoming one
+    const nearestWorkshop = allWorkshops
+      .filter(w => w.status === "active" && w.date >= today)
+      .sort((a, b) => new Date(a.date) - new Date(b.date))[0];
+
+    return nearestWorkshop || null;
+
+  } catch (error) {
+    console.error("Error fetching upcoming workshop:", error);
+    return null;
+  }
 };
 
 // CREATE

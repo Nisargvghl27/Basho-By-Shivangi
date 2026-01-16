@@ -17,14 +17,16 @@ import {
   CalendarDays,
   Crown,
   X,
-  Menu
+  Menu,
+  Star // Added Star icon
 } from "lucide-react";
 
 const menuItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/upcoming-workshop", label: "Upcoming Workshop", icon: Star }, // New Menu Item
   { href: "/admin/best-seller", label: "Best Seller", icon: Crown },
   { href: "/admin/products", label: "Products", icon: Package },
-  { href: "/admin/workshops", label: "Workshops", icon: CalendarDays }, 
+  { href: "/admin/workshops", label: "All Workshops", icon: CalendarDays }, 
   { href: "/admin/categories", label: "Categories", icon: Tags },
   { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
   { href: "/admin/users", label: "Users", icon: Users },

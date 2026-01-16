@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import { fetchAllWorkshops } from "../../lib/workshopService";
@@ -21,7 +22,11 @@ import {
 // Images (Relative Imports)
 import heroStudio from "../../assets/hero-studio.jpg";
 
-export default function WorkshopsPage() {
+// Helper Component to handle search params logic safely inside Suspense
+function WorkshopsContent() {
+  const searchParams = useSearchParams();
+  const autoBookId = searchParams.get("id"); // Get ID from URL if present
+
   const [isVisible, setIsVisible] = useState(false);
   const [isMarqueeHovered, setIsMarqueeHovered] = useState(false);
   
@@ -36,10 +41,8 @@ export default function WorkshopsPage() {
 
   // Fetch Workshops Function
   const loadData = async () => {
-    // We don't set global loading to true here to prevent full page flash on refresh
     try {
       const data = await fetchAllWorkshops();
-      // Filter for active workshops (optional logic)
       const activeWorkshops = data.filter(w => w.status === 'active' || !w.status); 
       setWorkshops(activeWorkshops);
     } catch (error) {
@@ -53,6 +56,16 @@ export default function WorkshopsPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Auto-Open Modal Logic
+  useEffect(() => {
+    if (autoBookId && workshops.length > 0) {
+      const target = workshops.find((w) => w.id === autoBookId);
+      if (target) {
+        setSelectedWorkshop(target);
+      }
+    }
+  }, [autoBookId, workshops]);
 
   // Intersection Observer for Reveal Animations
   useEffect(() => {
@@ -217,7 +230,7 @@ export default function WorkshopsPage() {
           </div>
         </section>
 
-        {/* CONTINUOUS MARQUEE SECTION: THE PROCESS IN MOTION */}
+        {/* CONTINUOUS MARQUEE SECTION */}
         <section className="py-12 md:py-16 bg-charcoal-light border-t border-border-subtle relative overflow-hidden">
           {/* Subtle Background Pattern */}
           <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuCzVlI8BGQMSspZ5VftfBOItr0K4kOBo5vWkTdGEdqND11OwtzoetJuopJoaWl4mC-ii7fqypDIEZlBtoa9xoekR71JXyJfRAWwRjiJGY2vVrcf92xIDWgI_HOredw7Sq9UrUQQNALmW9oGK70Qif9TAjR96GuZ9Uu77B2tmusZwR-PRiCDOKlCgf3TYAt34qeZAC81VKOdJqOd_agLTwTntabqTO1W2oldEyQ951BFgWqOZMElOjhSww885mnrRadT2Ug0QnO06go")' }}></div>
@@ -300,12 +313,13 @@ export default function WorkshopsPage() {
       {selectedWorkshop && (
         <BookingModal 
           workshop={selectedWorkshop} 
-          onClose={() => setSelectedWorkshop(null)}
+          onClose={() => {
+            setSelectedWorkshop(null);
+            // Optional: Remove ID from URL on close
+            // window.history.replaceState(null, '', '/workshops');
+          }}
           onSuccess={() => {
-             // Refresh data to show updated seat counts
              loadData();
-             // Optional: You could also keep the modal open to show the success message, 
-             // but currently the modal handles its own success state view.
           }}
         />
       )}
@@ -339,5 +353,14 @@ export default function WorkshopsPage() {
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
     </div>
+  );
+}
+
+// Wrap in Suspense to prevent De-opt in Next.js build
+export default function WorkshopsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-charcoal flex items-center justify-center text-white">Loading...</div>}>
+      <WorkshopsContent />
+    </Suspense>
   );
 }
