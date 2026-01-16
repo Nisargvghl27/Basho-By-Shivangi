@@ -28,8 +28,6 @@ const menuItems = [
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/payments", label: "Payments", icon: CreditCard },
   { href: "/admin/inventory", label: "Inventory", icon: Warehouse },
-  { href: "/admin/banners", label: "Banners", icon: Image },
-  { href: "/admin/coupons", label: "Coupons", icon: Ticket },
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];

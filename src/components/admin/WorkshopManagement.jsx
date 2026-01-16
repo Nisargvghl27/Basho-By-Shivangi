@@ -12,7 +12,7 @@ import {
   Users,
   Search,
   Image as ImageIcon,
-  MoreVertical
+  IndianRupee // Added IndianRupee icon
 } from "lucide-react";
 import {
   fetchAllWorkshops,
@@ -233,8 +233,9 @@ export default function WorkshopManagement() {
                     {/* Column 3: Stats */}
                     <td className="px-6 py-4">
                       <div className="space-y-1">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          ₹{w.price}
+                        <div className="flex items-center text-sm font-medium text-gray-900 dark:text-white">
+                          <IndianRupee className="w-3 h-3 mr-1" />
+                          {w.price}
                         </div>
                         <div className="flex items-center text-xs text-gray-500">
                           <Users className="w-3 h-3 mr-1" />

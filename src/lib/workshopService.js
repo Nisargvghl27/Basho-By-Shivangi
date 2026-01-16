@@ -46,9 +46,9 @@ export const deleteWorkshop = async (id) => {
 };
 
 // BOOK WORKSHOP (Transaction)
-export const bookWorkshop = async (workshopId, userDetails, seatsRequested) => {
+export const bookWorkshop = async (workshopId, userDetails, seatsRequested, paymentDetails) => {
   try {
-    await runTransaction(db, async (transaction) => {
+    const result = await runTransaction(db, async (transaction) => {
       // 1. Get the latest workshop data
       const workshopDocRef = doc(db, "workshops", workshopId);
       const workshopDoc = await transaction.get(workshopDocRef);
@@ -81,14 +81,17 @@ export const bookWorkshop = async (workshopId, userDetails, seatsRequested) => {
         seatsBooked: seatsRequested,
         totalPrice: parseFloat(workshopData.price) * seatsRequested,
         status: "confirmed",
+        paymentId: paymentDetails.paymentId,
+        orderId: paymentDetails.orderId,
         bookedAt: serverTimestamp(),
       });
+      
+      return { id: newBookingRef.id };
     });
 
-    return { success: true };
+    return { success: true, bookingId: result.id };
   } catch (e) {
     console.error("Booking failed: ", e);
-    // Return a friendly error message
     return { success: false, error: e.toString() };
   }
 };

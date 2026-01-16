@@ -21,6 +21,7 @@ const CartPage = () => {
   const [selectedItems, setSelectedItems] = useState([]);
   const [itemToRemove, setItemToRemove] = useState(null);
   const [showRemoveModal, setShowRemoveModal] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false); // [!code ++]
 
   useEffect(() => {
     setIsClient(true);
@@ -48,12 +49,20 @@ const CartPage = () => {
     setShowRemoveModal(true);
   };
 
-  const handleQuantityChange = (itemId, change) => {
+  const handleQuantityChange = async (itemId, change) => { // [!code ++]
+    if (isUpdating) return; // [!code ++]
+    
     const item = cartItems.find(item => item.id === itemId);
     if (item) {
       const newQuantity = item.quantity + change;
       if (newQuantity > 0) {
-        updateQuantity(itemId, newQuantity);
+        setIsUpdating(true); // [!code ++]
+        const result = await updateQuantity(itemId, newQuantity); // [!code ++]
+        setIsUpdating(false); // [!code ++]
+        
+        if (!result.success) { // [!code ++]
+            alert(result.message); // Simple alert for cart page error
+        }
       } else {
         setItemToRemove(itemId);
         setShowRemoveModal(true);
@@ -224,6 +233,7 @@ const CartPage = () => {
                                   }}
                                   className="px-3 py-1 text-stone-400 hover:text-white hover:bg-charcoal/50 transition-colors"
                                   aria-label="Decrease quantity"
+                                  disabled={isUpdating} // [!code ++]
                                 >
                                   -
                                 </button>
@@ -237,6 +247,7 @@ const CartPage = () => {
                                   }}
                                   className="px-3 py-1 text-stone-400 hover:text-white hover:bg-charcoal/50 transition-colors"
                                   aria-label="Increase quantity"
+                                  disabled={isUpdating} // [!code ++]
                                 >
                                   +
                                 </button>

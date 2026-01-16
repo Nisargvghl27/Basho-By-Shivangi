@@ -1,145 +1,297 @@
-"use client";
+import React, { useState } from 'react';
+import { X, Loader2, Calendar, Clock, MapPin, Users } from 'lucide-react';
+import { toast } from 'react-hot-toast'; 
+import { bookWorkshop } from '../lib/workshopService'; // Corrected Import
 
-import { useState } from "react";
-import { X, Loader2, Users, CheckCircle } from "lucide-react";
-import { bookWorkshop } from "../lib/workshopService";
-import { auth } from "../lib/firebase";
-
-export default function BookingModal({ workshop, onClose, onSuccess }) {
+const BookingModal = ({ workshop, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [step, setStep] = useState("form"); // form | success
-
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    seats: 1,
+    name: '',
+    email: '',
+    phone: '',
+    attendees: 1,
   });
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: name === 'attendees' ? parseInt(value) || 1 : value
+    }));
   };
 
-  const handleSubmit = async (e) => {
+  // Helper to load Razorpay script
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      if (window.Razorpay) {
+        resolve(true);
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  const handlePayment = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
 
-    // 1. Check if user is logged in
-    const user = auth.currentUser;
-    if (!user) {
-      setError("You must be logged in to book a workshop. Please sign in first.");
+    try {
+      // 1. Load Razorpay Script
+      const res = await loadRazorpayScript();
+      if (!res) {
+        toast.error('Razorpay SDK failed to load. Are you online?');
+        setLoading(false);
+        return;
+      }
+
+      // 2. Calculate Total Amount
+      const totalAmount = workshop.price * formData.attendees;
+
+      // 3. Create Order on Backend
+      const orderResponse = await fetch('/api/create-razorpay-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          amount: totalAmount,
+          currency: 'INR',
+          // Pass customer details for Razorpay Dashboard Notes
+          shipping: {
+            firstName: formData.name,
+            email: formData.email,
+            phone: formData.phone
+          }
+        }),
+      });
+
+      if (!orderResponse.ok) {
+        throw new Error('Failed to create order');
+      }
+
+      const orderData = await orderResponse.json();
+
+      // 4. Configure Razorpay Options
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, 
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "Basho Pottery", 
+        description: `Booking: ${workshop.title} (${formData.attendees} seats)`,
+        image: "/logo.png", // Ensure you have a logo in public folder
+        order_id: orderData.id,
+        handler: async function (response) {
+          try {
+            // 5. Verify Payment on Backend
+            const verifyResponse = await fetch('/api/verify-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            });
+
+            const verifyData = await verifyResponse.json();
+
+            if (verifyData.success) {
+              // 6. Save Booking to Database (Firestore)
+              await handleBookingSuccess(response.razorpay_payment_id, response.razorpay_order_id);
+            } else {
+              toast.error('Payment verification failed');
+              setLoading(false);
+            }
+          } catch (error) {
+            console.error('Verification Error:', error);
+            toast.error('Payment verified but booking failed. Please contact support.');
+            setLoading(false);
+          }
+        },
+        prefill: {
+          name: formData.name,
+          email: formData.email,
+          contact: formData.phone,
+        },
+        theme: {
+          color: "#A0522D", 
+        },
+        modal: {
+            ondismiss: function() {
+                setLoading(false);
+            }
+        }
+      };
+
+      const paymentObject = new window.Razorpay(options);
+      paymentObject.open();
+
+    } catch (error) {
+      console.error('Payment Error:', error);
+      toast.error('Something went wrong initiating payment.');
       setLoading(false);
-      return;
     }
+  };
 
-    // 2. Basic validation for seat availability
-    if (formData.seats > workshop.seats) {
-      setError(`Only ${workshop.seats} seats remaining.`);
+  const handleBookingSuccess = async (paymentId, orderId) => {
+    try {
+      const userDetails = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone
+      };
+
+      const paymentDetails = {
+        paymentId: paymentId,
+        orderId: orderId
+      };
+
+      // Call the service to update seats and save booking
+      const result = await bookWorkshop(workshop.id, userDetails, formData.attendees, paymentDetails);
+
+      if (result.success) {
+        toast.success('Workshop booked successfully!');
+        if (onSuccess) onSuccess(); // Refresh parent data
+        onClose(); // Close the modal
+      } else {
+        toast.error('Payment successful, but seat reservation failed: ' + result.error);
+      }
+    } catch (error) {
+      console.error('Firestore Save Error:', error);
+      toast.error('Critical Error: Payment succeeded but booking failed to save.');
+    } finally {
       setLoading(false);
-      return;
     }
-
-    // 3. Attempt Booking
-    const result = await bookWorkshop(workshop.id, formData, parseInt(formData.seats));
-
-    if (result.success) {
-      setStep("success");
-      if (onSuccess) onSuccess(); // Callback to refresh data in parent
-    } else {
-      setError(result.error || "Booking failed. Please try again.");
-    }
-    setLoading(false);
   };
 
   if (!workshop) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md shadow-2xl relative overflow-hidden">
+      <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
         
-        {/* Close Button */}
-        <button 
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
-        >
-          <X size={24} />
-        </button>
+        {/* Header */}
+        <div className="bg-[#A0522D] p-6 text-white flex justify-between items-start">
+          <div>
+            <h2 className="text-2xl font-serif font-bold">{workshop.title}</h2>
+            <p className="text-white/80 text-sm mt-1">Complete your reservation</p>
+          </div>
+          <button 
+            onClick={onClose}
+            className="p-2 hover:bg-white/20 rounded-full transition-colors"
+          >
+            <X size={20} />
+          </button>
+        </div>
 
-        {step === "success" ? (
-          <div className="p-8 text-center space-y-4">
-            <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CheckCircle size={32} />
+        {/* Workshop Summary */}
+        <div className="bg-stone-50 p-4 border-b border-stone-100 flex gap-4 text-sm text-stone-600">
+          <div className="flex items-center gap-2">
+            <Calendar size={16} className="text-[#A0522D]" />
+            <span>{new Date(workshop.date).toLocaleDateString()}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Clock size={16} className="text-[#A0522D]" />
+            <span>{workshop.time}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Users size={16} className="text-[#A0522D]" />
+            <span>{workshop.seats} Seats Left</span>
+          </div>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handlePayment} className="p-6 space-y-4">
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-stone-700">Name</label>
+              <input
+                type="text"
+                name="name"
+                required
+                value={formData.name}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-[#A0522D] focus:border-transparent outline-none transition-all"
+                placeholder="Your Name"
+              />
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Booking Confirmed!</h3>
-            <p className="text-gray-500">
-              You have successfully booked {formData.seats} seat(s) for <br/>
-              <span className="font-semibold text-gray-800 dark:text-gray-200">{workshop.title}</span>.
-            </p>
-            <button 
-              onClick={onClose}
-              className="w-full mt-4 bg-gray-900 text-white py-3 rounded-xl font-medium hover:bg-black transition-colors"
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-stone-700">Phone</label>
+              <input
+                type="tel"
+                name="phone"
+                required
+                value={formData.phone}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-[#A0522D] focus:border-transparent outline-none transition-all"
+                placeholder="+91 98765 43210"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-stone-700">Email Address</label>
+            <input
+              type="email"
+              name="email"
+              required
+              value={formData.email}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-[#A0522D] focus:border-transparent outline-none transition-all"
+              placeholder="you@example.com"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-stone-700">Number of Attendees</label>
+            <div className="relative">
+              <Users size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+              <input
+                type="number"
+                name="attendees"
+                min="1"
+                max={workshop.seats || 5} // Limit max selection to available seats
+                required
+                value={formData.attendees}
+                onChange={handleChange}
+                className="w-full pl-10 pr-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-[#A0522D] focus:border-transparent outline-none transition-all"
+              />
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-stone-100 mt-4">
+            <div className="flex justify-between items-center mb-6">
+              <span className="text-stone-600">Total Amount</span>
+              <span className="text-2xl font-bold text-[#A0522D]">
+                ₹{(workshop.price * formData.attendees).toLocaleString()}
+              </span>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-[#A0522D] hover:bg-[#8B4513] text-white py-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              Close
-            </button>
-          </div>
-        ) : (
-          <div className="p-6">
-            <div className="mb-6">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Book Workshop</h3>
-              <p className="text-sm text-gray-500 mt-1">{workshop.title}</p>
-              <div className="flex items-center gap-2 mt-2 text-xs font-medium text-blue-600 bg-blue-50 w-fit px-2 py-1 rounded">
-                <Users size={12} />
-                {workshop.seats} seats remaining
-              </div>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
-                <input required name="name" type="text" value={formData.name} onChange={handleChange} className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="John Doe" />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email Address</label>
-                <input required name="email" type="email" value={formData.email} onChange={handleChange} className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="john@example.com" />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
-                  <input required name="phone" type="tel" value={formData.phone} onChange={handleChange} className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="+1 234..." />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Seats</label>
-                  <input required name="seats" type="number" min="1" max={workshop.seats} value={formData.seats} onChange={handleChange} className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 outline-none" />
-                </div>
-              </div>
-
-              {error && (
-                <div className="text-red-500 text-sm bg-red-50 p-2 rounded border border-red-200">
-                  {error}
-                </div>
+              {loading ? (
+                <>
+                  <Loader2 size={20} className="animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                'Pay & Book Now'
               )}
-
-              <div className="pt-2">
-                 <div className="flex justify-between items-center mb-4 text-sm font-semibold">
-                    <span>Total Price:</span>
-                    <span>₹{workshop.price * formData.seats}</span>
-                 </div>
-                <button 
-                  type="submit" 
-                  disabled={loading}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold transition-all flex items-center justify-center"
-                >
-                  {loading ? <Loader2 className="animate-spin w-5 h-5" /> : "Confirm Booking"}
-                </button>
-              </div>
-            </form>
+            </button>
+            <p className="text-xs text-center text-stone-400 mt-3">
+              Secure payment powered by Razorpay
+            </p>
           </div>
-        )}
+        </form>
       </div>
     </div>
   );
-}
+};
+
+export default BookingModal;

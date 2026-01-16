@@ -7,28 +7,28 @@ const products = [
     id: 1,
     name: "Morning Ritual Mug",
     category: "Stoneware • Hand-dipped",
-    price: "$32.00",
+    price: "₹3200.00",
     image: "https://lh3.googleusercontent.com/aida-public/AB6AXuBpIiubKDNOmyXyvkp1GQTFxTw-vcjAPhrFRflWI3xamBf40EpFCCCkTTZdd-Vw-qMaQva74FxjxLgtYPorLjx9-j5FmKrW0EVK2-Wj2LndgQ0JY1cWPm7W1sJ08Z2W7oeRxqimpuXlN1rvXAIn1kqJ0kbKE65Sa6hBq4Wxs88huL8jJIS0NquICBcXNG2WsMTkI87AOSdnhJ-wFLnUAkJjIvh7e8oYxk3mHwr6fhALilmFCq3lHOPwpN9TWtecaVncirBqeQ710-3b"
   },
   {
     id: 2,
     name: "Ikebana Vase",
     category: "Speckled Clay • Organic Shape",
-    price: "$85.00",
+    price: "₹8500.00",
     image: "https://lh3.googleusercontent.com/aida-public/AB6AXuBtHSu2maI6qNCAGDPGbAE3Y4xVZ59o_ExD-CRjwLGXtkvmV4KyYltw0xxDLOAuhHaKLrkJeUjLuQmOLoarzhmDbngVXWcd7oQP3zPoTch5llhluB7_24SAAz_vhkmS_G1-tBuZ23FOcXz7-dNUaBIJ3B29Zoqp1GueZ0lT36KtAZmexPe5ITXRBfuIToETX7eTw5mEuTfvXNaZC6uqs04EeOU4O83sF9cDmxf-IvNI0JouAl8JkfBhOt9gZENCjDuKKZ-1lktJNMdJ"
   },
   {
     id: 3,
     name: "Chawan Matcha Bowl",
     category: "Raku Fired • Unique Glaze",
-    price: "$55.00",
+    price: "₹5500.00",
     image: "https://lh3.googleusercontent.com/aida-public/AB6AXuDWnDEJIEnX4WOsheKZ1kpVvS1wH5Vzzr--DNvfOQ44XMkq1L-h6w9VqIGwRcxHYTqM7F4tYnSFvXABCQJPd8YqTFpb-5-_f6nWTZPXI8wGkTwz_Fo2MGcpEyOAbHybBZ3qTA7cfFKVTHHsAUZShFXMgBHMguG6esgVYsDF74egO5T8cmJvZOQglOfAsjCFqtB6qXsmreLB7B8E2PbDfpkXEA2gMD_0rw99aLS7hPzNR0EXarg-TuWYC-tsiR3xbE4WQIrx4teShG84"
   },
   {
     id: 4,
     name: "Incense Burner",
     category: "Black Clay • Minimalist",
-    price: "$28.00",
+    price: "₹2800.00",
     image: "https://lh3.googleusercontent.com/aida-public/AB6AXuBPFit41-EvWZZ6xy9vZ37d43IqiUAzgxR3ASW-NKVzi0gbKgg7zvX14nFJW6zhoRjxPBMevfNwsvWvBcl4-i3qRbA0HO9GJl5FT-V3c1ExbOrpFblszgrplrZ7JLI1m0hs19KuHBDgRPLk8L-gjPhhaH1gy99kCCItVv4XRGOu-s-d7DgBj1MuCGMqQnZmxdY-W-Km-3W14m6LnCqQlj5j-TywKWOhvdTTYsfWRyTZqS_lFK-IsKq9PLBE1Ea83QxMpoeODoUGIJHC"
   }
 ];
@@ -163,7 +163,7 @@ export default function Collections() {
                 {/* Price & CTA - Reveal on Hover */}
                 <div className="flex items-center gap-6 opacity-0 group-hover:opacity-100 transition-all duration-700 delay-100 transform translate-y-6 group-hover:translate-y-0">
                   <span className="text-3xl md:text-4xl font-serif font-light text-white transition-all duration-500 group-hover:text-clay/90">
-                    $240.00
+                    ₹24000.00
                   </span>
                   <span className="h-[2px] w-16 bg-gradient-to-r from-white/40 via-white/60 to-white/40 transition-all duration-500 group-hover:w-20" />
                   <button className="relative uppercase text-[11px] tracking-[0.2em] font-bold hover:text-clay transition-all duration-500 flex items-center gap-2 group/cta hover:tracking-[0.25em]">
