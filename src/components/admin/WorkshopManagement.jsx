@@ -12,7 +12,8 @@ import {
   Users,
   Search,
   Image as ImageIcon,
-  IndianRupee // Added IndianRupee icon
+  IndianRupee,
+  Star // Added Star icon for featured status
 } from "lucide-react";
 import {
   fetchAllWorkshops,
@@ -38,6 +39,7 @@ export default function WorkshopManagement() {
     status: "active",
     description: "",
     imageUrl: "",
+    isFeatured: false, // Added isFeatured
   });
 
   useEffect(() => {
@@ -53,9 +55,10 @@ export default function WorkshopManagement() {
   };
 
   const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value,
+      [name]: type === "checkbox" ? checked : value,
     }));
   };
 
@@ -71,6 +74,7 @@ export default function WorkshopManagement() {
       status: "active",
       description: "",
       imageUrl: "",
+      isFeatured: false, // Reset isFeatured
     });
     setShowModal(false);
   };
@@ -105,6 +109,7 @@ export default function WorkshopManagement() {
       status: w.status || "active",
       description: w.description || "",
       imageUrl: w.image || "",
+      isFeatured: w.isFeatured || false, // Load isFeatured
     });
     setShowModal(true);
   };
@@ -206,9 +211,14 @@ export default function WorkshopManagement() {
                           )}
                         </div>
                         <div>
-                          <h3 className="font-semibold text-gray-900 dark:text-white">
-                            {w.title}
-                          </h3>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold text-gray-900 dark:text-white">
+                              {w.title}
+                            </h3>
+                            {w.isFeatured && (
+                              <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+                            )}
+                          </div>
                           <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
                             {w.subtitle || "No subtitle"}
                           </p>
@@ -435,6 +445,26 @@ export default function WorkshopManagement() {
                       <option value="draft">Draft</option>
                       <option value="completed">Completed</option>
                     </select>
+                  </div>
+                </div>
+
+                {/* Feature Toggle Checkbox */}
+                <div className="flex items-center gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-700/30">
+                  <input
+                    type="checkbox"
+                    id="isFeatured"
+                    name="isFeatured"
+                    checked={formData.isFeatured}
+                    onChange={handleChange}
+                    className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 border-gray-300 cursor-pointer"
+                  />
+                  <div className="flex flex-col">
+                    <label htmlFor="isFeatured" className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+                      Show this workshop on Home Page
+                    </label>
+                    <span className="text-xs text-gray-500">
+                      Check this to feature this workshop on the main landing page.
+                    </span>
                   </div>
                 </div>
 
