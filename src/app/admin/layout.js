@@ -21,8 +21,8 @@ const manrope = Manrope({
 const AUTHORIZED_EMAILS = [
   "manthanmd21@gmail.com",
   "nisargvaghela27@gmail.com",
-  "admin3@example.com",
-  "admin4@example.com"
+  "krishkachhadiya87@gmail.com",
+  "mayankrathva281@gmail.com"
 ];
 
 export default function AdminLayout({ children }) {
