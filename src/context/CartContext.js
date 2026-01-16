@@ -158,7 +158,6 @@ export const CartProvider = ({ children }) => {
       value={{
         cartItems,
         cartSubtotal,
-        setCartItems,
         addToCart,
         updateQuantity,
         removeFromCart,
