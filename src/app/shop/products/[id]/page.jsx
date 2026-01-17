@@ -32,6 +32,7 @@ export default function ProductPage() {
   const [hoveredCard, setHoveredCard] = useState(null);
   const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
   const [isAdding, setIsAdding] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   // FETCH PRODUCT
   useEffect(() => {
@@ -163,6 +164,17 @@ export default function ProductPage() {
   const incrementQuantity = () => setQuantity(q => Math.min(q + 1, 10));
   const decrementQuantity = () => setQuantity(q => Math.max(q - 1, 1));
 
+  const handleQuantityChange = (change) => {
+    if (isUpdating) return;
+    
+    const newQuantity = quantity + change;
+    if (newQuantity > 0 && newQuantity <= 10) {
+      setIsUpdating(true);
+      setQuantity(newQuantity);
+      setIsUpdating(false);
+    }
+  };
+
   // UI
   return (
     <div className="min-h-screen flex flex-col bg-charcoal text-rice-paper">
@@ -222,13 +234,27 @@ export default function ProductPage() {
 
             {/* QTY */}
             <div className="flex items-center gap-4 mt-6">
-              <button onClick={decrementQuantity}>−</button>
-              <input
-                value={quantity}
-                onChange={e => setQuantity(Number(e.target.value))}
-                className="w-12 text-center bg-transparent border"
-              />
-              <button onClick={incrementQuantity}>+</button>
+              <div className="flex items-center border border-border-subtle rounded-md">
+                <button
+                  onClick={() => handleQuantityChange(-1)}
+                  className="px-4 py-2 text-stone-400 hover:text-white hover:bg-charcoal/50 transition-colors text-lg"
+                  aria-label="Decrease quantity"
+                  disabled={isUpdating || quantity <= 1}
+                >
+                  -
+                </button>
+                <span className="w-12 text-center text-base text-rice-paper">
+                  {quantity}
+                </span>
+                <button
+                  onClick={() => handleQuantityChange(1)}
+                  className="px-4 py-2 text-stone-400 hover:text-white hover:bg-charcoal/50 transition-colors text-lg"
+                  aria-label="Increase quantity"
+                  disabled={isUpdating || quantity >= 10}
+                >
+                  +
+                </button>
+              </div>
             </div>
 
             {/* ACTIONS */}

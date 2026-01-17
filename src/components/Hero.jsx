@@ -3,11 +3,9 @@ import React, { useState, useEffect } from "react";
 
 export default function Hero() {
   const [scrollY, setScrollY] = useState(0);
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
-    setIsVisible(true);
-    
     const handleScroll = () => {
       setScrollY(window.scrollY);
     };

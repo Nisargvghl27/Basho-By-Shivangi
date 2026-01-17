@@ -371,3 +371,33 @@ body {
     opacity: 1;
   }
 }
+
+/* Custom Color Utility Classes */
+/* .bg-obsidian { background-color: var(--color-obsidian); }
+.bg-charcoal { background-color: var(--color-charcoal); }
+.bg-charcoal-light { background-color: var(--color-charcoal-light); }
+.bg-clay { background-color: var(--color-clay); }
+.bg-clay-muted { background-color: var(--color-clay-muted); }
+.bg-stone { background-color: var(--color-stone); }
+.bg-stone-warm { background-color: var(--color-stone-warm); }
+.bg-rice-paper { background-color: var(--color-rice-paper); }
+.bg-border-subtle { background-color: var(--color-border-subtle); }
+
+.text-obsidian { color: var(--color-obsidian); }
+.text-charcoal { color: var(--color-charcoal); }
+.text-charcoal-light { color: var(--color-charcoal-light); }
+.text-clay { color: var(--color-clay); }
+.text-clay-muted { color: var(--color-clay-muted); }
+.text-stone { color: var(--color-stone); }
+.text-stone-warm { color: var(--color-stone-warm); }
+.text-rice-paper { color: var(--color-rice-paper); }
+.text-border-subtle { color: var(--color-border-subtle); }
+
+.border-clay { border-color: var(--color-clay); }
+.border-stone { border-color: var(--color-stone); }
+.border-border-subtle { border-color: var(--color-border-subtle); }
+
+.hover\:bg-clay:hover { background-color: var(--color-clay); }
+.hover\:bg-clay\/90:hover { background-color: rgba(166, 93, 61, 0.9); }
+.hover\:text-clay:hover { color: var(--color-clay); }
+.hover\:border-clay:hover { border-color: var(--color-clay); } */
