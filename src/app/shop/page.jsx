@@ -3,121 +3,65 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
+import { Heart, Search, SlidersHorizontal, ChevronDown, ShoppingBag, Check, X } from 'lucide-react';
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import { useCart } from "../../context/CartContext";
 import { useWishlist } from "../../context/WishlistContext";
 import { fetchAllProducts } from "../../lib/productService";
 
-// Enhanced Notification Component with animation
+// Enhanced Notification Component
 const Notification = ({ message, onClose, type = 'success' }) => {
-  const [isVisible, setIsVisible] = useState(true);
-  
-  const handleClose = () => {
-    setIsVisible(false);
-    setTimeout(() => {
-      onClose();
-    }, 300);
-  };
-  
   useEffect(() => {
-    const timer = setTimeout(() => {
-      handleClose();
-    }, 3000);
+    const timer = setTimeout(onClose, 3000);
     return () => clearTimeout(timer);
-  }, []);
-  
-  const bgColor = type === 'success' ? 'bg-charcoal-light' : 'bg-red-900';
-  const borderColor = type === 'success' ? 'border-clay/50' : 'border-red-700';
-  const icon = type === 'success' ? 'check_circle' : 'error';
+  }, [onClose]);
 
   return (
-    <div
-      className={`fixed bottom-8 right-8 ${bgColor} border ${borderColor} text-rice-paper px-6 py-4 rounded-xl shadow-2xl flex items-start gap-3 z-50 transition-all duration-300 transform ${
-        isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
-      }`}
-    >
-      <span className="material-symbols-outlined text-clay mt-0.5">
-        {icon}
+    <div className={`fixed bottom-8 right-8 z-50 px-6 py-4 rounded-sm shadow-2xl flex items-center gap-4 animate-fade-in-up ${
+      type === 'error' ? 'bg-red-900/90 text-white border border-red-700/50' : 'bg-charcoal-light border border-clay/30 text-rice-paper'
+    }`}>
+      <span className={type === 'error' ? 'text-red-300' : 'text-clay'}>
+        {type === 'error' ? <X size={18} /> : <Check size={18} />}
       </span>
-      <div className="flex-1 min-w-0">
-        <p className="font-medium text-rice-paper">{type === 'success' ? 'Added to Cart' : 'Error'}</p>
-        <p className="text-sm text-stone-300">{message}</p>
-      </div>
-      <button
-        onClick={handleClose}
-        className="text-stone-400 hover:text-white transition-colors ml-2"
-        aria-label="Close notification"
-      >
-        <span className="material-symbols-outlined text-base">close</span>
-      </button>
+      <p className="font-sans text-sm tracking-wide">{message}</p>
     </div>
   );
 };
 
-const categories = ["All", "Mugs", "Plates", "Platter/Cheeseboard", "Bowls" , "Vase","Dinner Sets",'Trinket Trays',"Bookends","Fancy" ,"Picasso Limited Collection"]; 
+const categories = ["All", "Mugs", "Plates", "Platter/Cheeseboard", "Bowls", "Vase", "Dinner Sets", "Trinket Trays", "Bookends", "Fancy", "Picasso Limited Collection"];
 
-export default function ProductsPage() {
-  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
-  const { addToCart, cartItems } = useCart();
+export default function Shop() {
   const router = useRouter();
+  const { addToCart, cartItems } = useCart();
+  const { wishlistItems = [], addToWishlist, removeFromWishlist, isInWishlist } = useWishlist() || {};
   
-  // State for products and loading
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // UI State
-  const [notification, setNotification] = useState({
-    show: false,
-    message: '',
-    type: 'success'
-  });
-  const [isVisible, setIsVisible] = useState(false);
-  const [hoveredCard, setHoveredCard] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState("All");
-  
-  // Renamed to localSearchQuery to distinguish from global context
-  const [localSearchQuery, setLocalSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("default");
+  const [localSearchQuery, setLocalSearchQuery] = useState("");
+  const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
+  const [hoveredCard, setHoveredCard] = useState(null);
+  const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef(null);
 
-  const showNotification = (message, type = 'success') => {
-    setNotification({ show: true, message, type });
-  };
-
-  // Fetch Products from Firebase
   useEffect(() => {
     const loadProducts = async () => {
       try {
-        const fetchedProducts = await fetchAllProducts();
-        
-        // Transform data to ensure it matches UI expectations
-        const processedProducts = fetchedProducts.map(p => ({
-          ...p,
-          // Ensure price is a number for logic, create formatted string for display
-          price: Number(p.price),
-          priceFormatted: p.priceFormatted || `₹${Number(p.price).toFixed(2)}`,
-          // Ensure tags is an array
-          tags: Array.isArray(p.tags) ? p.tags : (p.tags ? p.tags.split(',') : [])
-        }));
-
-        // UPDATED: Show ALL products, even if they are marked 'inactive'
-        // If you want to hide inactive ones later, uncomment the .filter part
-        const activeProducts = processedProducts; // .filter(p => p.status !== 'inactive');
-        
-        setProducts(activeProducts);
+        setLoading(true);
+        const data = await fetchAllProducts();
+        setProducts(data);
       } catch (error) {
         console.error("Failed to load products:", error);
-        showNotification("Failed to load products. Please try refreshing.", "error");
+        showNotification("Failed to load products", 'error');
       } finally {
         setLoading(false);
       }
     };
-
     loadProducts();
   }, []);
 
-  // Intersection Observer for page animation
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -139,59 +83,50 @@ export default function ProductsPage() {
     };
   }, []);
 
-  const handleAddToCart = (e, product) => {
-    e.preventDefault();
-    e.stopPropagation();
-    try {
-      addToCart({
-        ...product,
-        price: Number(product.price),
-        quantity: 1
-      });
-
-      showNotification(`${product.name} has been added to your cart`, 'success');
-    } catch (error) {
-      showNotification('Failed to add item to cart. Please try again.', 'error');
-    }
+  const showNotification = (message, type = 'success') => {
+    setNotification({ show: true, message, type });
   };
 
-  // Filter products
-  const filteredProducts = products.filter((product) => {
-    const productTags = product.tags.map(t => t.toLowerCase());
-    const productCategory = product.category ? product.category.toLowerCase() : "";
+  const handleAddToCart = (e, product) => {
+    e.stopPropagation();
+    addToCart(product, 1);
+    showNotification(`Added ${product.name} to cart`);
+  };
 
-    const matchesCategory =
-      selectedCategory === "All" ||
-      productCategory === selectedCategory.toLowerCase() ||
-      productTags.includes(selectedCategory.toLowerCase()) ||
-      (selectedCategory === "Tableware" && productTags.includes("tableware")) ||
-      (selectedCategory === "Vases" && productTags.includes("vases")) ||
-      (selectedCategory === "Sets" && productTags.includes("sets")) ||
-      (selectedCategory === "Decorative" && productTags.includes("decorative"));
-
-    const matchesSearch =
-      localSearchQuery === "" ||
-      product.name.toLowerCase().includes(localSearchQuery.toLowerCase()) ||
-      (product.subtitle && product.subtitle.toLowerCase().includes(localSearchQuery.toLowerCase())) ||
-      productCategory.includes(localSearchQuery.toLowerCase());
-
+  const filteredProducts = products.filter(product => {
+    const matchesCategory = selectedCategory === "All" || product.category === selectedCategory;
+    const matchesSearch = product.name.toLowerCase().includes(localSearchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
-  // Sort products
   const sortedProducts = [...filteredProducts].sort((a, b) => {
-    if (sortBy === "price-low") {
-      return a.price - b.price;
-    } else if (sortBy === "price-high") {
-      return b.price - a.price;
-    } else if (sortBy === "name") {
-      return a.name.localeCompare(b.name);
+    switch (sortBy) {
+      case "price-low":
+        return parseFloat(a.price) - parseFloat(b.price);
+      case "price-high":
+        return parseFloat(b.price) - parseFloat(a.price);
+      case "name":
+        return a.name.localeCompare(b.name);
+      default:
+        return 0;
     }
-    return 0; // default (usually by creation date from fetch)
   });
 
   return (
-    <div className="relative min-h-screen bg-charcoal">
+    <div className="relative min-h-screen bg-charcoal overflow-x-hidden selection:bg-clay selection:text-charcoal">
+      
+      {/* Background Ambience */}
+      <div className="fixed inset-0 opacity-[0.15] pointer-events-none z-0">
+         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-40 mix-blend-overlay animate-grain-shift" style={{
+              backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' /%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' /%3E%3C/svg%3E")',
+              backgroundSize: '200px 200px',
+              willChange: 'transform',
+              transform: 'translate3d(0, 0, 0)'
+            }}></div>
+      </div>
+      <div className="fixed top-[-15%] right-[-10%] w-[50vw] h-[50vw] bg-clay/5 rounded-full blur-[120px] animate-float-slow pointer-events-none z-0" style={{ willChange: 'transform' }} />
+      <div className="fixed bottom-[-10%] left-[-10%] w-[40vw] h-[40vw] bg-stone-500/5 rounded-full blur-[100px] animate-float-delayed pointer-events-none z-0" style={{ willChange: 'transform' }} />
+
       <Header />
 
       {/* Notification */}
@@ -203,225 +138,160 @@ export default function ProductsPage() {
         />
       )}
 
-      <section
+      <main
         ref={sectionRef}
-        className="pt-32 pb-24 px-4 md:px-12 lg:px-24 bg-charcoal relative overflow-hidden min-h-screen"
+        className="pt-32 pb-24 px-6 md:px-12 lg:px-24 relative z-10 min-h-screen"
       >
-        {/* Enhanced Grain Texture */}
-        <div className="absolute inset-0 opacity-[0.12] pointer-events-none">
-          <div
-            className="absolute inset-0 animate-grain-shift"
-            style={{
-              backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' /%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' /%3E%3C/svg%3E")',
-              backgroundSize: '200px 200px'
-            }}
-          />
-        </div>
-
-        {/* Subtle Radial Gradient */}
-        <div className="absolute inset-0 pointer-events-none" style={{
-          background: 'radial-gradient(ellipse at center top, rgba(210,180,140,0.03) 0%, transparent 60%)'
-        }} />
-
-        <div className="max-w-8xl mx-auto relative z-10">
+        <div className="max-w-[1800px] mx-auto relative z-10">
           {/* Header Section */}
-          <div className={`mb-16 transition-all duration-1000 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
-            }`}>
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-serif font-light text-rice-paper tracking-tight mb-6 transition-all duration-700 hover:tracking-tighter hover:text-clay/90">
-              The Studio Shop
+          <div className={`mb-20 transition-all duration-1000 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
+            <div className="flex items-center gap-3 mb-6">
+                <span className="text-clay text-[10px] uppercase font-bold tracking-[0.3em]">Curated Collection</span>
+                <div className="h-px w-16 bg-clay/30"></div>
+            </div>
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-serif text-rice-paper leading-[0.95] mb-8">
+              The Studio <br className="hidden md:block" />
+              <span className="italic text-stone-500">Shop</span>
             </h1>
             <p className="text-stone-warm text-lg md:text-xl font-light max-w-2xl leading-relaxed">
               Handcrafted ceramics, each piece unique. Discover our collection of functional art for your daily rituals.
             </p>
           </div>
 
-          {/* Filters and Search Bar */}
-          <div className={`mb-12 flex flex-col md:flex-row gap-6 items-start md:items-center justify-between transition-all duration-1000 delay-200 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-            }`}>
-            {/* Search */}
-            <div className="relative w-full md:w-auto flex-1 md:flex-initial">
-              <div className="relative">
-                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-stone-warm text-lg">
-                  search
-                </span>
+          {/* Filters Bar */}
+          <div className={`mb-16 space-y-8 transition-all duration-1000 delay-200 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+            
+            {/* Search & Sort Row */}
+            <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
+              {/* Search */}
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-500 w-4 h-4" />
                 <input
                   type="text"
-                  placeholder="Search products..."
+                  placeholder="Search collection..."
                   value={localSearchQuery}
                   onChange={(e) => setLocalSearchQuery(e.target.value)}
-                  className="w-full md:w-80 bg-charcoal-light border border-border-subtle text-rice-paper placeholder-stone-warm pl-12 pr-4 py-3 text-sm focus:outline-none focus:border-clay transition-all duration-500"
+                  className="w-full bg-white/[0.02] border border-white/10 text-rice-paper placeholder-stone-600 pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:border-clay/50 transition-all duration-500 rounded-sm"
                 />
+              </div>
+
+              {/* Sort */}
+              <div className="relative min-w-[200px]">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="w-full bg-white/[0.02] border border-white/10 text-rice-paper text-xs font-bold uppercase tracking-[0.15em] px-4 py-3.5 pr-10 focus:outline-none focus:border-clay/50 transition-all duration-500 appearance-none cursor-pointer rounded-sm"
+                >
+                  <option value="default" className="bg-charcoal">Sort By</option>
+                  <option value="name" className="bg-charcoal">Name A-Z</option>
+                  <option value="price-low" className="bg-charcoal">Price: Low → High</option>
+                  <option value="price-high" className="bg-charcoal">Price: High → Low</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-500 w-4 h-4 pointer-events-none" />
               </div>
             </div>
 
-            {/* Category Filters */}
+            {/* Category Pills */}
             <div className="flex flex-wrap gap-3">
               {categories.map((category) => (
                 <button
                   key={category}
                   onClick={() => setSelectedCategory(category)}
-                  className={`px-5 py-2.5 text-xs font-bold uppercase tracking-[0.15em] transition-all duration-500 ${selectedCategory === category
-                      ? 'bg-clay text-white border border-clay'
-                      : 'bg-charcoal-light text-stone-warm border border-border-subtle hover:border-clay/40 hover:text-clay'
-                    }`}
+                  className={`px-5 py-2.5 text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-500 rounded-sm border ${
+                    selectedCategory === category
+                      ? 'bg-clay text-white border-clay shadow-lg'
+                      : 'bg-white/[0.02] text-stone-400 border-white/10 hover:border-clay/40 hover:text-clay hover:bg-white/[0.04]'
+                  }`}
                 >
                   {category}
                 </button>
               ))}
             </div>
-
-            {/* Sort */}
-            <div className="relative">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="bg-charcoal-light border border-border-subtle text-rice-paper text-xs font-bold uppercase tracking-[0.15em] px-4 py-2.5 pr-8 focus:outline-none focus:border-clay transition-all duration-500 appearance-none cursor-pointer"
-              >
-                <option value="default">Default</option>
-                <option value="name">Name A-Z</option>
-                <option value="price-low">Price: Low to High</option>
-                <option value="price-high">Price: High to Low</option>
-              </select>
-              <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-stone-warm text-sm pointer-events-none">
-                expand_more
-              </span>
-            </div>
           </div>
 
           {/* Content Area */}
           {loading ? (
-             <div className="flex justify-center items-center py-24 min-h-[400px]">
-               <div className="flex flex-col items-center gap-4">
-                 <div className="w-8 h-8 border-2 border-clay border-t-transparent rounded-full animate-spin"></div>
-                 <p className="text-stone-warm text-sm uppercase tracking-widest animate-pulse">Loading Collection...</p>
+             <div className="flex justify-center items-center py-32 min-h-[500px]">
+               <div className="flex flex-col items-center gap-6">
+                 <div className="w-16 h-16 border border-white/10 rounded-full flex items-center justify-center relative">
+                    <div className="absolute inset-0 border-t border-clay rounded-full animate-spin"></div>
+                    <div className="w-2 h-2 bg-clay rounded-full"></div>
+                 </div>
+                 <p className="text-clay text-xs tracking-[0.3em] uppercase animate-pulse">Loading Collection</p>
                </div>
              </div>
           ) : (
             <>
               {/* Results Count */}
-              <div className={`mb-8 text-stone-warm text-sm transition-all duration-1000 delay-300 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-                }`}>
-                Showing {sortedProducts.length} {sortedProducts.length === 1 ? 'product' : 'products'}
+              <div className={`mb-10 flex items-center gap-4 text-stone-500 text-xs uppercase tracking-widest transition-all duration-1000 delay-300 ease-out ${
+                isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              }`}>
+                <span>{sortedProducts.length} {sortedProducts.length === 1 ? 'Piece' : 'Pieces'}</span>
+                <div className="h-px flex-1 max-w-[100px] bg-white/10"></div>
               </div>
 
               {/* Products Grid */}
               {sortedProducts.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                   {sortedProducts.map((product, index) => (
                     <div
                       key={product.id}
                       onMouseEnter={() => setHoveredCard(product.id)}
                       onMouseLeave={() => setHoveredCard(null)}
-                      className={`group flex flex-col gap-4 bg-charcoal-light border border-border-subtle p-4 transition-all duration-700 hover:border-clay/20 hover:bg-white/5 hover:shadow-[0_12px_40px_rgba(0,0,0,0.3)] hover:-translate-y-2 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-16'}`}
-                      style={{ transitionDelay: `${400 + index * 50}ms` }}
+                      className={`group cursor-pointer ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-16'}`}
+                      style={{ transitionDelay: `${400 + index * 30}ms`, transition: 'all 0.8s ease-out' }}
                       onClick={() => router.push(`/shop/products/${product.id}`)}
                     >
-                      {/* Image Container with Moving Background */}
-                      <div className="h-[280px] w-full overflow-hidden relative bg-black/20 group">
+                      {/* Image Container */}
+                      <div className="relative aspect-[3/4] w-full overflow-hidden bg-white/[0.02] mb-4 rounded-sm border border-white/5 group-hover:border-clay/30 transition-all duration-700">
                         {/* Main Image */}
-                        <div
-                          className="absolute inset-0 bg-cover bg-center transition-all duration-[1200ms] ease-out group-hover:scale-110 group-hover:rotate-1"
-                          style={{
-                            backgroundImage: `url("${product.image || '/api/placeholder/400/400'}")`,
-                          }}
+                        <img
+                          src={product.image || '/api/placeholder/400/500'}
+                          alt={product.name}
+                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 ease-out group-hover:scale-110"
                         />
 
-                        {/* Moving Gradient Overlay */}
-                        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-                          <div className="absolute inset-0 bg-gradient-to-br from-transparent via-clay/5 to-transparent animate-gradient-shift"></div>
-                          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(210,180,140,0.03)_70%,transparent_100%)] opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
-                        </div>
+                        {/* Gradient Overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-charcoal/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
-                        {/* Subtle Noise Texture */}
-                        <div className="absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity duration-1000"
-                          style={{
-                            backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' /%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' /%3E%3C/svg%3E")',
-                            backgroundSize: '200px 200px'
-                          }}
-                        ></div>
-
-                        {/* Overlay with Color Shift */}
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-clay/10 transition-all duration-700" />
-
-                        {/* Favorite Button */}
+                        {/* Wishlist Button */}
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             if (isInWishlist(product.id)) {
                               removeFromWishlist(product.id);
-                              showNotification(`Removed ${product.name} from wishlist`, 'success');
+                              showNotification(`Removed from wishlist`, 'success');
                             } else {
                               addToWishlist(product);
-                              showNotification(`Added ${product.name} to wishlist`, 'success');
+                              showNotification(`Added to wishlist`, 'success');
                             }
                           }}
-                          className={`absolute top-3 right-3 bg-charcoal/80 backdrop-blur-md p-2.5 rounded-full transition-all duration-500 ${hoveredCard === product.id || isInWishlist(product.id)
+                          className={`absolute top-4 right-4 z-20 p-2.5 bg-charcoal/60 backdrop-blur-md rounded-full transition-all duration-500 border border-white/10 ${
+                            hoveredCard === product.id || isInWishlist(product.id)
                               ? 'opacity-100 translate-y-0 scale-100'
-                              : 'opacity-0 translate-y-2 scale-75'
-                            } ${isInWishlist(product.id)
-                              ? 'text-red-500 hover:text-red-400'
-                              : 'text-stone-warm hover:text-clay'
-                            } hover:bg-charcoal hover:scale-110 hover:shadow-lg z-10`}
-                          aria-label={isInWishlist(product.id) ? "Remove from wishlist" : "Add to wishlist"}
+                              : 'opacity-0 translate-y-2 scale-90'
+                          } hover:bg-white hover:scale-110`}
                         >
-                          <span className="material-symbols-outlined text-[16px] block transition-transform duration-300 hover:scale-110">
-                            {isInWishlist(product.id) ? 'favorite' : 'favorite_border'}
-                          </span>
+                          <Heart 
+                            size={16} 
+                            className={`transition-colors ${isInWishlist(product.id) ? 'fill-clay text-clay' : 'text-white'}`}
+                            fill={isInWishlist(product.id) ? "currentColor" : "none"}
+                          />
                         </button>
 
-                        {/* Quick View Overlay */}
-                        <div
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(`/shop/products/${product.id}`);
-                          }}
-                          className={`absolute inset-0 bg-charcoal/95 backdrop-blur-sm flex items-center justify-center transition-all duration-500 ${hoveredCard === product.id ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-                          role="button"
-                          tabIndex={0}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              router.push(`/shop/products/${product.id}`);
-                            }
-                          }}
-                        >
-                          <span className="text-white text-sm uppercase tracking-[0.2em] font-bold border border-white/20 px-6 py-3 transition-all duration-500 group-hover:bg-clay group-hover:border-clay group-hover:scale-105 group-hover:shadow-lg">
-                            Quick View
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Product Info */}
-                      <div className="flex flex-col flex-1 justify-between px-1">
-                        <div className="transform transition-all duration-500 group-hover:-translate-y-1">
-                          <h3 className="text-xl font-serif text-rice-paper transition-all duration-500 group-hover:text-clay group-hover:tracking-tight">
-                            {product.name}
-                          </h3>
-                          <p className="text-[10px] text-stone-warm uppercase tracking-[0.15em] mt-2 transition-all duration-500 group-hover:text-stone-300 group-hover:tracking-[0.2em]">
-                            {product.subtitle || product.category}
-                          </p>
-                        </div>
-
-                        {/* Price & Add to Bag */}
-                        <div className="flex items-center justify-between mt-3 pt-4 border-t border-white/5 transition-colors duration-500 group-hover:border-clay/20">
-                          <span className="text-lg font-light font-serif text-white transition-all duration-500 group-hover:text-clay group-hover:scale-105 origin-left">
-                            {product.priceFormatted}
-                          </span>
+                        {/* Quick Add to Cart Overlay */}
+                        <div className={`absolute bottom-0 left-0 right-0 p-4 transform transition-all duration-500 ${
+                          hoveredCard === product.id ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
+                        }`}>
                           {cartItems.some(item => item.id === product.id) ? (
                             <button
                               onClick={(e) => {
-                                e.preventDefault();
                                 e.stopPropagation();
                                 router.push('/cart');
                               }}
-                              className="relative text-stone-warm hover:text-clay transition-all duration-500 text-[10px] font-bold uppercase tracking-wider group-hover:tracking-[0.15em]"
-                              aria-label={`View cart for ${product.name}`}
+                              className="w-full py-3 bg-white text-charcoal font-bold uppercase tracking-widest text-[10px] hover:bg-clay hover:text-white transition-all duration-300 flex items-center justify-center gap-2 rounded-sm"
                             >
-                              <span className="relative">
-                                View Cart
-                                <span className="absolute bottom-0 left-0 h-[1px] w-0 bg-clay transition-all duration-500 group-hover:w-full" />
-                              </span>
+                              View in Cart
                             </button>
                           ) : (
                             <button
@@ -429,14 +299,32 @@ export default function ProductsPage() {
                                 e.stopPropagation();
                                 handleAddToCart(e, product);
                               }}
-                              className="relative text-stone-warm hover:text-clay transition-all duration-500 text-[10px] font-bold uppercase tracking-wider group-hover:tracking-[0.15em]"
-                              aria-label={`Add ${product.name} to cart`}
+                              className="w-full py-3 bg-clay text-white font-bold uppercase tracking-widest text-[10px] hover:bg-white hover:text-clay transition-all duration-300 flex items-center justify-center gap-2 rounded-sm"
                             >
-                              <span className="relative">
-                                Add to Bag
-                                <span className="absolute bottom-0 left-0 h-[1px] w-0 bg-clay transition-all duration-500 group-hover:w-full" />
-                              </span>
+                              <ShoppingBag size={14} /> Add to Cart
                             </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Product Info */}
+                      <div className="space-y-2">
+                        <h3 className="text-lg font-serif text-rice-paper group-hover:text-clay transition-colors duration-300">
+                          {product.name}
+                        </h3>
+                        <p className="text-[10px] text-stone-600 uppercase tracking-[0.2em]">
+                          {product.category || 'Collection'}
+                        </p>
+                        <div className="flex items-baseline justify-between pt-2 border-t border-white/5">
+                          <span className="text-xl font-serif text-stone-300">
+                            ₹{Number(product.price).toLocaleString('en-IN')}
+                          </span>
+                          {product.stock > 0 ? (
+                            <span className="text-emerald-500/60 text-[9px] uppercase tracking-wider flex items-center gap-1">
+                              <div className="w-1 h-1 rounded-full bg-emerald-500" /> In Stock
+                            </span>
+                          ) : (
+                            <span className="text-stone-600 text-[9px] uppercase tracking-wider">Out of Stock</span>
                           )}
                         </div>
                       </div>
@@ -444,60 +332,34 @@ export default function ProductsPage() {
                   ))}
                 </div>
               ) : (
-                <div className={`text-center py-20 transition-all duration-1000 delay-300 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-                  }`}>
-                  <p className="text-stone-warm text-lg mb-4">No products found</p>
+                <div className={`text-center py-32 border border-dashed border-white/10 rounded-sm transition-all duration-1000 delay-300 ease-out ${
+                  isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                }`}>
+                  <div className="w-16 h-16 border border-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <Search className="w-6 h-6 text-stone-600" />
+                  </div>
+                  <h3 className="text-2xl font-serif text-stone-500 mb-3">No Pieces Found</h3>
+                  <p className="text-stone-600 text-sm mb-8 max-w-md mx-auto">
+                    We couldn&apos;t find any pieces matching your criteria. Try adjusting your filters or search terms.
+                  </p>
                   <button
                     onClick={() => {
                       setLocalSearchQuery("");
                       setSelectedCategory("All");
+                      setSortBy("default");
                     }}
-                    className="text-clay text-sm uppercase tracking-wider hover:underline"
+                    className="text-clay text-xs uppercase tracking-widest font-bold hover:text-rice-paper transition-colors border-b border-clay/30 hover:border-rice-paper pb-1"
                   >
-                    Clear filters
+                    Clear All Filters
                   </button>
                 </div>
               )}
             </>
           )}
         </div>
-      </section>
+      </main>
 
       <Footer />
-
-      <style jsx>{`
-        @keyframes grain-shift {
-          0%, 100% { transform: translate(0, 0); }
-          10% { transform: translate(-5%, -5%); }
-          20% { transform: translate(-10%, 5%); }
-          30% { transform: translate(5%, -10%); }
-          40% { transform: translate(-5%, 15%); }
-          50% { transform: translate(-10%, 5%); }
-          60% { transform: translate(15%, 0); }
-          70% { transform: translate(0, 10%); }
-          80% { transform: translate(-15%, 0); }
-          90% { transform: translate(10%, 5%); }
-        }
-
-        .animate-grain-shift {
-          animation: grain-shift 12s ease-in-out infinite;
-        }
-        
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        .animate-fade-in-up {
-          animation: fadeInUp 0.3s ease-out forwards;
-        }
-      `}</style>
     </div>
   );
 }
