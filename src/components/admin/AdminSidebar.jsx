@@ -32,6 +32,7 @@ const menuItems = [
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/payments", label: "Payments", icon: CreditCard },
   { href: "/admin/inventory", label: "Inventory", icon: Warehouse },
+  { href: "/admin/contact-inquiries", label: "Contact Inquiries", icon: MessageSquare },
 ];
 
 export default function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
