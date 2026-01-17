@@ -80,14 +80,14 @@ export default function Workshop() {
       {/* Animated Background Shapes */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         {/* Spinning wheel inspiration */}
-        <div className="absolute top-1/2 right-1/4 w-96 h-96 border border-clay/5 rounded-full animate-spin-slow-reverse" />
-        <div className="absolute top-1/3 right-1/3 w-64 h-64 border-2 border-clay/10 rounded-full animate-spin-slower" />
+        <div className="absolute top-1/2 right-1/4 w-96 h-96 border border-clay/5 rounded-full animate-spin-slow-reverse will-change-transform" />
+        <div className="absolute top-1/3 right-1/3 w-64 h-64 border-2 border-clay/10 rounded-full animate-spin-slower will-change-transform" />
         
         {/* Floating clay particles */}
         {particles.map((particle, i) => (
           <div
             key={i}
-            className="absolute w-2 h-2 bg-clay/10 rounded-full animate-float-random"
+            className="absolute w-2 h-2 bg-clay/10 rounded-full animate-float-random will-change-transform"
             style={{
               left: `${particle.left}%`,
               top: `${particle.top}%`,
@@ -138,16 +138,16 @@ export default function Workshop() {
             <div className="absolute inset-0 bg-gradient-to-r from-charcoal-light/85 via-charcoal-light/40 to-transparent transition-all duration-700 group-hover:from-charcoal-light/70" />
             
             {/* Animated spots of interest */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 border-2 border-clay/30 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-1000 group-hover:scale-150 group-hover:border-clay/10" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 border-2 border-clay/30 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-1000 group-hover:scale-150 group-hover:border-clay/10 will-change-transform" />
             
             {/* Shimmer effect */}
             <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1500 delay-200" />
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1500 delay-200 will-change-transform" />
             </div>
 
             {/* Spots available indicator */}
             <div className="absolute top-6 right-6 bg-clay/95 backdrop-blur-md text-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.2em] shadow-xl transition-all duration-500 group-hover:scale-110 group-hover:shadow-2xl">
-              <span className="inline-block animate-pulse-subtle">6 Spots Left</span>
+              <span className="inline-block animate-pulse-subtle will-change-transform">6 Spots Left</span>
             </div>
           </div>
 
@@ -176,8 +176,8 @@ export default function Workshop() {
                 <span className="relative inline-block px-4 py-2 bg-clay/10 text-clay border border-clay/20 text-[10px] font-bold uppercase tracking-[0.2em] shadow-sm transition-all duration-500 group-hover:bg-clay/20 group-hover:border-clay/40">
                   <span className="relative z-10">Upcoming Workshop</span>
                   {/* Animated corner accents */}
-                  <span className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-clay transition-all duration-500 group-hover:w-3 group-hover:h-3" />
-                  <span className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-clay transition-all duration-500 group-hover:w-3 group-hover:h-3" />
+                  <span className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-clay transition-all duration-500 group-hover:w-3 group-hover:h-3 will-change-transform" />
+                  <span className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-clay transition-all duration-500 group-hover:w-3 group-hover:h-3 will-change-transform" />
                 </span>
               </div>
 
@@ -186,7 +186,7 @@ export default function Workshop() {
                 <span className="relative inline-block italic text-clay">
                   Wheel Throwing
                   {/* Animated underline */}
-                  <span className="absolute bottom-1 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-clay to-transparent opacity-50 animate-shimmer" />
+                  <span className="absolute bottom-1 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-clay to-transparent opacity-50 animate-shimmer will-change-transform" />
                 </span>
               </h2>
               <p className="text-stone-warm font-light text-lg transition-colors duration-500 group-hover:text-stone-200">
@@ -247,10 +247,10 @@ export default function Workshop() {
                 </span>
                 
                 {/* Animated background fill */}
-                <div className="absolute inset-0 bg-clay translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500 ease-out" />
+                <div className="absolute inset-0 bg-clay translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500 ease-out will-change-transform" />
                 
                 {/* Shimmer effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700" />
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700 will-change-transform" />
               </button>
 
               <a
