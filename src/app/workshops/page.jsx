@@ -23,6 +23,17 @@ import {
 // Images (Relative Imports for Fallback)
 import heroStudio from "../../assets/hero-studio.jpg";
 
+// --- HELPERS ---
+const validateVideoUrl = (url) => {
+  if (!url || typeof url !== 'string') return false;
+  // Basic validation: allow http/https URLs or relative paths starting with /
+  try {
+    return url.startsWith('/') || new URL(url).protocol.startsWith('http');
+  } catch (e) {
+    return false;
+  }
+};
+
 // --- VIDEO MODAL COMPONENT ---
 const VideoModal = ({ videoUrl, onClose }) => {
   if (!videoUrl || !validateVideoUrl(videoUrl)) {

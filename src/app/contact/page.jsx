@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
-import CursorGlow from "../components/CursorGlow";
 import { 
   MapPin, 
   Phone, 
@@ -13,7 +12,10 @@ import {
   Instagram, 
   Facebook, 
   Twitter,
-  ArrowRight
+  ArrowRight,
+  Plus,
+  Minus,
+  Briefcase
 } from "lucide-react";
 
 export default function Contact() {
@@ -26,6 +28,18 @@ export default function Contact() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
+  const [openFaq, setOpenFaq] = useState(null);
+
+  const toggleFaq = (index) => {
+    setOpenFaq(openFaq === index ? null : index);
+  };
+
+  const faqs = [
+    { question: "Do you ship internationally?", answer: "Yes, we ship to select countries. Please contact us for specific shipping rates if your country is not listed at checkout. Note that customs duties may apply." },
+    { question: "Are the ceramics dishwasher safe?", answer: "While our high-fired stoneware is durable and dishwasher safe, we recommend hand washing to preserve the glaze's unique character over time." },
+    { question: "How can I book a private workshop?", answer: "Private workshops can be arranged for groups of 4-10 people. Use the form above or visit our Workshops page to check availability." },
+    { question: "Do you accept wholesale orders?", answer: "Yes, we partner with select boutiques and restaurants. Please visit our Corporate page or email us directly for our wholesale catalog." }
+  ];
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -51,12 +65,23 @@ export default function Contact() {
               className="absolute inset-0 animate-grain-shift"
               style={{
                   backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' /%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' /%3E%3C/svg%3E")',
-                  backgroundSize: '200px 200px'
+                  backgroundSize: '200px 200px',
+                  willChange: 'transform',
+                  transform: 'translate3d(0, 0, 0)'
               }}
           />
       </div>
 
-      <CursorGlow />
+       {/* Floating Fog / Orbs */}
+       <div 
+         className="fixed top-[-20%] left-[-10%] w-[50vw] h-[50vw] bg-clay/5 rounded-full blur-[120px] animate-float-slow pointer-events-none z-0" 
+         style={{ willChange: 'transform', transform: 'translate3d(0, 0, 0)' }}
+       />
+       <div 
+         className="fixed bottom-[-20%] right-[-10%] w-[60vw] h-[60vw] bg-stone-500/5 rounded-full blur-[150px] animate-float-slower pointer-events-none z-0" 
+         style={{ willChange: 'transform', transform: 'translate3d(0, 0, 0)' }}
+       />
+
       <Header />
 
       <main className="relative z-10 pt-32 pb-20 md:pt-40 md:pb-32">
@@ -324,6 +349,54 @@ export default function Contact() {
             </div>
             
           </div>
+
+          {/* New Section: FAQ */}
+          <div className="mt-32 max-w-3xl mx-auto opacity-0 animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
+             <h2 className="font-serif text-3xl md:text-4xl text-rice-paper text-center mb-16">Frequently Asked</h2>
+             <div className="space-y-4">
+               {faqs.map((faq, index) => (
+                 <div key={index} className="border-b border-white/10">
+                   <button 
+                     onClick={() => toggleFaq(index)}
+                     className="w-full py-6 flex items-center justify-between text-left group focus:outline-none"
+                   >
+                     <span className={`text-lg transition-colors font-light ${openFaq === index ? 'text-clay' : 'text-stone-warm group-hover:text-rice-paper'}`}>
+                        {faq.question}
+                     </span>
+                     <span className={`transition-transform duration-300 ${openFaq === index ? 'rotate-180 text-clay' : 'text-stone-600 group-hover:text-rice-paper'}`}>
+                       {openFaq === index ? <Minus className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                     </span>
+                   </button>
+                   <div 
+                     className={`overflow-hidden transition-all duration-500 ease-in-out ${openFaq === index ? 'max-h-40 opacity-100 mb-8' : 'max-h-0 opacity-0'}`}
+                   >
+                     <p className="text-stone-500 font-light leading-relaxed pr-8">{faq.answer}</p>
+                   </div>
+                 </div>
+               ))}
+             </div>
+          </div>
+
+          {/* New Section: Corporate / Collaboration CTA */}
+          <div className="mt-32 mb-12 opacity-0 animate-fade-in-up" style={{ animationDelay: '0.8s' }}>
+             <div className="relative overflow-hidden rounded-sm border border-white/5 bg-white/[0.02] p-10 md:p-16 text-center group">
+                 <div className="absolute inset-0 bg-gradient-to-r from-clay/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+                 
+                 <Briefcase className="w-10 h-10 text-clay mx-auto mb-6 opacity-80" />
+                 <h2 className="font-serif text-3xl text-rice-paper mb-4">Looking for Corporate Gifting?</h2>
+                 <p className="text-stone-warm font-light max-w-2xl mx-auto mb-10 leading-relaxed">
+                    We offer bespoke ceramic collections for restaurants, hotels, and corporate events. 
+                    Create a lasting impression with handmade pieces that tell a story.
+                 </p>
+                 <a 
+                   href="/corporate"
+                   className="inline-flex items-center gap-3 text-xs font-bold uppercase tracking-[0.2em] text-clay hover:text-rice-paper transition-colors pb-2 border-b border-clay/30 hover:border-rice-paper"
+                 >
+                    Explore Corporate Solutions <ArrowRight className="w-4 h-4" />
+                 </a>
+             </div>
+          </div>
+
         </div>
       </main>
 

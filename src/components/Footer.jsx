@@ -32,7 +32,8 @@ export default function Footer() {
     { label: "The Journal", href: "/journal" },
     { label: "Philosophy", href: "/about#philosophy" },
     { label: "The Process", href: "/about#values" },
-    { label: "Corporate Inquiries", href: "/corporate" } // <--- NEW LINK ADDED
+    { label: "Corporate Inquiries", href: "/corporate" },
+    { label: "Contact us", href: "/contact" }
   ];
 
   const socialLinks = [
@@ -300,3 +301,4 @@ export default function Footer() {
     </footer>
   );
 }
+
