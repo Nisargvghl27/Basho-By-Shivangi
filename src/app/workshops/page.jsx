@@ -242,9 +242,6 @@ function WorkshopsContent() {
                 <p className="text-stone-warm max-w-2xl font-light leading-relaxed text-lg text-left">From the first throw to the final firing, witness the dedication required to master the wheel. Join our workshops to get your hands dirty.</p>
               </div>
               <div className="flex items-center justify-end flex-shrink-0 px-4 md:px-12 lg:px-24">
-                <button className="flex items-center gap-2 bg-clay text-white px-8 py-3 rounded-xl font-bold transition-all duration-500 hover:bg-clay/90 hover:scale-105 shadow-lg hover:shadow-xl uppercase tracking-wider text-sm">
-                  <CalendarDays size={20} /> Book a Workshop
-                </button>
               </div>
             </div>
           </div>
