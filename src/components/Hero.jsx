@@ -1,152 +1,74 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 export default function Hero() {
   const [scrollY, setScrollY] = useState(0);
-  const [isVisible, setIsVisible] = useState(false);
+  const videoRef = useRef(null);
 
   useEffect(() => {
-    setIsVisible(true);
-    
-    const handleScroll = () => {
-      setScrollY(window.scrollY);
-    };
-    
+    const handleScroll = () => setScrollY(window.scrollY);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Subtle parallax calculations
-  const parallaxOffset = scrollY * 0.5;
-  const fadeOpacity = Math.max(0, 1 - scrollY / 600);
+  // Set video speed to 50% (Slow Motion)
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = 0.5;
+    }
+  }, []);
 
   return (
-    <div className="w-full">
-      <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden">
-        {/* Background Image with Parallax */}
-        <div
-          className="absolute inset-0 bg-cover bg-center transition-transform duration-100 ease-out"
-          style={{ 
-            backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuDuVBKg5R8BQ98bLvmSRZr_JtsluSdDs-ck4GdifTFrFOtqKJCfWD3swZ9sIcgedJgiUc5IUJNbt-ez0rWo7SJAm8JTsmTkqA7ZwgorQkaQYgs7AqAtMshNOsfZSl9DwKOSTFfJLGqp8rCkolDt4ZrWs0fkg9p9tnGZvPZN7nKoEp7s2XvX6Y1DIcIShYbViy8BBLgdZ7HgJ3kpcNnjRy93bVueqobZigt2Xm6YkQZJNdsd4xrRUcquFkoEfmwbTIjMCDe7IOCxs76u")',
-            transform: `translateY(${parallaxOffset}px) scale(1.1)`
-          }}
-        />
-        
-        {/* Organic Grain Texture */}
-        <div className="absolute inset-0 opacity-[0.08] bg-noise mix-blend-overlay pointer-events-none">
-          <div className="absolute inset-0 animate-grain-shift" style={{ 
-            backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' /%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' /%3E%3C/svg%3E")',
-            backgroundSize: '200px 200px'
-          }} />
-        </div>
-        
-        {/* Layered Atmospheric Gradients */}
-        <div className="absolute inset-0 bg-gradient-to-b from-charcoal/50 via-charcoal/25 via-40% to-charcoal to-90%" />
-        <div className="absolute inset-0 bg-gradient-to-t from-obsidian/40 via-transparent to-transparent" />
-        <div className="absolute inset-0 bg-obsidian/25 mix-blend-multiply" />
-        
-        {/* Subtle Vignette */}
-        <div className="absolute inset-0 bg-radial-gradient from-transparent via-transparent to-charcoal/60" style={{
-          background: 'radial-gradient(ellipse at center, transparent 0%, transparent 50%, rgba(0,0,0,0.4) 100%)'
-        }} />
-
-        {/* Content Container with Parallax Fade */}
-        <div 
-          className="relative z-10 flex flex-col items-center gap-10 px-6 text-center max-w-6xl mt-10 transition-all duration-300"
-          style={{ 
-            opacity: fadeOpacity,
-            transform: `translateY(${scrollY * 0.3}px)`
-          }}
+    <div className="w-full relative h-screen overflow-hidden">
+      {/* --- VIDEO BACKGROUND --- */}
+      <div className="absolute inset-0 z-0">
+        <video
+          ref={videoRef}
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="object-cover w-full h-full"
+          // Parallax Effect on Scroll
+          style={{ transform: `translateY(${scrollY * 0.5}px)` }}
         >
-          {/* Eyebrow */}
-          <span
-            className={`text-white/70 text-xs font-bold uppercase tracking-[0.4em] border-b border-white/15 pb-3 transition-all duration-1000 delay-200 ${
-              isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-            }`}
-          >
-            <span className="inline-block transition-all duration-500 hover:tracking-[0.45em] hover:text-white/90">
-              Est. 2023 • Kyoto Inspired
-            </span>
-          </span>
-
-          {/* Main Headline with Staggered Animation */}
-          <h1 className="text-rice-paper text-6xl md:text-8xl lg:text-9xl font-serif font-medium tracking-tight leading-[0.95] drop-shadow-2xl">
-            <span
-              className={`block transition-all duration-1200 delay-400 ease-out ${
-                isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
-              }`}
-            >
-              <span className="inline-block transition-all duration-700 hover:tracking-tighter hover:text-clay/90">
-                Imperfection
-              </span>
-            </span>
-            <span
-              className={`block italic font-light opacity-75 text-stone-200 mt-2 transition-all duration-1200 delay-600 ease-out ${
-                isVisible ? 'opacity-75 translate-y-0 blur-0' : 'opacity-0 translate-y-12 blur-sm'
-              }`}
-            >
-              <span className="inline-block transition-all duration-700 hover:tracking-wide hover:opacity-90">
-                is Beauty
-              </span>
-            </span>
-          </h1>
-
-          {/* Subheadline */}
-          <h2
-            className={`text-stone-300 text-lg md:text-xl font-sans font-light max-w-2xl leading-relaxed mt-4 tracking-wide transition-all duration-1200 delay-800 ease-out ${
-              isVisible ? 'opacity-100 translate-y-0 blur-0' : 'opacity-0 translate-y-8 blur-sm'
-            }`}
-          >
-            <span className="inline-block transition-all duration-500 hover:text-stone-200">
-              Handcrafted pottery for the mindful home.
-            </span>
-            <br className="hidden md:block" />
-            <span className="inline-block transition-all duration-500 hover:text-stone-200 hover:tracking-wider">
-              Embracing the soulful asymmetry of wabi-sabi.
-            </span>
-          </h2>
-
-          {/* CTA Button */}
-          <div
-            className={`pt-10 transition-all duration-1200 delay-1000 ease-out ${
-              isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-            }`}
-          >
-            <button className="group relative inline-flex h-14 items-center justify-center overflow-hidden rounded-sm border border-white/20 bg-white/5 px-12 backdrop-blur-md transition-all duration-700 hover:bg-white/10 hover:border-white/40 w-52 hover:shadow-[0_0_40px_rgba(210,180,140,0.15)] hover:scale-105">
-              <span className="relative text-xs font-bold uppercase tracking-[0.25em] text-white transition-all duration-500 group-hover:text-rice-paper group-hover:tracking-[0.3em] z-10">
-                Discover
-              </span>
-              
-              {/* Organic fill animation */}
-              <div className="absolute inset-0 bg-gradient-to-r from-clay/70 via-clay/85 to-clay/70 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]" />
-              
-              {/* Subtle shimmer effect */}
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-1000">
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1500 ease-out" />
-              </div>
-            </button>
-          </div>
-        </div>
+          <source src="/videos/hero-video.mp4" type="video/mp4" />
+          {/* Fallback for mobile/low-data */}
+          <div className="absolute inset-0 bg-charcoal" />
+        </video>
+        
+        {/* Overlays for readability and atmosphere */}
+        {/* UPDATED: Increased opacity to 60% for a darker look */}
+        <div className="absolute inset-0 bg-black/60" />
+        <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-transparent to-black/50" />
+        <div className="absolute inset-0 opacity-[0.08] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay" />
       </div>
 
-      <style jsx>{`
-        @keyframes grain-shift {
-          0%, 100% { transform: translate(0, 0); }
-          10% { transform: translate(-5%, -5%); }
-          20% { transform: translate(-10%, 5%); }
-          30% { transform: translate(5%, -10%); }
-          40% { transform: translate(-5%, 15%); }
-          50% { transform: translate(-10%, 5%); }
-          60% { transform: translate(15%, 0); }
-          70% { transform: translate(0, 10%); }
-          80% { transform: translate(-15%, 0); }
-          90% { transform: translate(10%, 5%); }
-        }
+      {/* --- CONTENT --- */}
+      <div className="relative z-10 flex flex-col items-center justify-center h-full text-center px-4">
+        <span className="text-white/80 text-xs font-bold uppercase tracking-[0.4em] mb-6 animate-fade-in-up">
+          Est. 2023 • Kyoto Inspired
+        </span>
 
-        .animate-grain-shift {
-          animation: grain-shift 8s ease-in-out infinite;
-        }
-      `}</style>
+        <h1 className="text-rice-paper text-6xl md:text-8xl lg:text-9xl font-serif tracking-tight leading-none drop-shadow-2xl mb-6">
+          <span className="block animate-fade-in-up delay-100">Imperfection</span>
+          <span className="block italic font-light text-stone-200 animate-fade-in-up delay-200">
+            is Beauty
+          </span>
+        </h1>
+
+        <p className="text-stone-300 text-lg md:text-xl font-light max-w-xl leading-relaxed mb-10 animate-fade-in-up delay-300">
+          Handcrafted pottery for the mindful home.<br/>
+          Embracing the soulful asymmetry of wabi-sabi.
+        </p>
+
+        <button className="group relative inline-flex items-center justify-center px-12 py-4 overflow-hidden border border-white/20 bg-white/5 backdrop-blur-md rounded-sm transition-all duration-500 hover:bg-white/10 hover:border-white/40 hover:scale-105 animate-fade-in-up delay-500">
+          <span className="relative z-10 text-xs font-bold uppercase tracking-[0.25em] text-white group-hover:text-rice-paper">
+            Discover Collection
+          </span>
+          <div className="absolute inset-0 bg-gradient-to-r from-clay/0 via-clay/40 to-clay/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
+        </button>
+      </div>
     </div>
   );
 }

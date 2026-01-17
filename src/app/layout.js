@@ -4,9 +4,10 @@ import { Manrope, Playfair_Display } from "next/font/google";
 import { useState, useEffect } from "react";
 import { CartProvider } from "../context/CartContext";
 import { WishlistProvider } from '../context/WishlistContext';
-import { Toaster } from "react-hot-toast"; // [!code ++]
+import { Toaster } from "react-hot-toast";
+import SmoothScroll from "../components/SmoothScroll"; // Import SmoothScroll
 import "./globals.css";
-import { metadata } from './metadata'; // Moved import up to respect module scope
+import { metadata } from './metadata';
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -21,7 +22,7 @@ const playfair = Playfair_Display({
   variable: "--font-playfair",
 });
 
-// Component 1: Handles the Mouse Glow Effect
+// Component: Handles the Mouse Glow Effect
 function CursorGlow({ children }) {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isVisible, setIsVisible] = useState(false);
@@ -93,13 +94,17 @@ export default function RootLayout({ children }) {
       >
         <WishlistProvider>
           <CartProvider>
-            <CursorGlow>
-              {children}
-              <Toaster position="bottom-right" toastOptions={{ duration: 4000 }} />
-            </CursorGlow>
+            {/* Wrap everything in SmoothScroll */}
+            <SmoothScroll>
+              <CursorGlow>
+                {children}
+                <Toaster position="bottom-right" toastOptions={{ duration: 4000 }} />
+              </CursorGlow>
+            </SmoothScroll>
           </CartProvider>
         </WishlistProvider>
       </body>
     </html>
   );
 }
+
