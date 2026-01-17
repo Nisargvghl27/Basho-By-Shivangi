@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { 
-  Building2, Mail, Phone, Calendar, CheckCircle, XCircle, Loader2, MessageSquare 
+  Building2, Mail, Phone, Calendar, CheckCircle, MessageSquare 
 } from "lucide-react";
 import { fetchCorporateInquiries, updateCorporateStatus } from "../../lib/corporateService";
+import LottieLoader from "../LottieLoader"; // <--- Import New Loader
 
 export default function CorporateInquiryManagement() {
   const [inquiries, setInquiries] = useState([]);
@@ -22,7 +23,6 @@ export default function CorporateInquiryManagement() {
   }, []);
 
   const handleStatus = async (id, newStatus) => {
-    // Optimistic update for UI responsiveness
     setInquiries(prev => prev.map(item => 
       item.id === id ? { ...item, status: newStatus } : item
     ));
@@ -31,14 +31,14 @@ export default function CorporateInquiryManagement() {
       await updateCorporateStatus(id, newStatus);
     } catch (error) {
       console.error("Failed to update status");
-      loadData(); // Revert on error
+      loadData();
     }
   };
 
   if (loading) return (
-    <div className="flex flex-col items-center justify-center h-64 text-gray-500">
-      <Loader2 className="w-8 h-8 animate-spin mb-2 text-blue-600"/>
-      Loading Inquiries...
+    <div className="flex flex-col items-center justify-center h-96">
+      {/* --- USED NEW LOADER HERE --- */}
+      <LottieLoader className="w-32 h-32" text="Loading Inquiries..." />
     </div>
   );
 
@@ -58,7 +58,6 @@ export default function CorporateInquiryManagement() {
           inquiries.map((inq) => (
             <div key={inq.id} className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col lg:flex-row gap-6 justify-between transition-all hover:shadow-md">
               
-              {/* Info Section */}
               <div className="space-y-3 flex-1">
                 <div className="flex items-center gap-3 flex-wrap">
                   <h3 className="font-bold text-lg text-gray-900 dark:text-white">{inq.companyName}</h3>
@@ -93,7 +92,6 @@ export default function CorporateInquiryManagement() {
                 </div>
               </div>
 
-              {/* Action Section */}
               <div className="flex flex-row lg:flex-col gap-3 justify-center lg:border-l border-gray-100 dark:border-gray-700 pt-4 lg:pt-0 lg:pl-6 min-w-[180px]">
                 {inq.status !== 'contacted' && inq.status !== 'closed' && (
                   <button 

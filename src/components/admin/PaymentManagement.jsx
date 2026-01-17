@@ -74,6 +74,9 @@ export default function PaymentManagement() {
       });
       setPayments(paymentData);
       setLoading(false);
+    }, (error) => {
+      console.error("Error fetching payments/orders:", error);
+      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -96,6 +99,12 @@ export default function PaymentManagement() {
         };
       });
       setRefunds(refundData);
+    }, (error) => {
+      // 🔥 FIX: Error handling added here to prevent crash
+      console.error("Error fetching refunds:", error);
+      if (error.code === 'permission-denied') {
+        console.warn("Please check Firestore Rules for 'refunds' collection.");
+      }
     });
 
     return () => unsubscribe();
@@ -159,6 +168,7 @@ export default function PaymentManagement() {
 
   // Helper UI functions
   const getStatusColor = (status) => {
+    if (!status) return 'bg-gray-100 text-gray-800';
     if (status.includes('Completed') || status === 'Approved') return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
     if (status.includes('Pending')) return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
     if (status === 'Failed' || status === 'Rejected') return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
@@ -166,6 +176,7 @@ export default function PaymentManagement() {
   };
 
   const getStatusIcon = (status) => {
+    if (!status) return null;
     if (status.includes('Completed') || status === 'Approved') return <CheckCircle className="w-4 h-4" />;
     if (status.includes('Pending')) return <Clock className="w-4 h-4" />;
     if (status === 'Failed' || status === 'Rejected') return <XCircle className="w-4 h-4" />;
@@ -199,9 +210,10 @@ export default function PaymentManagement() {
         });
         
         onClose();
+        alert("Refund request created successfully!");
       } catch (error) {
         console.error("Error creating refund request:", error);
-        alert("Failed to create refund request");
+        alert("Failed to create refund request: " + error.message);
       } finally {
         setIsSubmitting(false);
       }
@@ -298,7 +310,7 @@ export default function PaymentManagement() {
     .filter(r => r.status === 'Approved')
     .reduce((sum, r) => sum + parseFloat(r.refundAmount), 0);
     
-  const pendingPayments = payments.filter(p => p.status.includes('Pending')).length;
+  const pendingPayments = payments.filter(p => p.status && p.status.includes('Pending')).length;
   const pendingRefunds = refunds.filter(r => r.status === 'Pending').length;
 
   if (loading) {

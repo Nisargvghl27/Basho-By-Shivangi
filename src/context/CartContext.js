@@ -2,8 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore"; // [!code ++]
-import { auth, db } from "../lib/firebase"; // [!code ++]
+import { doc, getDoc } from "firebase/firestore"; 
+import { auth, db } from "../lib/firebase"; 
 
 export const CartContext = createContext();
 
@@ -20,13 +20,18 @@ export const CartProvider = ({ children }) => {
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      setCartItems([]); // 🚨 RESET CART on user change
+      setCartItems([]); // Reset local state on user switch
 
+      // Load saved cart from localStorage
       const cartKey = getCartKey(currentUser?.uid);
       const savedCart = localStorage.getItem(cartKey);
 
       if (savedCart) {
-        setCartItems(JSON.parse(savedCart));
+        try {
+          setCartItems(JSON.parse(savedCart));
+        } catch (e) {
+          console.error("Failed to parse cart", e);
+        }
       }
 
       setIsInitialized(true);
@@ -43,7 +48,7 @@ export const CartProvider = ({ children }) => {
     localStorage.setItem(cartKey, JSON.stringify(cartItems));
 
     const subtotal = cartItems.reduce(
-      (sum, item) => sum + item.price * item.quantity,
+      (sum, item) => sum + (parseFloat(item.price) || 0) * item.quantity,
       0
     );
     setCartSubtotal(subtotal);
@@ -52,6 +57,8 @@ export const CartProvider = ({ children }) => {
   // 🔍 Helper: Check Stock in Firestore
   const checkStock = async (productId, requestedQuantity) => {
     try {
+      if (!db) return { available: true }; // Guard if db not initialized
+
       const productRef = doc(db, "products", productId);
       const productSnap = await getDoc(productRef);
 
@@ -59,7 +66,8 @@ export const CartProvider = ({ children }) => {
         return { available: false, stock: 0, error: "Product not found" };
       }
 
-      const realStock = parseInt(productSnap.data().stock || 0);
+      const data = productSnap.data();
+      const realStock = parseInt(data.stock || 0);
       
       if (requestedQuantity > realStock) {
         return { 
@@ -72,27 +80,26 @@ export const CartProvider = ({ children }) => {
       return { available: true, stock: realStock };
     } catch (error) {
       console.error("Stock check error:", error);
-      // Fallback: allow if check fails (or block depending on preference)
+      // Fallback: If we can't check stock (e.g. offline/permission error), we allow the add
+      // to prevent blocking the user, but you could also return false here.
       return { available: true }; 
     }
   };
 
   // ➕ ADD TO CART (Async with Validation)
   const addToCart = async (product) => {
-    // 1. Calculate total desired quantity
     const existingItem = cartItems.find((item) => item.id === product.id);
     const currentQty = existingItem ? existingItem.quantity : 0;
     const itemsToAdd = product.quantity || 1;
     const totalQty = currentQty + itemsToAdd;
 
-    // 2. Validate against Real-Time Stock
+    // Validate against Real-Time Stock
     const stockCheck = await checkStock(product.id, totalQty);
 
     if (!stockCheck.available) {
       return { success: false, message: stockCheck.error };
     }
 
-    // 3. Update State if valid
     setCartItems((prevItems) => {
       if (existingItem) {
         return prevItems.map((item) =>
@@ -107,14 +114,14 @@ export const CartProvider = ({ children }) => {
     return { success: true, message: "Added to cart" };
   };
 
-  // 🔄 UPDATE QUANTITY (Async with Validation)
+  // 🔄 UPDATE QUANTITY
   const updateQuantity = async (productId, newQuantity) => {
     if (newQuantity < 1) {
       removeFromCart(productId);
       return { success: true };
     }
 
-    // 1. Check if increasing quantity
+    // Check stock if increasing quantity
     const currentItem = cartItems.find(item => item.id === productId);
     if (currentItem && newQuantity > currentItem.quantity) {
       const stockCheck = await checkStock(productId, newQuantity);
@@ -123,7 +130,6 @@ export const CartProvider = ({ children }) => {
       }
     }
 
-    // 2. Update State
     setCartItems((prevItems) =>
       prevItems.map((item) =>
         item.id === productId
