@@ -30,13 +30,13 @@ export default function AdminNavbar({ sidebarOpen, setSidebarOpen }) {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    performSearch(searchQuery);
+    performSearch(searchQuery); // Triggers AI check inside Context
   };
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      performSearch(searchQuery);
+      performSearch(searchQuery); // Triggers AI check inside Context
     }
   };
 

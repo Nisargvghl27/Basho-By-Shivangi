@@ -4,11 +4,11 @@ import { Manrope, Playfair_Display } from "next/font/google";
 import { useState, useEffect } from "react";
 import { CartProvider } from "../context/CartContext";
 import { WishlistProvider } from '../context/WishlistContext';
-import { Toaster } from "react-hot-toast"; // [!code ++]
+import { Toaster } from "react-hot-toast";
+import SmoothScroll from "../components/SmoothScroll"; // Import SmoothScroll
 import "./globals.css";
-import { metadata } from './metadata'; // Moved import up to respect module scope
+import { metadata } from './metadata';
 
-// Font configurations
 const manrope = Manrope({
   subsets: ["latin"],
   weight: ["200", "300", "400", "500", "600"],
@@ -22,7 +22,7 @@ const playfair = Playfair_Display({
   variable: "--font-playfair",
 });
 
-// CursorGlow component
+// Component: Handles the Mouse Glow Effect
 function CursorGlow({ children }) {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isVisible, setIsVisible] = useState(false);
@@ -48,39 +48,31 @@ function CursorGlow({ children }) {
 
   return (
     <>
-      {/* Cursor Glow Effect */}
       <div
         className="pointer-events-none fixed inset-0 z-50 transition-opacity duration-300"
-        style={{
-          opacity: isVisible ? 1 : 0,
-        }}
+        style={{ opacity: isVisible ? 1 : 0 }}
       >
         <div
           className="absolute w-64 h-64 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
           style={{
             left: `${mousePosition.x}px`,
             top: `${mousePosition.y}px`,
-            background:
-              "radial-gradient(circle, rgba(210,180,140,0.06) 0%, rgba(210,180,140,0.03) 30%, transparent 60%)",
+            background: "radial-gradient(circle, rgba(210,180,140,0.06) 0%, rgba(210,180,140,0.03) 30%, transparent 60%)",
             filter: "blur(25px)",
             transition: "left 0.1s ease-out, top 0.1s ease-out",
           }}
         />
-        
-        {/* Core bright spot */}
         <div
           className="absolute w-32 h-32 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
           style={{
             left: `${mousePosition.x}px`,
             top: `${mousePosition.y}px`,
-            background:
-              "radial-gradient(circle, rgba(210,180,140,0.08) 0%, rgba(210,180,140,0.04) 40%, transparent 70%)",
+            background: "radial-gradient(circle, rgba(210,180,140,0.08) 0%, rgba(210,180,140,0.04) 40%, transparent 70%)",
             filter: "blur(12px)",
             transition: "left 0.08s ease-out, top 0.08s ease-out",
           }}
         />
       </div>
-
       {children}
     </>
   );
@@ -102,13 +94,17 @@ export default function RootLayout({ children }) {
       >
         <WishlistProvider>
           <CartProvider>
-            <CursorGlow>
-              {children}
-              <Toaster position="bottom-right" toastOptions={{ duration: 4000 }} />
-            </CursorGlow>
+            {/* Wrap everything in SmoothScroll */}
+            <SmoothScroll>
+              <CursorGlow>
+                {children}
+                <Toaster position="bottom-right" toastOptions={{ duration: 4000 }} />
+              </CursorGlow>
+            </SmoothScroll>
           </CartProvider>
         </WishlistProvider>
       </body>
     </html>
   );
 }
+

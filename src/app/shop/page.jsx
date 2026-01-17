@@ -75,7 +75,9 @@ export default function ProductsPage() {
   const [isVisible, setIsVisible] = useState(false);
   const [hoveredCard, setHoveredCard] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [searchQuery, setSearchQuery] = useState("");
+  
+  // Renamed to localSearchQuery to distinguish from global context
+  const [localSearchQuery, setLocalSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("default");
   const sectionRef = useRef(null);
 
@@ -168,10 +170,10 @@ export default function ProductsPage() {
       (selectedCategory === "Decorative" && productTags.includes("decorative"));
 
     const matchesSearch =
-      searchQuery === "" ||
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (product.subtitle && product.subtitle.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      productCategory.includes(searchQuery.toLowerCase());
+      localSearchQuery === "" ||
+      product.name.toLowerCase().includes(localSearchQuery.toLowerCase()) ||
+      (product.subtitle && product.subtitle.toLowerCase().includes(localSearchQuery.toLowerCase())) ||
+      productCategory.includes(localSearchQuery.toLowerCase());
 
     return matchesCategory && matchesSearch;
   });
@@ -245,8 +247,8 @@ export default function ProductsPage() {
                 <input
                   type="text"
                   placeholder="Search products..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  value={localSearchQuery}
+                  onChange={(e) => setLocalSearchQuery(e.target.value)}
                   className="w-full md:w-80 bg-charcoal-light border border-border-subtle text-rice-paper placeholder-stone-warm pl-12 pr-4 py-3 text-sm focus:outline-none focus:border-clay transition-all duration-500"
                 />
               </div>
@@ -447,7 +449,7 @@ export default function ProductsPage() {
                   <p className="text-stone-warm text-lg mb-4">No products found</p>
                   <button
                     onClick={() => {
-                      setSearchQuery("");
+                      setLocalSearchQuery("");
                       setSelectedCategory("All");
                     }}
                     className="text-clay text-sm uppercase tracking-wider hover:underline"

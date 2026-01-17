@@ -1,25 +1,34 @@
 "use client";
 
 import React, { createContext, useContext, useState } from 'react';
+// import { generateSearchTags } from '../lib/gemini'; 
 
 export const SearchContext = createContext();
 
 export const SearchProvider = ({ children }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
+  const [semanticKeywords, setSemanticKeywords] = useState([]); // Store AI keywords
   const [isSearching, setIsSearching] = useState(false);
 
   const performSearch = async (query) => {
     setSearchQuery(query);
+    setSemanticKeywords([]); // Reset previous AI results
+    
+    if (!query.trim()) return;
+
     setIsSearching(true);
     
     try {
-      // Add your search logic here
-      // For now, setting empty results
-      setSearchResults([]);
+      // 1. Basic check: if query is short (e.g., "mug"), no need for AI.
+      // 2. If query is complex (e.g., "gift for a sad friend"), use AI.
+      if (query.split(' ').length > 2) {
+        console.log("Creating vibe search for:", query);
+        const aiKeywords = await generateSearchTags(query);
+        console.log("AI suggested keywords:", aiKeywords);
+        setSemanticKeywords(aiKeywords);
+      }
     } catch (error) {
       console.error('Search error:', error);
-      setSearchResults([]);
     } finally {
       setIsSearching(false);
     }
@@ -27,7 +36,7 @@ export const SearchProvider = ({ children }) => {
 
   const clearSearch = () => {
     setSearchQuery('');
-    setSearchResults([]);
+    setSemanticKeywords([]);
     setIsSearching(false);
   };
 
@@ -35,7 +44,7 @@ export const SearchProvider = ({ children }) => {
     <SearchContext.Provider
       value={{
         searchQuery,
-        searchResults,
+        semanticKeywords, // Expose this to the UI
         isSearching,
         performSearch,
         clearSearch,

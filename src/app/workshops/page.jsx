@@ -17,35 +17,13 @@ import {
   Users,
   Loader2,
   Calendar,
-  X // Make sure X is imported for the close button
+  X 
 } from "lucide-react";
 
-// Images (Relative Imports)
+// Images (Relative Imports for Fallback)
 import heroStudio from "../../assets/hero-studio.jpg";
 
-// --- NEW: Video URL Validation ---
-const validateVideoUrl = (url) => {
-  if (!url) return false;
-  
-  try {
-    const urlObj = new URL(url);
-    // Check if it's a valid video URL
-    const validHosts = [
-      'res.cloudinary.com',
-      'www.youtube.com',
-      'youtu.be',
-      'vimeo.com',
-      'player.vimeo.com'
-    ];
-    
-    return validHosts.some(host => urlObj.hostname.includes(host));
-  } catch (error) {
-    console.error('Invalid video URL:', url, error);
-    return false;
-  }
-};
-
-// --- NEW: Video Modal Component ---
+// --- VIDEO MODAL COMPONENT ---
 const VideoModal = ({ videoUrl, onClose }) => {
   if (!videoUrl || !validateVideoUrl(videoUrl)) {
     console.error('Invalid or unsupported video URL:', videoUrl);
@@ -67,7 +45,6 @@ const VideoModal = ({ videoUrl, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
-      {/* Close Button */}
       <button 
         onClick={onClose}
         className="absolute top-6 right-6 text-white/70 hover:text-white transition-colors bg-white/10 p-2 rounded-full hover:bg-white/20"
@@ -75,159 +52,14 @@ const VideoModal = ({ videoUrl, onClose }) => {
         <X size={32} />
       </button>
 
-      {/* Video Player */}
       <div className="relative w-full max-w-5xl aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-white/10">
         <video
           src={videoUrl}
           className="w-full h-full object-contain"
           controls
           playsInline
-          muted={false}
-          preload="metadata"
-          crossOrigin="anonymous"
-          onError={(e) => {
-            console.error('Video failed to load:', e);
-            console.error('Video URL:', videoUrl);
-            console.error('Error code:', e.target.error ? e.target.error.code : 'Unknown');
-            alert('This video cannot be played. The video file may not be accessible from your current network or location.');
-            onClose();
-          }}
-          onCanPlay={() => console.log('Video can play:', videoUrl)}
-          onLoadedData={() => console.log('Video loaded successfully')}
+          autoPlay
         />
-      </div>
-    </div>
-  );
-};
-
-// Error Boundary Component
-const ErrorBoundary = ({ children, fallback }) => {
-  return (
-    <div className="error-boundary">
-      {children}
-    </div>
-  );
-};
-
-// --- NEW: ProcessItem Component ---
-const ProcessItem = ({ item, onOpenModal }) => {
-  const videoRef = useRef(null);
-  const [isHovered, setIsHovered] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-
-  const handleMouseEnter = () => {
-    setIsHovered(true);
-    if (item.type === 'video' && videoRef.current) {
-      // Small delay for smooth transition
-      setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.play().then(() => {
-            setIsPlaying(true);
-          }).catch(error => {
-            console.log("Playback was prevented:", error);
-          });
-        }
-      }, 100);
-    }
-  };
-
-  const handleMouseLeave = () => {
-    setIsHovered(false);
-    if (item.type === 'video' && videoRef.current) {
-      // Immediately pause the video
-      videoRef.current.pause();
-      setIsPlaying(false);
-      
-      // Reset to beginning after a short delay for smooth transition
-      setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.currentTime = 0;
-          // Ensure video is fully stopped
-          videoRef.current.load();
-        }
-      }, 100);
-    }
-  };
-
-  // Mobile touch handlers
-  const handleTouchStart = () => {
-    if (item.type === 'video' && videoRef.current) {
-      // For mobile, start playing on touch
-      videoRef.current.play().then(() => {
-        setIsPlaying(true);
-      }).catch(error => {
-        console.log("Touch playback was prevented:", error);
-      });
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (item.type === 'video' && videoRef.current) {
-      videoRef.current.pause();
-      setIsPlaying(false);
-      setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.currentTime = 0;
-          videoRef.current.load();
-        }
-      }, 100);
-    }
-  };
-
-  return (
-    <div 
-      className="shrink-0 w-[280px] sm:w-[320px] md:w-[380px] aspect-[4/5] rounded-2xl overflow-hidden relative border border-border-subtle transition-all duration-700 hover:border-clay/30 hover:shadow-[0_12px_40px_rgba(0,0,0,0.3)] group/video cursor-pointer"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-      onClick={() => {
-        if (item.type === 'video') {
-          onOpenModal(item.videoUrl);
-        }
-      }}
-    >
-      {item.type === 'video' ? (
-        <>
-          <video
-            ref={videoRef}
-            src={item.videoUrl}
-            poster={item.image}
-            muted
-            loop
-            playsInline
-            className="absolute inset-0 w-full h-full object-cover transition-all duration-500 ease-out group-hover/video:scale-105 pointer-events-none"
-            style={{ WebkitTapHighlightColor: 'transparent' }}
-          />
-          {/* Smooth fade transition for play button overlay */}
-          <div 
-            className={`absolute inset-0 bg-charcoal/40 transition-all duration-300 ease-in-out flex items-center justify-center pointer-events-none ${
-              isHovered || isPlaying ? 'opacity-0' : 'opacity-100'
-            }`}
-          >
-            <div className="size-12 sm:size-14 md:size-16 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/20 transition-all duration-300 ease-out hover:bg-clay hover:scale-110">
-              <Play size={20} className="sm:size-24 md:size-32" fill="currentColor" />
-            </div>
-          </div>
-        </>
-      ) : (
-        <>
-          <div 
-            className="absolute inset-0 bg-cover bg-center transition-all duration-700 ease-out group-hover/video:scale-105" 
-            style={{ backgroundImage: `url("${item.image}")` }} 
-          />
-          <div className="absolute inset-0 bg-charcoal/40 transition-all duration-300 ease-in-out group-hover/video:bg-charcoal/20 flex items-center justify-center">
-            <div className="size-12 sm:size-14 md:size-16 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/20 transition-all duration-300 ease-out group-hover/video:scale-110">
-              <Eye size={20} className="sm:size-24 md:size-32" />
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Title Overlay - Mobile Optimized */}
-      <div className="absolute bottom-0 left-0 w-full p-3 sm:p-4 md:p-6 bg-gradient-to-t from-charcoal via-charcoal/90 to-transparent text-left pointer-events-none">
-        <p className="text-white font-bold text-sm sm:text-base md:text-lg mb-1 whitespace-normal font-serif">{item.title}</p>
-        <p className="text-stone-warm text-xs sm:text-sm md:text-sm font-light italic">{item.subtitle || "Process Gallery"}</p>
       </div>
     </div>
   );
@@ -237,15 +69,13 @@ export default function WorkshopsPage() {
   const [isVisible, setIsVisible] = useState(false);
   const [isMarqueeHovered, setIsMarqueeHovered] = useState(false);
   
-  // Data State
   const [workshops, setWorkshops] = useState([]);
   const [processItems, setProcessItems] = useState([]); 
   const [studioItems, setStudioItems] = useState([]);   
   const [loading, setLoading] = useState(true);
   
-  // Booking & Video State
   const [selectedWorkshop, setSelectedWorkshop] = useState(null);
-  const [playingVideo, setPlayingVideo] = useState(null); // <--- NEW STATE
+  const [playingVideo, setPlayingVideo] = useState(null);
 
   const heroRef = useRef(null);
 
@@ -297,7 +127,6 @@ export default function WorkshopsPage() {
     <div className="relative min-h-screen bg-charcoal text-rice-paper flex flex-col overflow-hidden">
       <Header />
 
-      {/* --- VIDEO MODAL OVERLAY --- */}
       {playingVideo && (
         <VideoModal 
           videoUrl={playingVideo} 
@@ -305,30 +134,33 @@ export default function WorkshopsPage() {
         />
       )}
 
-      {/* Background Grain */}
-      <div className="fixed inset-0 opacity-[0.12] pointer-events-none z-0">
-        <div
-          className="absolute inset-0 animate-grain-shift"
-          style={{
-            backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' /%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' /%3E%3C/svg%3E")',
-            backgroundSize: '200px 200px'
-          }}
-        />
-      </div>
-
-      {/* HERO SECTION */}
+      {/* HERO SECTION WITH VIDEO BACKGROUND */}
       <section ref={heroRef} className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0">
-          <div
-            className="absolute inset-0 bg-cover bg-center transition-all duration-1000 ease-out"
-            style={{
-              backgroundImage: `linear-gradient(rgba(0,0,0,.3), rgba(0,0,0,.5)), url(${heroStudio.src || heroStudio})`,
-              transform: isVisible ? 'scale(1)' : 'scale(1.1)'
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-charcoal/60 via-charcoal/30 to-charcoal" />
+        {/* Background Video Layer */}
+        <div className="absolute inset-0 z-0">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            poster={heroStudio.src}
+            className="w-full h-full object-cover transition-transform duration-[2000ms] ease-out"
+            style={{ transform: isVisible ? 'scale(1)' : 'scale(1.1)' }}
+          >
+            {/* IMPORTANT: Move your file '9363488-hd...mp4' to 'public/videos/workshop-hero.mp4' 
+            */}
+            <source src="/videos/workshop-hero.mp4" type="video/mp4" />
+          </video>
+          
+          {/* Overlays for text readability */}
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="absolute inset-0 bg-gradient-to-b from-charcoal/60 via-charcoal/20 to-charcoal" />
+          
+          {/* Grain Texture */}
+          <div className="absolute inset-0 opacity-[0.15] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay" />
         </div>
 
+        {/* Hero Content */}
         <div className="relative z-10 max-w-6xl mx-auto px-4 md:px-12 lg:px-24 text-center">
           <div className={`mb-8 transition-all duration-1000 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
             <span className="inline-block text-clay text-xs font-bold uppercase tracking-[0.4em] mb-4">
@@ -341,7 +173,7 @@ export default function WorkshopsPage() {
             Workshops & Exhibitions
           </h1>
 
-          <p className={`text-stone-warm text-xl md:text-2xl max-w-3xl mx-auto leading-relaxed mb-12 font-light transition-all duration-1000 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`} style={{ transitionDelay: '400ms' }}>
+          <p className={`text-stone-200 text-xl md:text-2xl max-w-3xl mx-auto leading-relaxed mb-12 font-light transition-all duration-1000 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`} style={{ transitionDelay: '400ms' }}>
             Experience handcrafted pottery through immersive workshops and exhibitions across the globe.
           </p>
         </div>
@@ -427,10 +259,8 @@ export default function WorkshopsPage() {
           </div>
         </section>
 
-        {/* CONTINUOUS MARQUEE SECTION: THE PROCESS IN MOTION (UPDATED) */}
+        {/* MARQUEE SECTION */}
         <section className="py-12 md:py-16 bg-charcoal-light border-t border-border-subtle relative overflow-hidden">
-          <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuCzVlI8BGQMSspZ5VftfBOItr0K4kOBo5vWkTdGEdqND11OwtzoetJuopJoaWl4mC-ii7fqypDIEZlBtoa9xoekR71JXyJfRAWwRjiJGY2vVrcf92xIDWgI_HOredw7Sq9UrUQQNALmW9oGK70Qif9TAjR96GuZ9Uu77B2tmusZwR-PRiCDOKlCgf3TYAt34qeZAC81VKOdJqOd_agLTwTntabqTO1W2oldEyQ951BFgWqOZMElOjhSww885mnrRadT2Ug0QnO06go")' }}></div>
-
           <div className="relative z-10 mb-12">
             <div className={`flex flex-col md:flex-row justify-between items-start md:items-center gap-6 transition-all duration-1000 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
               <div className="space-y-4 px-4 md:px-12 lg:px-24 flex-1">
@@ -442,7 +272,6 @@ export default function WorkshopsPage() {
             </div>
           </div>
 
-          {/* Full Width Marquee */}
           <div
             className="relative w-full overflow-hidden"
             onMouseEnter={() => setIsMarqueeHovered(true)}
@@ -451,11 +280,51 @@ export default function WorkshopsPage() {
             {processItems.length > 0 && !loading ? (
               <div className={`flex gap-6 whitespace-nowrap ${isMarqueeHovered ? 'pause-animation' : 'animate-marquee'}`}>
                 {[...processItems, ...processItems, ...processItems].map((item, idx) => (
-                  <ProcessItem 
-                    key={`${item.id}-${idx}`} 
-                    item={item} 
-                    onOpenModal={(url) => setPlayingVideo(url)} 
-                  />
+                  <div 
+                    key={`${item.id}-${idx}-${item.type}`} 
+                    className="shrink-0 w-[300px] md:w-[380px] aspect-[4/5] rounded-2xl overflow-hidden relative border border-border-subtle transition-all duration-700 hover:border-clay/30 hover:shadow-[0_12px_40px_rgba(0,0,0,0.3)] group/video cursor-pointer"
+                    onClick={() => {
+                        if (item.type === 'video' && item.videoUrl) {
+                            setPlayingVideo(item.videoUrl);
+                        }
+                    }}
+                  >
+                    {item.type === 'video' && item.videoUrl ? (
+                      <video
+                        src={item.videoUrl}
+                        poster={item.image}
+                        muted
+                        loop
+                        playsInline
+                        preload="metadata"
+                        className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover/video:opacity-100 transition-opacity duration-500"
+                        onLoadedData={(e) => {
+                          const video = e.target;
+                          if (video.readyState >= 2) video.currentTime = 0.1;
+                        }}
+                      />
+                    ) : (
+                      <div 
+                        className="absolute inset-0 bg-cover bg-center transition-all duration-[1200ms] ease-out group-hover/video:scale-110" 
+                        style={{ backgroundImage: `url("${item.image}")` }} 
+                      />
+                    )}
+
+                    <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-transparent to-transparent opacity-90 transition-opacity duration-500 group-hover/video:opacity-70" />
+
+                    {item.type === 'video' && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div className="size-16 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white border border-white/30 scale-90 group-hover/video:scale-110 group-hover/video:bg-black/60 transition-all duration-500 shadow-2xl">
+                                <Play size={28} fill="currentColor" />
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="absolute bottom-0 left-0 w-full p-6 text-left">
+                      <p className="text-white font-bold text-lg mb-1 whitespace-normal font-serif">{item.title}</p>
+                      <p className="text-stone-warm text-sm font-light italic">{item.subtitle || item.category}</p>
+                    </div>
+                  </div>
                 ))}
               </div>
             ) : (
@@ -464,7 +333,7 @@ export default function WorkshopsPage() {
           </div>
         </section>
 
-        {/* STUDIO LIFE SECTION */}
+        {/* STUDIO LIFE */}
         <section className="px-4 md:px-12 lg:px-24 py-20 md:py-24 border-t border-border-subtle">
           <div className="flex items-center gap-4 mb-12">
             <h2 className="text-3xl md:text-4xl font-serif font-light tracking-tight text-rice-paper">Studio Life</h2>
@@ -522,14 +391,6 @@ export default function WorkshopsPage() {
       )}
 
       <style jsx>{`
-        @keyframes grain-shift {
-          0%, 100% { transform: translate(0, 0); }
-          10% { transform: translate(-5%, -5%); }
-          50% { transform: translate(-10%, 5%); }
-          90% { transform: translate(10%, 5%); }
-        }
-        .animate-grain-shift { animation: grain-shift 12s ease-in-out infinite; }
-        
         @keyframes marquee {
           0% { transform: translateX(0); }
           100% { transform: translateX(-33.333%); }
@@ -547,10 +408,6 @@ export default function WorkshopsPage() {
           animation-play-state: paused;
           will-change: transform;
         }
-
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
       `}</style>
     </div>
   );
