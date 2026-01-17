@@ -23,11 +23,7 @@ import {
 // Images (Relative Imports for Fallback)
 import heroStudio from "../../assets/hero-studio.jpg";
 
-<<<<<<< HEAD
-// --- NEW: Video URL Validation ---
-=======
 // --- HELPERS ---
->>>>>>> 36b128448a4913143bdba58ae23ae683b4abc0b1
 const validateVideoUrl = (url) => {
   if (!url || typeof url !== 'string') return false;
   // Basic validation: allow http/https URLs or relative paths starting with /
@@ -73,32 +69,13 @@ const VideoModal = ({ videoUrl, onClose }) => {
           className="w-full h-full object-contain"
           controls
           playsInline
-<<<<<<< HEAD
-          onError={(e) => {
-            console.error('Video failed to load:', e);
-            onClose();
-          }}
-=======
           autoPlay
->>>>>>> 36b128448a4913143bdba58ae23ae683b4abc0b1
         />
       </div>
     </div>
   );
 };
 
-<<<<<<< HEAD
-// Error Boundary Component
-const ErrorBoundary = ({ children, fallback }) => {
-  return (
-    <div className="error-boundary">
-      {children}
-    </div>
-  );
-};
-
-=======
->>>>>>> 36b128448a4913143bdba58ae23ae683b4abc0b1
 export default function WorkshopsPage() {
   const [isVisible, setIsVisible] = useState(false);
   const [isMarqueeHovered, setIsMarqueeHovered] = useState(false);
