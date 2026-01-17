@@ -114,11 +114,11 @@ export default function Contact() {
               Contact Us
             </span>
             <h1 className="font-serif text-5xl md:text-7xl text-rice-paper mb-8 leading-tight">
-              Let&apos;s start a <br />
+              Let's start a <br />
               <span className="italic text-stone-500">conversation.</span>
             </h1>
             <p className="text-lg md:text-xl text-stone-warm max-w-2xl font-light leading-relaxed">
-              Whether you&apos;re interested in a custom commission, joining a workshop, 
+              Whether you're interested in a custom commission, joining a workshop, 
               or simply want to say hello—we are here to listen.
             </p>
           </div>
@@ -191,8 +191,9 @@ export default function Contact() {
 
               {/* Map */}
               <div className="relative h-64 w-full overflow-hidden border border-white/10 grayscale hover:grayscale-0 transition-all duration-700">
+                  {/* Updated to 21°07'48.0"N 72°43'26.4"E (approx 21.130000, 72.724000) */}
                   <iframe 
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3721.246726294767!2d72.7770851!3d21.1425624!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be05274d75f284d%3A0x67258384210085!2sVesu%2C%20Surat%2C%20Gujarat!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin"
+                    src="https://maps.google.com/maps?q=21.130000,72.724000&z=15&output=embed"
                     width="100%" 
                     height="100%" 
                     style={{ border: 0 }} 

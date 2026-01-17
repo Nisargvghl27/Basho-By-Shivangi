@@ -234,11 +234,6 @@ export default function Philosophy() {
                     <span className="absolute inset-0 rounded-full border-2 border-clay/30 scale-100 opacity-0 group-hover:scale-150 group-hover:opacity-0 transition-all duration-1000" />
                     <span className="absolute inset-0 rounded-full border-2 border-clay/20 scale-100 opacity-0 group-hover:scale-[2] group-hover:opacity-0 transition-all duration-1500 delay-100" />
                   </div>
-
-                  {/* Number indicator */}
-                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-clay text-charcoal rounded-full flex items-center justify-center text-xs font-bold opacity-0 group-hover:opacity-100 transition-all duration-500 group-hover:scale-110">
-                    {index + 1}
-                  </div>
                 </div>
 
                 {/* Content with reveal animation */}
