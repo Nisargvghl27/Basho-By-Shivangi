@@ -295,6 +295,7 @@ export default function WorkshopsPage() {
                     key={`${item.id}-${idx}-${item.type}`} 
                     className="shrink-0 w-[300px] md:w-[380px] aspect-[4/5] rounded-2xl overflow-hidden relative border border-border-subtle transition-all duration-700 hover:border-clay/30 hover:shadow-[0_12px_40px_rgba(0,0,0,0.3)] group/video cursor-pointer"
                     onClick={() => {
+                        // Only open modal if it's a video
                         if (item.type === 'video' && item.videoUrl) {
                             setPlayingVideo(item.videoUrl);
                         }
@@ -310,8 +311,11 @@ export default function WorkshopsPage() {
                         preload="metadata"
                         className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover/video:opacity-100 transition-opacity duration-500"
                         onLoadedData={(e) => {
+                          // Capture first frame as poster
                           const video = e.target;
-                          if (video.readyState >= 2) video.currentTime = 0.1;
+                          if (video.readyState >= 2) { // HAVE_CURRENT_DATA
+                            video.currentTime = 0.1; // Set to near start
+                          }
                         }}
                       />
                     ) : (
@@ -321,8 +325,10 @@ export default function WorkshopsPage() {
                       />
                     )}
 
+                    {/* Gradient Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-transparent to-transparent opacity-90 transition-opacity duration-500 group-hover/video:opacity-70" />
 
+                    {/* Play Icon Overlay (Shows only for videos) */}
                     {item.type === 'video' && (
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                             <div className="size-16 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white border border-white/30 scale-90 group-hover/video:scale-110 group-hover/video:bg-black/60 transition-all duration-500 shadow-2xl">
