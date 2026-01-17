@@ -168,6 +168,7 @@ export default function Shop() {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-500 w-4 h-4" />
                 <input
                   type="text"
+                  suppressHydrationWarning={true} /* FIX: Ignored attribute mismatches from extensions */
                   placeholder="Search collection..."
                   value={localSearchQuery}
                   onChange={(e) => setLocalSearchQuery(e.target.value)}
