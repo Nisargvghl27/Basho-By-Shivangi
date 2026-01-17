@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import { 
@@ -15,7 +16,8 @@ import {
   ArrowRight,
   Plus,
   Minus,
-  Briefcase
+  Briefcase,
+  ChevronDown
 } from "lucide-react";
 // Firebase Imports
 import { db } from "../../lib/firebase";
@@ -137,9 +139,9 @@ export default function Contact() {
                     <div>
                       <h3 className="font-serif text-xl text-rice-paper mb-2">Visit the Studio</h3>
                       <p className="text-stone-warm font-light leading-relaxed">
-                        Basho by Shivangi<br />
-                        Vesu, Surat<br />
-                        Gujarat, India 395007
+                        311, Silent Zone, Gavier,<br />
+                        Dumas Road,<br />
+                        Surat-395007
                       </p>
                     </div>
                   </div>
@@ -157,10 +159,6 @@ export default function Contact() {
                         <p className="flex items-center gap-3">
                           <span className="text-stone-500 text-sm uppercase tracking-widest w-12">Mail</span>
                           <span className="text-rice-paper hover:text-clay transition-colors cursor-pointer">bashobyshivangi2019@gmail.com</span>
-                        </p>
-                        <p className="flex items-center gap-3">
-                          <span className="text-stone-500 text-sm uppercase tracking-widest w-12">Call</span>
-                          <span className="text-rice-paper hover:text-clay transition-colors cursor-pointer">+91 98765 43210</span>
                         </p>
                       </div>
                     </div>
@@ -295,9 +293,9 @@ export default function Contact() {
                         onChange={handleChange}
                         onFocus={() => setFocusedField('subject')}
                         onBlur={() => setFocusedField(null)}
-                        className="w-full bg-transparent border-b border-white/20 py-4 text-rice-paper focus:outline-none focus:border-clay transition-all duration-500 appearance-none rounded-none"
+                        className="w-full bg-transparent border-b border-white/20 py-4 text-rice-paper focus:outline-none focus:border-clay transition-all duration-500 appearance-none rounded-none cursor-pointer"
                       >
-                        <option value="" className="bg-charcoal text-stone-500">Select a subject</option>
+                        <option value="" className="bg-charcoal text-stone-500"></option>
                         <option value="General Inquiry" className="bg-charcoal">General Inquiry</option>
                         <option value="Order Support" className="bg-charcoal">Order Support</option>
                         <option value="Workshops" className="bg-charcoal">Workshops</option>
@@ -313,6 +311,9 @@ export default function Contact() {
                       >
                         Subject
                       </label>
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none text-stone-500">
+                        <ChevronDown className="w-5 h-5" />
+                      </div>
                     </div>
 
                     {/* Message Field */}
@@ -406,20 +407,22 @@ export default function Contact() {
           {/* New Section: Corporate / Collaboration CTA */}
           <div className="mt-32 mb-12 opacity-0 animate-fade-in-up" style={{ animationDelay: '0.8s' }}>
              <div className="relative overflow-hidden rounded-sm border border-white/5 bg-white/[0.02] p-10 md:p-16 text-center group">
-                 <div className="absolute inset-0 bg-gradient-to-r from-clay/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+                 <div className="absolute inset-0 bg-gradient-to-r from-clay/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none" />
                  
-                 <Briefcase className="w-10 h-10 text-clay mx-auto mb-6 opacity-80" />
-                 <h2 className="font-serif text-3xl text-rice-paper mb-4">Looking for Corporate Gifting?</h2>
-                 <p className="text-stone-warm font-light max-w-2xl mx-auto mb-10 leading-relaxed">
-                    We offer bespoke ceramic collections for restaurants, hotels, and corporate events. 
-                    Create a lasting impression with handmade pieces that tell a story.
-                 </p>
-                 <a 
-                   href="/corporate"
-                   className="inline-flex items-center gap-3 text-xs font-bold uppercase tracking-[0.2em] text-clay hover:text-rice-paper transition-colors pb-2 border-b border-clay/30 hover:border-rice-paper"
-                 >
-                    Explore Corporate Solutions <ArrowRight className="w-4 h-4" />
-                 </a>
+                 <div className="relative z-10">
+                    <Briefcase className="w-10 h-10 text-clay mx-auto mb-6 opacity-80" />
+                    <h2 className="font-serif text-3xl text-rice-paper mb-4">Looking for Corporate Gifting?</h2>
+                    <p className="text-stone-warm font-light max-w-2xl mx-auto mb-10 leading-relaxed">
+                        We offer bespoke ceramic collections for restaurants, hotels, and corporate events. 
+                        Create a lasting impression with handmade pieces that tell a story.
+                    </p>
+                    <Link 
+                      href="/corporate"
+                      className="inline-flex items-center gap-3 text-xs font-bold uppercase tracking-[0.2em] text-clay hover:text-rice-paper transition-colors pb-2 border-b border-clay/30 hover:border-rice-paper"
+                    >
+                        Explore Corporate Solutions <ArrowRight className="w-4 h-4" />
+                    </Link>
+                 </div>
              </div>
           </div>
 
