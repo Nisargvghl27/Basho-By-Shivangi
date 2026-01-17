@@ -10,12 +10,14 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../lib/firebase";
 import MagneticButton from './MagneticButton';
 
+// UPDATED: Added Collaborations link
 const navLinks = [
   { label: "Home", href: "/" },
   { label: "Shop", href: "/shop" },
   { label: "Workshops", href: "/workshops" },
   { label: "Journal", href: "/journal" },
   { label: "About", href: "/about" },
+  { label: "Collaborations", href: "/corporate" }, // <--- NEW LINK ADDED
 ];
 
 export default function Header() {
@@ -39,6 +41,7 @@ export default function Header() {
     return () => unsub();
   }, []);
 
+  // Helper to calculate total cart quantity
   const cartCount = cartItems?.reduce((total, item) => total + item.quantity, 0) || 0;
   const wishlistCount = wishlistItems?.length || 0;
 
@@ -84,16 +87,8 @@ export default function Header() {
           {/* Actions with Magnetic Buttons */}
           <div className="flex items-center gap-1 md:gap-4 z-50 h-8">
             
-            {/* Search Button */}
-            <MagneticButton 
-              aria-label="Search" 
-              className="relative group flex items-center justify-center w-10 h-10 text-stone-warm transition-all duration-500 hover:text-rice-paper"
-            >
-              <span className="material-symbols-outlined text-[20px]">search</span>
-            </MagneticButton>
-
-            {/* Cart Button */}
-            <MagneticButton 
+            {/* Cart Bag */}
+            <Link
               href="/cart"
               className="relative group flex items-center justify-center w-10 h-10 text-stone-warm transition-all duration-500 hover:text-rice-paper"
             >
@@ -103,7 +98,7 @@ export default function Header() {
                   {cartCount}
                 </span>
               )}
-            </MagneticButton>
+            </Link>
 
             {/* Wishlist Button */}
             <MagneticButton 
@@ -118,10 +113,39 @@ export default function Header() {
                 )}
             </MagneticButton>
 
-            {/* Profile Button */}
-            <MagneticButton 
+            {/* Profile / Login */}
+            <Link
               href={user ? "/profile" : "/auth/login"}
-              className="relative group flex items-center justify-center w-10 h-10 transition-all duration-500 hover:-translate-y-0.5 hidden sm:flex"
+              aria-label="Account"
+              className="relative group transition-all duration-500 hover:-translate-y-0.5 hidden sm:block"
+            >
+              <span className="absolute inset-0 rounded-full bg-clay/0 scale-100 transition-all duration-700 group-hover:scale-150 group-hover:bg-clay/5 group-hover:opacity-0" />
+
+              {!user ? (
+                <span className="material-symbols-outlined text-[20px] font-light text-stone-warm relative drop-shadow-sm group-hover:text-rice-paper">
+                  account_circle
+                </span>
+              ) : user.photoURL ? (
+                <Image
+                  src={user.photoURL}
+                  alt="User Profile"
+                  width={28}
+                  height={28}
+                  className="rounded-full object-cover ring-1 ring-white/20"
+                />
+              ) : (
+                <div className="w-7 h-7 rounded-full bg-clay flex items-center justify-center text-[11px] font-bold text-charcoal">
+                  {user.displayName?.charAt(0).toUpperCase() ||
+                    user.email?.charAt(0).toUpperCase()}
+                </div>
+              )}
+            </Link>
+
+            {/* --- Mobile Hamburger Button --- */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden relative w-8 h-8 flex flex-col items-center justify-center gap-1.5 group"
+              aria-label="Toggle Menu"
             >
                 {!user ? (
                   <span className="material-symbols-outlined text-[20px] font-light text-stone-warm group-hover:text-rice-paper">account_circle</span>
@@ -132,7 +156,7 @@ export default function Header() {
                     {user.displayName?.charAt(0).toUpperCase() || "U"}
                   </div>
                 )}
-            </MagneticButton>
+            </button>
 
             {/* Mobile Menu Toggle (Kept as standard button to avoid complex layout shifts) */}
             <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="md:hidden relative w-10 h-10 flex flex-col items-center justify-center gap-1.5 group ml-2">

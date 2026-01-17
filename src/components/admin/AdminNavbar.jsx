@@ -1,29 +1,32 @@
 "use client";
 
-import { Bell, Search, User, Moon, Sun, Menu } from "lucide-react";
+import { Bell, Search, User, Menu } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useSearch } from "../../context/SearchContext";
+import { auth } from "../../lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
 export default function AdminNavbar({ sidebarOpen, setSidebarOpen }) {
-  const [darkMode, setDarkMode] = useState(false);
   const [notifications, setNotifications] = useState(3);
+  const [user, setUser] = useState(null);
   const { searchQuery, setSearchQuery, performSearch } = useSearch();
 
+  // Listen for Auth Changes
   useEffect(() => {
-    const isDark = document.documentElement.classList.contains('dark');
-    setDarkMode(isDark);
-  }, []);
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        setUser({
+          name: currentUser.displayName || "Admin User",
+          email: currentUser.email,
+          photoURL: currentUser.photoURL
+        });
+      } else {
+        setUser(null);
+      }
+    });
 
-  const toggleDarkMode = () => {
-    const newDarkMode = !darkMode;
-    setDarkMode(newDarkMode);
-    
-    if (newDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  };
+    return () => unsubscribe();
+  }, []);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -72,15 +75,8 @@ export default function AdminNavbar({ sidebarOpen, setSidebarOpen }) {
         </div>
 
         {/* Right side */}
-        <div className="flex items-center space-x-1 sm:space-x-4">
-          {/* Dark Mode Toggle */}
-          <button
-            onClick={toggleDarkMode}
-            className="p-1.5 sm:p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-          >
-            {darkMode ? <Sun className="w-4 h-4 sm:w-5 sm:h-5" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5" />}
-          </button>
-
+        <div className="flex items-center space-x-2 sm:space-x-4">
+          
           {/* Notifications */}
           <div className="relative">
             <button className="p-1.5 sm:p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
@@ -92,16 +88,33 @@ export default function AdminNavbar({ sidebarOpen, setSidebarOpen }) {
           </div>
 
           {/* User Profile */}
-          <div className="flex items-center space-x-2 sm:space-x-3">
+          <div className="flex items-center space-x-2 sm:space-x-3 pl-2 sm:pl-4 border-l border-gray-200 dark:border-gray-700">
             <div className="relative group transition-all duration-500 hover:-translate-y-0.5">
-              <span className="absolute inset-0 rounded-full bg-clay/0 scale-100 transition-all duration-700 group-hover:scale-150 group-hover:bg-clay/5 group-hover:opacity-0" />
-              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-clay to-clay/90 rounded-full flex items-center justify-center ring-1 ring-white/20 shadow-[0_2px_8px_rgba(0,0,0,0.15)]">
-                <User className="w-3 h-3 sm:w-5 sm:h-5 text-white" />
+              {/* Glow Effect */}
+              <span className="absolute inset-0 rounded-full bg-clay/0 scale-100 transition-all duration-700 group-hover:scale-110 group-hover:bg-clay/5 group-hover:opacity-0" />
+              
+              <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gray-100 rounded-full flex items-center justify-center ring-2 ring-white shadow-sm overflow-hidden">
+                {user?.photoURL ? (
+                  <img 
+                    src={user.photoURL} 
+                    alt={user.name} 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-clay to-clay/90 flex items-center justify-center">
+                    <User className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                  </div>
+                )}
               </div>
             </div>
+            
             <div className="hidden sm:block">
-              <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100">Admin User</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-32 sm:max-w-none">admin@basho.com</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                {user ? user.name : "Loading..."}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[150px]">
+                {user ? user.email : ""}
+              </p>
             </div>
           </div>
         </div>

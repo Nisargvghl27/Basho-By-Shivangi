@@ -2,27 +2,37 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
+import Link from "next/link"; 
+import { subscribeToNewsletter } from "../lib/newsletterService"; 
+import { Loader2, CheckCircle2 } from "lucide-react"; 
 
 export default function Footer() {
-  // --- 1. State & Refs (Declared ONCE) ---
+  // --- 1. State & Refs ---
   const [isVisible, setIsVisible] = useState(false);
   const [email, setEmail] = useState("");
   const [focusedInput, setFocusedInput] = useState(false);
+  
+  // New States for subscription handling
+  const [loading, setLoading] = useState(false);
+  const [subscriptionStatus, setSubscriptionStatus] = useState({ success: false, message: "" });
+  
   const footerRef = useRef(null);
 
-  // --- 2. Data Constants (Declared ONCE) ---
+  // --- 2. Data Constants ---
   const shopLinks = [
-    { label: "All Ceramics", href: "#" },
-    { label: "Tableware", href: "#" },
-    { label: "Vases", href: "#" },
+    { label: "All Ceramics", href: "/shop" },
+    { label: "Tableware", href: "/shop?category=tableware" },
+    { label: "Vases", href: "/shop?category=vases" },
     { label: "Workshops", href: "/workshops" }
   ];
 
-  const supportLinks = [
-    { label: "Care Guide", href: "#" },
-    { label: "Shipping", href: "#" },
-    { label: "Returns", href: "#" },
-    { label: "Contact", href: "#" }
+  // UPDATED: Added Corporate Inquiries link here
+  const discoverLinks = [
+    { label: "Our Story", href: "/about" },
+    { label: "The Journal", href: "/journal" },
+    { label: "Philosophy", href: "/about#philosophy" },
+    { label: "The Process", href: "/about#values" },
+    { label: "Corporate Inquiries", href: "/corporate" } // <--- NEW LINK ADDED
   ];
 
   const socialLinks = [
@@ -31,7 +41,7 @@ export default function Footer() {
     { label: "Facebook", href: "#", icon: "facebook" }
   ];
 
-  // --- 3. Intersection Observer Effect (Declared ONCE) ---
+  // --- 3. Intersection Observer Effect ---
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -53,6 +63,28 @@ export default function Footer() {
     };
   }, []);
 
+  // --- 4. Handle Subscribe Function ---
+  const handleSubscribe = async (e) => {
+    e.preventDefault(); 
+    
+    if (!email) return;
+
+    setLoading(true);
+    setSubscriptionStatus({ success: false, message: "" });
+
+    try {
+      const result = await subscribeToNewsletter(email);
+      setSubscriptionStatus(result);
+      if (result.success) {
+        setEmail(""); 
+      }
+    } catch (error) {
+      setSubscriptionStatus({ success: false, message: "An error occurred." });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <footer 
       ref={footerRef}
@@ -67,12 +99,9 @@ export default function Footer() {
               isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
             }`}
           >
-            {/* LOGO UPDATE START */}
+            {/* LOGO */}
             <div className="group cursor-pointer w-fit relative py-2">
-              {/* 1. The Backlight */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-clay/15 blur-[30px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none" />
-
-              {/* 2. The Logo Container */}
               <div className="relative z-10 w-48 h-16 md:w-56 md:h-20 transition-all duration-700 ease-out group-hover:-translate-y-1 group-hover:scale-105">
                 <Image
                   src="/images/bgr_logo.png"
@@ -82,14 +111,11 @@ export default function Footer() {
                   className="object-contain object-left opacity-100 grayscale-0 brightness-200 transition-all duration-700 group-hover:brightness-150 group-hover:drop-shadow-[0_10px_15px_rgba(0,0,0,0.5)]"
                 />
               </div>
-
-              {/* 3. The "Kiln Line" Underline Effect */}
               <div className="absolute -bottom-1 left-0 flex items-center gap-2">
                 <div className="h-[1px] bg-gradient-to-r from-clay to-transparent w-4 group-hover:w-24 transition-all duration-700 ease-out opacity-50 group-hover:opacity-100" />
                 <div className="h-1 w-1 rounded-full bg-clay opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-700 delay-100" />
               </div>
             </div>
-            {/* LOGO UPDATE END */}
 
             <p className="text-stone-warm text-sm leading-7 max-w-sm font-light transition-all duration-700 hover:text-stone-200">
               Handcrafted in small batches. Designed to bring warmth and intention to your daily rituals. We honor the clay and the process.
@@ -113,7 +139,7 @@ export default function Footer() {
             <ul className="flex flex-col gap-4 text-sm text-stone-warm font-light">
               {shopLinks.map((link) => (
                 <li key={link.label}>
-                  <a
+                  <Link
                     className="group relative inline-flex items-center gap-2 hover:text-clay transition-all duration-500 hover:translate-x-2"
                     href={link.href}
                   >
@@ -122,25 +148,25 @@ export default function Footer() {
                       {link.label}
                       <span className="absolute bottom-0 left-0 h-[1px] w-0 bg-clay/50 transition-all duration-500 group-hover:w-full" />
                     </span>
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* --- Support Links --- */}
+          {/* --- Discover Links --- */}
           <div
             className={`md:col-span-2 transition-all duration-1000 delay-200 ease-out ${
               isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
             }`}
           >
             <h4 className="font-bold uppercase tracking-[0.2em] mb-8 text-[11px] text-white transition-all duration-500 hover:text-clay hover:tracking-[0.25em]">
-              Support
+              Discover
             </h4>
             <ul className="flex flex-col gap-4 text-sm text-stone-warm font-light">
-              {supportLinks.map((link) => (
+              {discoverLinks.map((link) => (
                 <li key={link.label}>
-                  <a
+                  <Link
                     className="group relative inline-flex items-center gap-2 hover:text-clay transition-all duration-500 hover:translate-x-2"
                     href={link.href}
                   >
@@ -149,7 +175,7 @@ export default function Footer() {
                       {link.label}
                       <span className="absolute bottom-0 left-0 h-[1px] w-0 bg-clay/50 transition-all duration-500 group-hover:w-full" />
                     </span>
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -168,15 +194,18 @@ export default function Footer() {
               Subscribe to receive updates on new kiln firings and workshops.
             </p>
 
-            <div className="flex flex-col gap-5">
+            {/* Form */}
+            <form onSubmit={handleSubscribe} className="flex flex-col gap-5">
               {/* Email Input */}
               <div className="relative">
                 <input
+                  suppressHydrationWarning={true}
                   className={`bg-transparent border-b w-full py-3 text-white focus:outline-none placeholder-stone-600 text-sm transition-all duration-500 ${
                     focusedInput ? 'border-clay' : 'border-white/20 hover:border-white/40'
                   }`}
                   placeholder="Email address"
                   type="email"
+                  required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   onFocus={() => setFocusedInput(true)}
@@ -187,22 +216,40 @@ export default function Footer() {
                 }`} />
               </div>
 
+              {/* Status Message */}
+              {subscriptionStatus.message && (
+                <div className={`text-xs flex items-center gap-2 ${subscriptionStatus.success ? 'text-green-400' : 'text-red-400'}`}>
+                  {subscriptionStatus.success && <CheckCircle2 size={12} />}
+                  {subscriptionStatus.message}
+                </div>
+              )}
+
               {/* Subscribe Button */}
               <button
-                className="group relative text-[10px] font-bold uppercase tracking-[0.2em] text-obsidian bg-rice-paper hover:bg-clay hover:text-white transition-all duration-700 py-3.5 w-fit px-10 overflow-hidden hover:shadow-[0_8px_24px_rgba(210,180,140,0.3)] hover:scale-105 hover:tracking-[0.25em]"
-                onClick={() => console.log('Subscribe:', email)}
+                suppressHydrationWarning={true}
+                type="submit"
+                disabled={loading}
+                className="group relative text-[10px] font-bold uppercase tracking-[0.2em] text-obsidian bg-rice-paper hover:bg-clay hover:text-white transition-all duration-700 py-3.5 w-fit px-10 overflow-hidden hover:shadow-[0_8px_24px_rgba(210,180,140,0.3)] hover:scale-105 hover:tracking-[0.25em] disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                <span className="relative z-10">Subscribe</span>
+                <span className="relative z-10 flex items-center gap-2">
+                   {loading ? (
+                     <>
+                       <Loader2 size={12} className="animate-spin" /> Processing
+                     </>
+                   ) : "Subscribe"}
+                </span>
                 
                 {/* Shimmer Effect */}
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-                </div>
-
-                {/* Hover Fill */}
-                <div className="absolute inset-0 bg-gradient-to-r from-clay/0 via-clay to-clay/0 scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-center" />
+                {!loading && (
+                  <>
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                    </div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-clay/0 via-clay to-clay/0 scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-center" />
+                  </>
+                )}
               </button>
-            </div>
+            </form>
           </div>
 
         </div>
@@ -242,13 +289,7 @@ export default function Footer() {
         @keyframes grain-shift {
           0%, 100% { transform: translate(0, 0); }
           10% { transform: translate(-5%, -5%); }
-          20% { transform: translate(-10%, 5%); }
-          30% { transform: translate(5%, -10%); }
-          40% { transform: translate(-5%, 15%); }
           50% { transform: translate(-10%, 5%); }
-          60% { transform: translate(15%, 0); }
-          70% { transform: translate(0, 10%); }
-          80% { transform: translate(-15%, 0); }
           90% { transform: translate(10%, 5%); }
         }
 

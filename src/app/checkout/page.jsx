@@ -1,55 +1,75 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import { useCart } from '../../context/CartContext';
 import { loadRazorpay } from '../../utils/razorpayUtils';
+import { calculateShipping, formatCurrency, getShippingEstimate } from '../../utils/shippingUtils';
 
-export default function CheckoutPage() {
+// ==============================================================================
+// INTERNAL COMPONENT: CheckoutContent
+// Handles all the logic, state, and UI for the checkout process
+// ==============================================================================
+function CheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { cartItems, cartSubtotal, clearCart, removeFromCart } = useCart();
+  
+  // Context Data
+  const { cartItems, clearCart, removeFromCart } = useCart();
+  
+  // Local UI State
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState(1); // Mobile: 1: Shipping, 2: Order Summary, 3: Payment | Desktop: 1: Shipping, 2: Payment
+  const [step, setStep] = useState(1); // 1: Shipping, 2: Payment (or Summary on Mobile)
   const [isProcessing, setIsProcessing] = useState(false);
-  
-  // Helper function to calculate item total
-  const calculateItemTotal = (price, quantity) => {
-    const itemPrice = typeof price === 'string' 
-      ? parseFloat(price.replace(/[^0-9.-]+/g, "")) 
-      : price;
-    return itemPrice * quantity;
+  const [isMobile, setIsMobile] = useState(false);
+
+  // ----------------------------------------------------------------------------
+  // 1. DATA PREPARATION & CALCULATIONS
+  // ----------------------------------------------------------------------------
+
+  // Helper: Parse price strings that might contain symbols
+  const parsePrice = (price) => {
+    if (typeof price === 'string') {
+      return parseFloat(price.replace(/[^0-9.-]+/g, ""));
+    }
+    return price;
   };
+
+  const calculateItemTotal = (price, quantity) => parsePrice(price) * quantity;
   
-  // Get selected item IDs from URL parameters
+  // Identify which items are being checked out (from URL or all items)
   const selectedItemIds = searchParams.getAll('selected');
   
-  // Filter cart items to only include selected ones
   const filteredCartItems = selectedItemIds.length > 0 
     ? cartItems.filter(item => selectedItemIds.includes(item.id))
     : cartItems;
   
-  // Recalculate subtotal for filtered items
+  // Calculation: Subtotal
   const filteredSubtotal = filteredCartItems.reduce(
-    (sum, item) => {
-      const itemPrice = typeof item.price === 'string' 
-        ? parseFloat(item.price.replace(/[^0-9.-]+/g, "")) 
-        : item.price;
-      return sum + (itemPrice * item.quantity);
-    },
+    (sum, item) => sum + calculateItemTotal(item.price, item.quantity),
     0
   );
+
+  // Calculation: Total Weight
+  // Logic: Use item.weight if available, otherwise default to 0.5kg per item
+  const totalWeight = filteredCartItems.reduce((acc, item) => {
+    const itemWeight = item.weight ? parseFloat(item.weight) : 0.5;
+    return acc + (itemWeight * item.quantity);
+  }, 0);
   
-  // Form states
-  const [isMobile, setIsMobile] = useState(false);
+  // ----------------------------------------------------------------------------
+  // 2. FORM STATE MANAGEMENT
+  // ----------------------------------------------------------------------------
+
   const [shippingInfo, setShippingInfo] = useState({
     firstName: '',
     lastName: '',
     email: '',
     phone: '',
+    gstNumber: '', // NEW: GST Field
     address: '',
     apartment: '',
     city: '',
@@ -57,47 +77,6 @@ export default function CheckoutPage() {
     zipCode: '',
     country: 'India'
   });
-
-  // Saved addresses management
-  const [savedAddresses, setSavedAddresses] = useState([]);
-
-  // Load saved shipping info and addresses from localStorage on component mount
-  useEffect(() => {
-    // Check if mobile view
-    const checkMobile = () => {
-      const mobile = window.innerWidth < 1024;
-      setIsMobile(mobile);
-      console.log('Mobile detection:', mobile, 'Window width:', window.innerWidth, 'Step:', step);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    
-    const savedShippingInfo = localStorage.getItem('shippingInfo');
-    if (savedShippingInfo) {
-      try {
-        const parsed = JSON.parse(savedShippingInfo);
-        setShippingInfo(prev => ({
-          ...prev,
-          ...parsed
-        }));
-      } catch (error) {
-        console.error('Error parsing saved shipping info:', error);
-      }
-    }
-
-    // Load saved addresses
-    const savedAddressesData = localStorage.getItem('savedAddresses');
-    if (savedAddressesData) {
-      try {
-        const addresses = JSON.parse(savedAddressesData);
-        setSavedAddresses(addresses);
-      } catch (error) {
-        console.error('Error parsing saved addresses:', error);
-      }
-    }
-    
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   const [billingInfo, setBillingInfo] = useState({
     sameAsShipping: true,
@@ -110,196 +89,68 @@ export default function CheckoutPage() {
     zipCode: '',
     country: 'India'
   });
-  
+
+  const [savedAddresses, setSavedAddresses] = useState([]);
   const [paymentMethod, setPaymentMethod] = useState('razorpay');
   const [shippingMethod, setShippingMethod] = useState('standard');
-  
-  // Shipping prices constants
-  const SHIPPING_PRICES = {
-    standard: 50,
-    express: 150,
-  };
 
-  // Calculations
-  const shippingCost = SHIPPING_PRICES[shippingMethod];
+  // Calculation: Shipping Cost (Dynamic based on Weight)
+  const shippingCost = calculateShipping(filteredSubtotal, shippingMethod, totalWeight);
+
+  // Calculation: Tax & Final Total
   const taxRate = 0.18; // 18% GST
   const taxAmount = filteredSubtotal * taxRate;
   const total = filteredSubtotal + shippingCost + taxAmount;
 
+  // ----------------------------------------------------------------------------
+  // 3. EFFECTS (Lifecycle)
+  // ----------------------------------------------------------------------------
+
   useEffect(() => {
-    // Only redirect to cart if not processing payment and no items to checkout
+    // 1. Detect Mobile View
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    // 2. Load Saved Shipping Info
+    const savedShippingInfo = localStorage.getItem('shippingInfo');
+    if (savedShippingInfo) {
+      try {
+        setShippingInfo(prev => ({ ...prev, ...JSON.parse(savedShippingInfo) }));
+      } catch (error) {
+        console.error('Error parsing saved shipping info:', error);
+      }
+    }
+
+    // 3. Load Saved Addresses
+    const savedAddressesData = localStorage.getItem('savedAddresses');
+    if (savedAddressesData) {
+      try {
+        setSavedAddresses(JSON.parse(savedAddressesData));
+      } catch (error) {
+        console.error('Error parsing saved addresses:', error);
+      }
+    }
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Redirect if cart is empty
+  useEffect(() => {
     if (filteredCartItems.length === 0 && !isProcessing) {
       router.push('/cart');
     }
-  }, [cartItems, filteredCartItems, selectedItemIds, router, isProcessing]);
+  }, [filteredCartItems, router, isProcessing]);
 
-  const handleShippingSubmit = (e) => {
-    e.preventDefault();
-    setLoading(true);
-    // Simulate processing delay for better UX
-    setTimeout(() => {
-      setStep(2); // Always go to step 2 (Payment for desktop, Order Summary for mobile)
-      setLoading(false);
-    }, 300);
-  };
-
-  const handlePaymentSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    
-    try {
-      // Check if COD is selected
-      if (paymentMethod === 'cod') {
-        // Handle Cash on Delivery
-        const response = await fetch('/api/create-cod-order', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            items: filteredCartItems,
-            shipping: shippingInfo,
-            total: total,
-            paymentMethod: 'cod'
-          }),
-        });
-
-        const order = await response.json();
-        
-        if (order.id) {
-          // Navigate first, then remove only purchased items
-          router.push('/order-success');
-          // Remove only the purchased items from cart
-          setTimeout(() => {
-            if (selectedItemIds.length > 0) {
-              // Remove specific selected items
-              selectedItemIds.forEach(id => removeFromCart(id));
-            } else {
-              // If no specific items selected, clear entire cart (for Buy Now)
-              clearCart();
-            }
-          }, 100);
-          // Set processing flag to prevent redirect
-          setIsProcessing(true);
-          setTimeout(() => setIsProcessing(false), 2000); // Clear flag after 2 seconds
-        } else {
-          console.error('Failed to create COD order');
-          setLoading(false);
-        }
-        return;
-      }
-      
-      // Handle Razorpay payment
-      console.log('Processing Razorpay payment...');
-      const response = await fetch('/api/create-razorpay-order', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          items: filteredCartItems,
-          shipping: shippingInfo,
-          total: total
-        }),
-      });
-
-      const order = await response.json();
-      
-      if (order.id) {
-        const Razorpay = await loadRazorpay();
-        
-        if (!Razorpay) {
-          console.error('Razorpay SDK failed to load');
-          setLoading(false);
-          return;
-        }
-        
-        const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY;
-        
-        const options = {
-          key: razorpayKey,
-          amount: order.amount,
-          currency: 'INR',
-          name: 'Basho by Shivangi',
-          description: 'Purchase of pottery items',
-          order_id: order.id,
-          handler: async function (response) {
-            // Payment successful
-            const verifyResponse = await fetch('/api/verify-payment', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-              }),
-            });
-
-            const verification = await verifyResponse.json();
-            
-            if (verification.success) {
-              // Navigate first, then remove only purchased items
-              router.push('/order-success');
-              // Remove only the purchased items from cart
-              setTimeout(() => {
-                if (selectedItemIds.length > 0) {
-                  // Remove specific selected items
-                  selectedItemIds.forEach(id => removeFromCart(id));
-                } else {
-                  // If no specific items selected, clear entire cart (for Buy Now)
-                  clearCart();
-                }
-              }, 100);
-            } else {
-              console.error('Payment verification failed');
-              setLoading(false);
-            }
-          },
-          prefill: {
-            name: `${shippingInfo.firstName} ${shippingInfo.lastName}`,
-            email: shippingInfo.email,
-            contact: shippingInfo.phone,
-          },
-          theme: {
-            color: '#A65D3D', // Clay color
-          },
-          modal: {
-            ondismiss: function() {
-              setLoading(false);
-            },
-            escape: true,
-            backdropclose: true,
-            handleback: true,
-          }
-        };
-
-        const rzp = new Razorpay(options);
-        
-        // Add payment event handlers
-        rzp.on('payment.failed', function (response) {
-          setLoading(false);
-        });
-        
-        rzp.on('payment.cancel', function (response) {
-          setLoading(false);
-        });
-        
-        rzp.open();
-      }
-    } catch (error) {
-      setLoading(false);
-    }
-  };
+  // ----------------------------------------------------------------------------
+  // 4. HANDLERS & ACTIONS
+  // ----------------------------------------------------------------------------
 
   const updateShippingInfo = (field, value) => {
     setShippingInfo(prev => {
-      const updated = {
-        ...prev,
-        [field]: value
-      };
-      // Save to localStorage for future use
+      const updated = { ...prev, [field]: value };
       localStorage.setItem('shippingInfo', JSON.stringify(updated));
       return updated;
     });
@@ -312,7 +163,8 @@ export default function CheckoutPage() {
         address: shippingInfo.address,
         city: shippingInfo.city,
         pinCode: shippingInfo.zipCode,
-        phone: shippingInfo.phone
+        phone: shippingInfo.phone,
+        state: shippingInfo.state
       };
       
       const updatedAddresses = [...savedAddresses, newAddress];
@@ -322,18 +174,157 @@ export default function CheckoutPage() {
   };
 
   const selectSavedAddress = (address) => {
-    setShippingInfo({
+    setShippingInfo(prev => ({
+      ...prev,
       firstName: address.fullName.split(' ')[0] || '',
       lastName: address.fullName.split(' ')[1] || '',
       address: address.address,
       city: address.city,
       zipCode: address.pinCode,
       phone: address.phone,
-      apartment: '',
-      state: '',
-      country: 'India'
-    });
+      state: address.state || prev.state,
+    }));
   };
+
+  const handleShippingSubmit = (e) => {
+    e.preventDefault();
+    setLoading(true);
+    // Simulate API/Validation delay
+    setTimeout(() => {
+      setStep(2); 
+      setLoading(false);
+    }, 400);
+  };
+
+  const handleOrderSuccess = () => {
+    router.push('/order-success');
+    setIsProcessing(true);
+    
+    // Clean up cart
+    setTimeout(() => {
+      if (selectedItemIds.length > 0) {
+        selectedItemIds.forEach(id => removeFromCart(id));
+      } else {
+        clearCart();
+      }
+      setIsProcessing(false);
+    }, 500);
+  };
+
+  const handlePaymentSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    try {
+      // 1. Construct Order Payload
+      const orderPayload = {
+        items: filteredCartItems,
+        shipping: shippingInfo, // Contains GST Number
+        billing: billingInfo.sameAsShipping ? shippingInfo : billingInfo,
+        total: total,
+        subtotal: filteredSubtotal,
+        tax: taxAmount,
+        shippingCost: shippingCost,
+        paymentMethod: paymentMethod,
+        totalWeight: totalWeight
+      };
+
+      // 2. Handle Cash on Delivery
+      if (paymentMethod === 'cod') {
+        const response = await fetch('/api/create-cod-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(orderPayload),
+        });
+
+        const order = await response.json();
+        
+        if (order.id) {
+          handleOrderSuccess();
+        } else {
+          console.error('Failed to create COD order');
+          setLoading(false);
+          alert('Failed to place order. Please try again.');
+        }
+        return;
+      }
+      
+      // 3. Handle Razorpay
+      const response = await fetch('/api/create-razorpay-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderPayload),
+      });
+
+      const order = await response.json();
+      
+      if (order.id) {
+        const Razorpay = await loadRazorpay();
+        if (!Razorpay) {
+          console.error('Razorpay SDK failed to load');
+          setLoading(false);
+          return;
+        }
+        
+        const options = {
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY,
+          amount: order.amount,
+          currency: 'INR',
+          name: 'Basho by Shivangi',
+          description: 'Handcrafted Pottery',
+          order_id: order.id,
+          handler: async function (response) {
+            // Verify Signature
+            const verifyResponse = await fetch('/api/verify-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            });
+
+            const verification = await verifyResponse.json();
+            if (verification.success) {
+              handleOrderSuccess();
+            } else {
+              console.error('Payment verification failed');
+              setLoading(false);
+              alert('Payment verification failed. Please contact support.');
+            }
+          },
+          prefill: {
+            name: `${shippingInfo.firstName} ${shippingInfo.lastName}`,
+            email: shippingInfo.email,
+            contact: shippingInfo.phone,
+          },
+          theme: {
+            color: '#A65D3D', // Clay color
+          },
+          modal: {
+            ondismiss: function() { setLoading(false); }
+          }
+        };
+
+        const rzp = new Razorpay(options);
+        rzp.on('payment.failed', function (response) {
+          console.error(response.error);
+          setLoading(false);
+          alert(`Payment Failed: ${response.error.description}`);
+        });
+        rzp.open();
+      }
+    } catch (error) {
+      console.error(error);
+      setLoading(false);
+      alert('An unexpected error occurred. Please try again.');
+    }
+  };
+
+  // ----------------------------------------------------------------------------
+  // 5. RENDER
+  // ----------------------------------------------------------------------------
 
   if (cartItems.length === 0) {
     return (
@@ -356,644 +347,517 @@ export default function CheckoutPage() {
     <div className="min-h-screen bg-charcoal flex flex-col">
       <Header />
       
-      {/* Loading Overlay */}
+      {/* --- Loading Overlay --- */}
       {loading && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-charcoal-light rounded-lg p-6 border border-clay/30 shadow-2xl">
-            <div className="flex items-center gap-3">
-              <div className="animate-spin rounded-full h-6 w-6 border-2 border-clay border-t-transparent"></div>
-              <span className="text-rice-paper font-medium">Processing...</span>
-            </div>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[100]">
+          <div className="bg-charcoal-light rounded-lg p-8 border border-clay/30 shadow-2xl flex flex-col items-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-2 border-clay border-t-transparent mb-4"></div>
+            <span className="text-rice-paper font-medium text-lg">Processing...</span>
           </div>
         </div>
       )}
       
       <main className="flex-grow px-4 py-8 md:py-12 mt-12">
         <div className="max-w-6xl mx-auto">
-          {/* Progress Steps */}
-          <div className="flex items-center justify-center mb-8 px-2 sm:px-0">
-            <div className="flex items-center space-x-2 sm:space-x-4 lg:space-x-6">
-              <div className={`flex items-center transition-all duration-700 ease-out ${step >= 1 ? 'text-clay scale-105' : 'text-stone-500'}`}>
-                <div className={`relative w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold transition-all duration-700 ease-out ${
-                  step >= 1 
-                    ? 'bg-gradient-to-br from-clay to-clay/90 text-white shadow-lg shadow-clay/30 scale-110' 
-                    : 'bg-charcoal-light border-2 border-stone-600'
-                }`}>
-                  {step >= 1 && (
-                    <div className="absolute inset-0 rounded-full bg-clay/20 animate-ping"></div>
-                  )}
-                  1
-                </div>
-                <span className="ml-1 sm:ml-2 lg:ml-3 text-xs sm:text-sm font-semibold uppercase tracking-wider transition-all duration-700">Shipping</span>
+          
+          {/* --- Progress Steps --- */}
+          <div className="flex items-center justify-center mb-10">
+            <div className="flex items-center space-x-4">
+              {/* Step 1 Indicator */}
+              <div className={`flex items-center ${step >= 1 ? 'text-clay' : 'text-stone-500'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+                  step >= 1 ? 'border-clay bg-clay text-white' : 'border-stone-600 bg-transparent'
+                }`}>1</div>
+                <span className="ml-2 font-medium hidden sm:block">Shipping</span>
               </div>
               
-              {(isMobile || true) && (
-                <>
-                  <div className={`h-1 w-8 sm:w-12 lg:w-16 transition-all duration-700 ease-out relative ${
-                    step >= 2 ? 'bg-gradient-to-r from-clay to-clay/80' : 'bg-stone-700'
-                  }`}>
-                    {step === 2 && (
-                      <div className="absolute inset-0 bg-gradient-to-r from-clay to-clay/80 animate-pulse"></div>
-                    )}
-                  </div>
-                  
-                  <div className={`flex items-center transition-all duration-700 ease-out ${step >= 2 ? 'text-clay scale-105' : 'text-stone-500'}`}>
-                    <div className={`relative w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold transition-all duration-700 ease-out ${
-                      step >= 2 
-                        ? 'bg-gradient-to-br from-clay to-clay/90 text-white shadow-lg shadow-clay/30 scale-110' 
-                        : 'bg-charcoal-light border-2 border-stone-600'
-                    }`}>
-                      {step >= 2 && (
-                        <div className="absolute inset-0 rounded-full bg-clay/20 animate-ping"></div>
-                      )}
-                      2
-                    </div>
-                    <span className="ml-1 sm:ml-2 lg:ml-3 text-xs sm:text-sm font-semibold uppercase tracking-wider transition-all duration-700">
-                      {isMobile ? 'Summary' : 'Payment'}
-                    </span>
-                  </div>
-                </>
-              )}
+              <div className="w-12 h-[1px] bg-stone-700"></div>
               
-              {isMobile && (
-                <>
-                  <div className={`h-1 w-8 sm:w-12 lg:w-16 transition-all duration-700 ease-out relative ${
-                    step >= 3 ? 'bg-gradient-to-r from-clay to-clay/80' : 'bg-stone-700'
-                  }`}>
-                    {step === 3 && (
-                      <div className="absolute inset-0 bg-gradient-to-r from-clay to-clay/80 animate-pulse"></div>
-                    )}
-                  </div>
-                  
-                  <div className={`flex items-center transition-all duration-700 ease-out ${step >= 3 ? 'text-clay scale-105' : 'text-stone-500'}`}>
-                    <div className={`relative w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold transition-all duration-700 ease-out ${
-                      step >= 3 
-                        ? 'bg-gradient-to-br from-clay to-clay/90 text-white shadow-lg shadow-clay/30 scale-110' 
-                        : 'bg-charcoal-light border-2 border-stone-600'
-                    }`}>
-                      {step >= 3 && (
-                        <div className="absolute inset-0 rounded-full bg-clay/20 animate-ping"></div>
-                      )}
-                      3
-                    </div>
-                    <span className="ml-1 sm:ml-2 lg:ml-3 text-xs sm:text-sm font-semibold uppercase tracking-wider transition-all duration-700">Payment</span>
-                  </div>
-                </>
-              )}
+              {/* Step 2 Indicator */}
+              <div className={`flex items-center ${step >= 2 ? 'text-clay' : 'text-stone-500'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+                  step >= 2 ? 'border-clay bg-clay text-white' : 'border-stone-600 bg-transparent'
+                }`}>2</div>
+                <span className="ml-2 font-medium hidden sm:block">Payment</span>
+              </div>
             </div>
           </div>
+
           <div className={`grid ${isMobile ? 'grid-cols-1' : 'lg:grid-cols-3'} gap-8`}>
-            {/* Main Content */}
+            
+            {/* --- LEFT COLUMN: Forms --- */}
             <div className={isMobile ? '' : 'lg:col-span-2'}>
+              
+              {/* STEP 1: Shipping Form */}
               {step === 1 && (
-                <form onSubmit={handleShippingSubmit} className="bg-charcoal-light rounded-lg p-6 border border-border-subtle">
-                  <h2 className="text-xl font-serif text-rice-paper mb-6">Shipping Information</h2>
+                <form onSubmit={handleShippingSubmit} className="bg-charcoal-light rounded-xl p-6 md:p-8 border border-border-subtle shadow-lg">
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-serif text-rice-paper">Shipping Information</h2>
+                  </div>
                   
-                  {/* Saved Addresses Section */}
+                  {/* Saved Addresses List */}
                   {savedAddresses.length > 0 && (
-                    <div className="mb-6 p-4 bg-charcoal/50 rounded-md border border-border-subtle">
-                      <h3 className="text-sm font-medium text-rice-paper mb-4">Saved Addresses</h3>
-                      <div className="space-y-3">
+                    <div className="mb-8 p-4 bg-charcoal/50 rounded-lg border border-border-subtle">
+                      <h3 className="text-sm font-medium text-stone-400 uppercase tracking-wider mb-4">Saved Addresses</h3>
+                      <div className="grid gap-3">
                         {savedAddresses.map((address, index) => (
                           <div 
                             key={index}
-                            className="p-3 border border-border-subtle rounded-md hover:border-clay/30 cursor-pointer transition-colors"
+                            className="p-4 border border-stone-700 rounded-lg hover:border-clay/50 hover:bg-charcoal/80 cursor-pointer transition-all group"
                             onClick={() => selectSavedAddress(address)}
                           >
                             <div className="flex justify-between items-start">
-                              <div className="flex-1">
-                                <p className="text-sm font-medium text-rice-paper">{address.fullName}</p>
-                                <p className="text-xs text-stone-400">{address.address}, {address.city}</p>
-                                <p className="text-xs text-stone-500">PIN: {address.pinCode}</p>
+                              <div>
+                                <p className="font-medium text-rice-paper">{address.fullName}</p>
+                                <p className="text-sm text-stone-400 mt-1">{address.address}</p>
+                                <p className="text-sm text-stone-400">{address.city}, {address.state} - {address.pinCode}</p>
                               </div>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  // Remove address from saved list
-                                  const updatedAddresses = savedAddresses.filter((_, i) => i !== index);
-                                  setSavedAddresses(updatedAddresses);
-                                  localStorage.setItem('savedAddresses', JSON.stringify(updatedAddresses));
-                                }}
-                                className="text-red-400 hover:text-red-300 text-xs"
-                              >
-                                Remove
-                              </button>
+                              <span className="text-clay opacity-0 group-hover:opacity-100 text-sm font-medium transition-opacity">
+                                Select
+                              </span>
                             </div>
                           </div>
                         ))}
                       </div>
-                      
-                      <button
-                        type="button"
-                        onClick={() => {
-                          // Save current address
-                          saveNewAddress();
-                        }}
-                        className="w-full mt-3 bg-clay hover:bg-clay/90 text-white py-2 rounded-md font-medium transition-colors"
-                      >
-                        Save Current Address
-                      </button>
                     </div>
                   )}
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div className="relative">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
                       <label className="block text-sm text-stone-300 mb-2">First Name</label>
-                      <div className="relative">
-                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-lg">person</span>
-                        <input
-                          type="text"
-                          required
-                          value={shippingInfo.firstName}
-                          onChange={(e) => updateShippingInfo('firstName', e.target.value)}
-                          className="w-full pl-10 pr-4 py-2 bg-charcoal border border-border-subtle rounded-md text-rice-paper focus:outline-none focus:border-clay focus:ring-2 focus:ring-clay/20 transition-all duration-300"
-                        />
-                      </div>
+                      <input 
+                        type="text" 
+                        required 
+                        value={shippingInfo.firstName} 
+                        onChange={(e) => updateShippingInfo('firstName', e.target.value)} 
+                        className="w-full px-4 py-3 bg-charcoal border border-border-subtle rounded-lg text-rice-paper focus:outline-none focus:border-clay focus:ring-1 focus:ring-clay" 
+                      />
                     </div>
-                    <div className="relative">
+                    <div>
                       <label className="block text-sm text-stone-300 mb-2">Last Name</label>
-                      <div className="relative">
-                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-lg">person</span>
-                        <input
-                          type="text"
-                          required
-                          value={shippingInfo.lastName}
-                          onChange={(e) => updateShippingInfo('lastName', e.target.value)}
-                          className="w-full pl-10 pr-4 py-2 bg-charcoal border border-border-subtle rounded-md text-rice-paper focus:outline-none focus:border-clay focus:ring-2 focus:ring-clay/20 transition-all duration-300"
+                      <input 
+                        type="text" 
+                        required 
+                        value={shippingInfo.lastName} 
+                        onChange={(e) => updateShippingInfo('lastName', e.target.value)} 
+                        className="w-full px-4 py-3 bg-charcoal border border-border-subtle rounded-lg text-rice-paper focus:outline-none focus:border-clay focus:ring-1 focus:ring-clay" 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label className="block text-sm text-stone-300 mb-2">Email</label>
+                        <input 
+                            type="email" 
+                            required 
+                            value={shippingInfo.email} 
+                            onChange={(e) => updateShippingInfo('email', e.target.value)} 
+                            className="w-full px-4 py-3 bg-charcoal border border-border-subtle rounded-lg text-rice-paper focus:outline-none focus:border-clay focus:ring-1 focus:ring-clay" 
                         />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mb-4">
-                    <label className="block text-sm text-stone-300 mb-2">Email</label>
-                    <div className="relative">
-                      <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-lg">mail</span>
-                      <input
-                        type="email"
-                        required
-                        value={shippingInfo.email}
-                        onChange={(e) => updateShippingInfo('email', e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-charcoal border border-border-subtle rounded-md text-rice-paper focus:outline-none focus:border-clay focus:ring-2 focus:ring-clay/20 transition-all duration-300"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mb-4">
-                    <label className="block text-sm text-stone-300 mb-2">Phone</label>
-                    <div className="relative">
-                      <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-lg">phone</span>
-                      <input
-                        type="tel"
-                        required
-                        value={shippingInfo.phone}
-                        onChange={(e) => updateShippingInfo('phone', e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-charcoal border border-border-subtle rounded-md text-rice-paper focus:outline-none focus:border-clay focus:ring-2 focus:ring-clay/20 transition-all duration-300"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mb-4">
-                    <label className="block text-sm text-stone-300 mb-2">Address</label>
-                    <div className="relative">
-                      <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-lg">home</span>
-                      <input
-                        type="text"
-                        required
-                        value={shippingInfo.address}
-                        onChange={(e) => updateShippingInfo('address', e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-charcoal border border-border-subtle rounded-md text-rice-paper focus:outline-none focus:border-clay focus:ring-2 focus:ring-clay/20 transition-all duration-300"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <div>
-                      <label className="block text-sm text-stone-300 mb-2">City</label>
-                      <input
-                        type="text"
-                        required
-                        value={shippingInfo.city}
-                        onChange={(e) => updateShippingInfo('city', e.target.value)}
-                        className="w-full px-4 py-2 bg-charcoal border border-border-subtle rounded-md text-rice-paper focus:outline-none focus:border-clay"
-                      />
                     </div>
                     <div>
-                      <label className="block text-sm text-stone-300 mb-2">State</label>
-                      <input
-                        type="text"
-                        required
-                        value={shippingInfo.state}
-                        onChange={(e) => updateShippingInfo('state', e.target.value)}
-                        className="w-full px-4 py-2 bg-charcoal border border-border-subtle rounded-md text-rice-paper focus:outline-none focus:border-clay"
-                      />
+                        <label className="block text-sm text-stone-300 mb-2">Phone</label>
+                        <input 
+                            type="tel" 
+                            required 
+                            value={shippingInfo.phone} 
+                            onChange={(e) => updateShippingInfo('phone', e.target.value)} 
+                            className="w-full px-4 py-3 bg-charcoal border border-border-subtle rounded-lg text-rice-paper focus:outline-none focus:border-clay focus:ring-1 focus:ring-clay" 
+                        />
                     </div>
-                    <div>
-                      <label className="block text-sm text-stone-300 mb-2">ZIP Code</label>
-                      <input
+                  </div>
+
+                  {/* GST SECTION */}
+                  <div className="mb-6">
+                    <label className="block text-sm text-stone-300 mb-2">
+                        GST Number <span className="text-stone-500 text-xs ml-1">(Optional for Business Invoice)</span>
+                    </label>
+                    <div className="relative">
+                        <input
                         type="text"
-                        required
-                        value={shippingInfo.zipCode}
-                        onChange={(e) => updateShippingInfo('zipCode', e.target.value)}
-                        className="w-full px-4 py-2 bg-charcoal border border-border-subtle rounded-md text-rice-paper focus:outline-none focus:border-clay"
-                      />
+                        placeholder="e.g. 27AAAAA0000A1Z5"
+                        value={shippingInfo.gstNumber}
+                        onChange={(e) => updateShippingInfo('gstNumber', e.target.value)}
+                        className="w-full px-4 py-3 bg-charcoal border border-border-subtle rounded-lg text-rice-paper focus:outline-none focus:border-clay focus:ring-1 focus:ring-clay uppercase placeholder:text-stone-600"
+                        />
                     </div>
                   </div>
 
                   <div className="mb-6">
-                    <label className="block text-sm text-stone-300 mb-2">Shipping Method</label>
-                    <div className="space-y-2">
-                      <label className={`flex items-center p-3 border border-border-subtle rounded-md cursor-pointer transition-colors ${
-                        shippingMethod === 'standard'
-                          ? 'border-clay bg-clay/10'
-                          : 'border-border-subtle hover:border-clay/50'
+                    <label className="block text-sm text-stone-300 mb-2">Address</label>
+                    <input 
+                        type="text" 
+                        required 
+                        value={shippingInfo.address} 
+                        onChange={(e) => updateShippingInfo('address', e.target.value)} 
+                        className="w-full px-4 py-3 bg-charcoal border border-border-subtle rounded-lg text-rice-paper focus:outline-none focus:border-clay focus:ring-1 focus:ring-clay" 
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div>
+                      <label className="block text-sm text-stone-300 mb-2">City</label>
+                      <input 
+                        type="text" 
+                        required 
+                        value={shippingInfo.city} 
+                        onChange={(e) => updateShippingInfo('city', e.target.value)} 
+                        className="w-full px-4 py-3 bg-charcoal border border-border-subtle rounded-lg text-rice-paper focus:outline-none focus:border-clay focus:ring-1 focus:ring-clay" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-stone-300 mb-2">State</label>
+                      <input 
+                        type="text" 
+                        required 
+                        value={shippingInfo.state} 
+                        onChange={(e) => updateShippingInfo('state', e.target.value)} 
+                        className="w-full px-4 py-3 bg-charcoal border border-border-subtle rounded-lg text-rice-paper focus:outline-none focus:border-clay focus:ring-1 focus:ring-clay" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-stone-300 mb-2">ZIP Code</label>
+                      <input 
+                        type="text" 
+                        required 
+                        value={shippingInfo.zipCode} 
+                        onChange={(e) => updateShippingInfo('zipCode', e.target.value)} 
+                        className="w-full px-4 py-3 bg-charcoal border border-border-subtle rounded-lg text-rice-paper focus:outline-none focus:border-clay focus:ring-1 focus:ring-clay" 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center mb-8">
+                    <input 
+                        type="checkbox" 
+                        id="saveAddress"
+                        className="w-4 h-4 rounded border-stone-600 bg-charcoal text-clay focus:ring-clay"
+                        onChange={(e) => { if(e.target.checked) saveNewAddress(); }}
+                    />
+                    <label htmlFor="saveAddress" className="ml-2 text-sm text-stone-300 cursor-pointer">
+                        Save this address for future orders
+                    </label>
+                  </div>
+
+                  {/* Shipping Method Selection */}
+                  <div className="mb-8">
+                    <h3 className="text-lg font-medium text-rice-paper mb-4">Shipping Method</h3>
+                    <div className="space-y-3">
+                      {/* Standard */}
+                      <label className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all ${
+                        shippingMethod === 'standard' ? 'border-clay bg-clay/10' : 'border-border-subtle hover:border-stone-500'
                       }`}>
-                        <input
-                          type="radio"
-                          name="shipping"
-                          value="standard"
-                          checked={shippingMethod === 'standard'}
-                          onChange={(e) => setShippingMethod(e.target.value)}
-                          className="mr-3 text-clay focus:ring-clay"
+                        <input 
+                            type="radio" 
+                            name="shipping" 
+                            value="standard" 
+                            checked={shippingMethod === 'standard'} 
+                            onChange={(e) => setShippingMethod(e.target.value)} 
+                            className="w-4 h-4 text-clay border-stone-500 focus:ring-clay bg-transparent" 
                         />
-                        <div className="flex-1">
-                          <span className="text-rice-paper">Standard Shipping</span>
-                          <span className="text-stone-400 text-sm ml-2">(5-7 business days)</span>
+                        <div className="ml-4 flex-1">
+                          <div className="flex justify-between">
+                            <span className="font-medium text-rice-paper">Standard Shipping</span>
+                            <span className="font-bold text-clay">
+                                {formatCurrency(calculateShipping(filteredSubtotal, 'standard', totalWeight))}
+                            </span>
+                          </div>
+                          <p className="text-sm text-stone-400 mt-1">{getShippingEstimate('standard')}</p>
                         </div>
-                        <span className="text-clay">₹{SHIPPING_PRICES.standard}</span>
                       </label>
-                      <label className={`flex items-center p-3 border border-border-subtle rounded-md cursor-pointer transition-colors ${
-                        shippingMethod === 'express'
-                          ? 'border-clay bg-clay/10'
-                          : 'border-border-subtle hover:border-clay/50'
+                      
+                      {/* Express */}
+                      <label className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all ${
+                        shippingMethod === 'express' ? 'border-clay bg-clay/10' : 'border-border-subtle hover:border-stone-500'
                       }`}>
-                        <input
-                          type="radio"
-                          name="shipping"
-                          value="express"
-                          checked={shippingMethod === 'express'}
-                          onChange={(e) => setShippingMethod(e.target.value)}
-                          className="mr-3 text-clay focus:ring-clay"
+                        <input 
+                            type="radio" 
+                            name="shipping" 
+                            value="express" 
+                            checked={shippingMethod === 'express'} 
+                            onChange={(e) => setShippingMethod(e.target.value)} 
+                            className="w-4 h-4 text-clay border-stone-500 focus:ring-clay bg-transparent" 
                         />
-                        <div className="flex-1">
-                          <span className="text-rice-paper">Express Shipping</span>
-                          <span className="text-stone-400 text-sm ml-2">(2-3 business days)</span>
+                        <div className="ml-4 flex-1">
+                          <div className="flex justify-between">
+                            <span className="font-medium text-rice-paper">Express Shipping</span>
+                            <span className="font-bold text-clay">
+                                {formatCurrency(calculateShipping(filteredSubtotal, 'express', totalWeight))}
+                            </span>
+                          </div>
+                          <p className="text-sm text-stone-400 mt-1">{getShippingEstimate('express')}</p>
                         </div>
-                        <span className="text-clay">₹150</span>
                       </label>
                     </div>
                   </div>
 
-                  <button
-                    type="submit"
-                    className="w-full bg-gradient-to-r from-clay to-clay/90 hover:from-clay/90 hover:to-clay text-white py-3 rounded-md font-medium transition-all duration-300 shadow-lg hover:shadow-clay/30 hover:-translate-y-0.5 transform"
+                  <button 
+                    type="submit" 
+                    className="w-full bg-clay hover:bg-clay-dark text-white py-4 rounded-xl font-medium text-lg transition-colors shadow-lg shadow-clay/20"
                   >
                     Continue to Payment
                   </button>
                 </form>
               )}
 
-              {((!isMobile && step >= 2) || (isMobile && step === 3)) && (
-                <form onSubmit={handlePaymentSubmit} className="bg-charcoal-light rounded-lg p-6 border border-border-subtle transition-all duration-500 ease-out hover:bg-charcoal/80 hover:border-clay/30 hover:shadow-[0_8px_25px_rgba(0,0,0,0.15)] hover:-translate-y-1">
-                  <h2 className="text-xl font-serif text-rice-paper mb-6">Payment Information</h2>
+              {/* STEP 2: Payment Form */}
+              {((!isMobile && step >= 2) || (isMobile && step === 2)) && (
+                <form onSubmit={handlePaymentSubmit} className="bg-charcoal-light rounded-xl p-6 md:p-8 border border-border-subtle shadow-lg animate-fade-in-up">
+                  <div className="flex justify-between items-center mb-8">
+                    <h2 className="text-2xl font-serif text-rice-paper">Payment Details</h2>
+                    <button 
+                        type="button" 
+                        onClick={() => setStep(1)} 
+                        className="text-sm text-clay hover:text-white underline"
+                    >
+                        Edit Shipping
+                    </button>
+                  </div>
                   
-                  <div className="mb-6">
-                    <label className="flex items-center mb-4">
-                      <input
-                        type="checkbox"
-                        checked={billingInfo.sameAsShipping}
-                        onChange={(e) => setBillingInfo(prev => ({ ...prev, sameAsShipping: e.target.checked }))}
-                        className="mr-2 text-clay focus:ring-clay"
-                      />
-                      <span className="text-rice-paper text-sm">Billing address same as shipping</span>
-                    </label>
+                  {/* Summary of Shipping Info */}
+                  <div className="mb-8 p-4 bg-charcoal/50 rounded-lg border border-border-subtle text-sm">
+                     <div className="flex justify-between mb-2">
+                        <span className="text-stone-400">Ship to:</span>
+                        <span className="text-rice-paper text-right">{shippingInfo.address}, {shippingInfo.city}</span>
+                     </div>
+                     <div className="flex justify-between mb-2">
+                        <span className="text-stone-400">Contact:</span>
+                        <span className="text-rice-paper text-right">{shippingInfo.phone}</span>
+                     </div>
+                     {shippingInfo.gstNumber && (
+                         <div className="flex justify-between">
+                            <span className="text-stone-400">GSTIN:</span>
+                            <span className="text-rice-paper font-mono">{shippingInfo.gstNumber}</span>
+                         </div>
+                     )}
                   </div>
 
-                  {!billingInfo.sameAsShipping && (
-                    <div className="mb-6 p-4 border border-border-subtle rounded-md">
-                      <h3 className="text-sm font-medium text-rice-paper mb-4">Billing Address</h3>
-                      {/* Add billing address fields similar to shipping */}
-                    </div>
-                  )}
-
-                  <div className="mb-6">
-                    <label className="block text-sm text-stone-300 mb-2">Payment Method</label>
-                    <div className="space-y-2">
-                      <label className={`group flex items-center p-4 border rounded-xl cursor-pointer transition-all duration-300 ease-out ${
-                        paymentMethod === 'razorpay' 
-                          ? 'border-clay bg-clay/10 shadow-lg shadow-clay/20' 
-                          : 'border-border-subtle hover:border-clay/50 hover:bg-charcoal/50'
+                  <div className="mb-8">
+                    <label className="block text-sm font-medium text-stone-300 mb-4">Select Payment Method</label>
+                    <div className="space-y-4">
+                      {/* Razorpay Option */}
+                      <label className={`relative flex items-start p-5 border rounded-xl cursor-pointer transition-all ${
+                        paymentMethod === 'razorpay' ? 'border-clay bg-clay/10' : 'border-border-subtle hover:border-stone-500'
                       }`}>
-                        <input
-                          type="radio"
-                          name="payment"
-                          value="razorpay"
-                          checked={paymentMethod === 'razorpay'}
-                          onChange={(e) => setPaymentMethod(e.target.value)}
-                          className="sr-only"
-                        />
-                        <div className="flex items-center">
-                          <div className={`w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center transition-all duration-300 ${
-                            paymentMethod === 'razorpay' 
-                              ? 'border-clay bg-clay' 
-                              : 'border-stone-600 bg-transparent'
-                          }`}>
-                            {paymentMethod === 'razorpay' && (
-                              <div className="w-2 h-2 rounded-full bg-white"></div>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className={`text-lg transition-colors duration-300 ${
-                              paymentMethod === 'razorpay' ? 'text-clay' : 'text-stone-400'
-                            }`}></span>
-                            <div>
-                              <p className={`font-medium transition-colors duration-300 ${
-                                paymentMethod === 'razorpay' ? 'text-rice-paper' : 'text-stone-300'
-                              }`}>Razorpay</p>
-                              <p className={`text-xs transition-colors duration-300 ${
-                                paymentMethod === 'razorpay' ? 'text-stone-400' : 'text-stone-500'
-                              }`}>UPI, Cards, Net Banking</p>
+                        <div className="flex items-center h-5">
+                            <input 
+                                type="radio" 
+                                name="payment" 
+                                value="razorpay" 
+                                checked={paymentMethod === 'razorpay'} 
+                                onChange={(e) => setPaymentMethod(e.target.value)} 
+                                className="w-4 h-4 text-clay border-stone-500 focus:ring-clay bg-transparent" 
+                            />
+                        </div>
+                        <div className="ml-4">
+                            <span className="block font-medium text-rice-paper">Online Payment (Razorpay)</span>
+                            <span className="block text-sm text-stone-400 mt-1">UPI, Credit/Debit Cards, NetBanking, Wallets</span>
+                            <div className="mt-2 flex gap-2">
+                                {/* Placeholders for card icons could go here */}
+                                <div className="w-8 h-5 bg-white/10 rounded"></div>
+                                <div className="w-8 h-5 bg-white/10 rounded"></div>
+                                <div className="w-8 h-5 bg-white/10 rounded"></div>
                             </div>
-                          </div>
                         </div>
                       </label>
                       
-                      <label className={`group flex items-center p-4 border rounded-xl cursor-pointer transition-all duration-300 ease-out ${
-                        paymentMethod === 'cod' 
-                          ? 'border-clay bg-clay/10 shadow-lg shadow-clay/20' 
-                          : 'border-border-subtle hover:border-clay/50 hover:bg-charcoal/50'
+                      {/* COD Option */}
+                      <label className={`relative flex items-start p-5 border rounded-xl cursor-pointer transition-all ${
+                        paymentMethod === 'cod' ? 'border-clay bg-clay/10' : 'border-border-subtle hover:border-stone-500'
                       }`}>
-                        <input
-                          type="radio"
-                          name="payment"
-                          value="cod"
-                          checked={paymentMethod === 'cod'}
-                          onChange={(e) => setPaymentMethod(e.target.value)}
-                          className="sr-only"
-                        />
-                        <div className="flex items-center">
-                          <div className={`w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center transition-all duration-300 ${
-                            paymentMethod === 'cod' 
-                              ? 'border-clay bg-clay' 
-                              : 'border-stone-600 bg-transparent'
-                          }`}>
-                            {paymentMethod === 'cod' && (
-                              <div className="w-2 h-2 rounded-full bg-white"></div>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className={`text-lg transition-colors duration-300 ${
-                              paymentMethod === 'cod' ? 'text-clay' : 'text-stone-400'
-                            }`}></span>
-                            <div>
-                              <p className={`font-medium transition-colors duration-300 ${
-                                paymentMethod === 'cod' ? 'text-rice-paper' : 'text-stone-300'
-                              }`}>Cash on Delivery</p>
-                              <p className={`text-xs transition-colors duration-300 ${
-                                paymentMethod === 'cod' ? 'text-stone-400' : 'text-stone-500'
-                              }`}>Pay when you receive</p>
-                            </div>
-                          </div>
+                        <div className="flex items-center h-5">
+                            <input 
+                                type="radio" 
+                                name="payment" 
+                                value="cod" 
+                                checked={paymentMethod === 'cod'} 
+                                onChange={(e) => setPaymentMethod(e.target.value)} 
+                                className="w-4 h-4 text-clay border-stone-500 focus:ring-clay bg-transparent" 
+                            />
+                        </div>
+                        <div className="ml-4">
+                            <span className="block font-medium text-rice-paper">Cash on Delivery</span>
+                            <span className="block text-sm text-stone-400 mt-1">Pay when you receive the order. Additional verification may be required.</span>
                         </div>
                       </label>
                     </div>
                   </div>
 
-                  <div className="mb-6">
-                    <div className="p-4 border border-border-subtle rounded-md bg-charcoal/50">
-                      <div className="flex items-center mb-2">
-                        <span className="material-symbols-outlined text-clay mr-2">lock</span>
-                        <span className="text-rice-paper text-sm font-medium">Secure Payment</span>
-                      </div>
-                      <p className="text-stone-400 text-xs">Your payment information is encrypted and secure. We accept all major credit cards, debit cards, and UPI payments.</p>
-                    </div>
+                  {/* Billing Address Toggle */}
+                  <div className="mb-8">
+                     <label className="flex items-center cursor-pointer">
+                        <input 
+                            type="checkbox" 
+                            checked={billingInfo.sameAsShipping}
+                            onChange={(e) => setBillingInfo(prev => ({ ...prev, sameAsShipping: e.target.checked }))}
+                            className="w-4 h-4 rounded border-stone-600 bg-charcoal text-clay focus:ring-clay"
+                        />
+                        <span className="ml-2 text-sm text-stone-300">Billing address same as shipping</span>
+                     </label>
                   </div>
+                  
+                  {/* Expanded Billing Address Form (if different) */}
+                  {!billingInfo.sameAsShipping && (
+                      <div className="mb-8 p-4 border border-stone-700 rounded-lg bg-charcoal animate-fade-in">
+                          <h3 className="text-sm font-medium text-rice-paper mb-4">Billing Address</h3>
+                          {/* Simplified fields for brevity in UI, but logic handles full object */}
+                          <div className="space-y-4">
+                             <input 
+                                type="text" placeholder="Full Name" 
+                                value={billingInfo.firstName}
+                                onChange={(e) => setBillingInfo({...billingInfo, firstName: e.target.value})}
+                                className="w-full px-3 py-2 bg-charcoal-light border border-stone-700 rounded text-rice-paper"
+                             />
+                             <input 
+                                type="text" placeholder="Address"
+                                value={billingInfo.address}
+                                onChange={(e) => setBillingInfo({...billingInfo, address: e.target.value})}
+                                className="w-full px-3 py-2 bg-charcoal-light border border-stone-700 rounded text-rice-paper"
+                             />
+                             <div className="grid grid-cols-2 gap-4">
+                                <input 
+                                    type="text" placeholder="City"
+                                    value={billingInfo.city}
+                                    onChange={(e) => setBillingInfo({...billingInfo, city: e.target.value})}
+                                    className="w-full px-3 py-2 bg-charcoal-light border border-stone-700 rounded text-rice-paper"
+                                />
+                                <input 
+                                    type="text" placeholder="ZIP Code"
+                                    value={billingInfo.zipCode}
+                                    onChange={(e) => setBillingInfo({...billingInfo, zipCode: e.target.value})}
+                                    className="w-full px-3 py-2 bg-charcoal-light border border-stone-700 rounded text-rice-paper"
+                                />
+                             </div>
+                          </div>
+                      </div>
+                  )}
 
                   <div className="flex gap-4">
-                    <button
-                      type="button"
-                      onClick={() => setStep(isMobile ? 2 : 1)}
-                      className="flex-1 border border-clay text-clay py-3 rounded-md font-medium hover:bg-clay/10 transition-colors"
+                    <button 
+                        type="button" 
+                        onClick={() => setStep(1)} 
+                        className="flex-1 py-4 border border-stone-600 text-stone-300 rounded-xl hover:bg-charcoal font-medium transition-colors"
                     >
-                      {isMobile ? 'Back to Summary' : 'Back to Shipping'}
+                        Back
                     </button>
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="flex-1 bg-clay hover:bg-clay/90 text-white py-3 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    <button 
+                        type="submit" 
+                        disabled={loading}
+                        className="flex-[2] bg-clay hover:bg-clay-dark text-white py-4 rounded-xl font-medium text-lg transition-colors shadow-lg shadow-clay/20 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {loading ? 'Processing...' : 'Complete Payment'}
+                      {loading ? 'Processing...' : `Pay ${formatCurrency(total)}`}
                     </button>
                   </div>
-
-                  </form>
+                </form>
               )}
+            </div>
 
-              {/* Mobile Order Summary Step */}
-              {isMobile && step === 2 && (
-                <div className="bg-charcoal-light rounded-lg p-6 border border-border-subtle">
-                  <h2 className="text-xl font-serif text-rice-paper mb-6">Order Summary</h2>
+            {/* --- RIGHT COLUMN: Order Summary --- */}
+            {/* Displayed always on Desktop, conditionally on Mobile */}
+            <div className={`lg:col-span-1 ${isMobile && step === 1 ? 'hidden' : 'block'}`}>
+              <div className="sticky top-8">
+                <div className="bg-charcoal-light rounded-xl border border-border-subtle shadow-xl overflow-hidden">
+                  <div className="p-6 bg-charcoal/30 border-b border-border-subtle">
+                    <h3 className="text-xl font-medium text-rice-paper">Order Summary</h3>
+                  </div>
                   
-                  <div className="space-y-4">
-                    {/* Shipping Information Summary */}
-                    <div className="p-4 bg-charcoal/50 rounded-md border border-border-subtle">
-                      <h3 className="text-sm font-medium text-rice-paper mb-3">Shipping Information</h3>
-                      <div className="space-y-1 text-sm">
-                        <p className="text-stone-300">{shippingInfo.firstName} {shippingInfo.lastName}</p>
-                        <p className="text-stone-300">{shippingInfo.email}</p>
-                        <p className="text-stone-300">{shippingInfo.phone}</p>
-                        <p className="text-stone-300">{shippingInfo.address}</p>
-                        <p className="text-stone-300">
-                          {shippingInfo.city}, {shippingInfo.state} {shippingInfo.zipCode}
-                        </p>
-                        <p className="text-stone-300">{shippingInfo.country}</p>
-                      </div>
-                    </div>
-
-                    {/* Order Items */}
-                    <div className="space-y-3">
-                      <h3 className="text-sm font-medium text-rice-paper">Order Items</h3>
+                  <div className="p-6">
+                    {/* Cart Items List */}
+                    <div className="space-y-4 mb-6 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
                       {filteredCartItems.map(item => (
-                        <div key={item.id} className="flex justify-between items-center">
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 bg-charcoal rounded-md overflow-hidden">
-                              <img 
+                        <div key={item.id} className="flex gap-4">
+                          <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 border border-stone-700">
+                            <img 
                                 src={item.image} 
-                                alt={item.name || 'Product image'}
-                                className="w-full h-full object-cover"
-                                loading="lazy"
-                              />
-                            </div>
-                            <div>
-                              <p className="text-rice-paper text-sm font-medium">{item.name}</p>
-                              <p className="text-stone-400 text-xs">Qty: {item.quantity}</p>
+                                alt={item.name} 
+                                className="w-full h-full object-cover" 
+                            />
+                            <div className="absolute -top-1 -right-1 w-5 h-5 bg-clay text-white text-xs flex items-center justify-center rounded-full">
+                                {item.quantity}
                             </div>
                           </div>
-                          <span className="text-white font-medium">
-                            ₹{calculateItemTotal(item.price, item.quantity).toLocaleString('en-IN')}
-                          </span>
+                          <div className="flex-1">
+                            <h4 className="text-rice-paper text-sm font-medium line-clamp-1">{item.name}</h4>
+                            <p className="text-stone-500 text-xs mt-1">Weight: {item.weight || 0.5}kg</p>
+                          </div>
+                          <div className="text-right">
+                             <p className="text-rice-paper text-sm font-medium">
+                                {formatCurrency(calculateItemTotal(item.price, item.quantity))}
+                             </p>
+                          </div>
                         </div>
                       ))}
                     </div>
 
-                    {/* Price Breakdown */}
-                    <div className="border-t border-border-subtle pt-4 space-y-2">
+                    {/* Cost Breakdown */}
+                    <div className="space-y-3 py-6 border-t border-stone-800">
                       <div className="flex justify-between text-sm">
                         <span className="text-stone-400">Subtotal</span>
-                        <span className="text-rice-paper">
-                          ₹{filteredSubtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                        </span>
+                        <span className="text-rice-paper">{formatCurrency(filteredSubtotal)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-stone-400">Total Weight</span>
+                        <span className="text-stone-400">{totalWeight.toFixed(2)} kg</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-stone-400">Shipping</span>
-                        <span className={shippingCost > 0 ? 'text-rice-paper' : 'text-green-400'}>
-                          {shippingCost > 0 ? `₹${shippingCost.toLocaleString('en-IN')}` : 'Free'}
+                        <span className={shippingCost === 0 ? 'text-green-400 font-medium' : 'text-rice-paper'}>
+                          {shippingCost === 0 ? 'Free' : formatCurrency(shippingCost)}
                         </span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-stone-400">Tax (GST)</span>
-                        <span className="text-rice-paper">
-                          ₹{taxAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        <span className="text-stone-400">GST (18%)</span>
+                        <span className="text-rice-paper">{formatCurrency(taxAmount)}</span>
+                      </div>
+                    </div>
+
+                    {/* Total */}
+                    <div className="pt-6 border-t border-stone-800">
+                      <div className="flex justify-between items-end">
+                        <span className="text-stone-300 font-medium">Total</span>
+                        <span className="text-2xl font-serif text-clay font-bold">
+                            {formatCurrency(total)}
                         </span>
                       </div>
-                      <div className="border-t border-border-subtle pt-2">
-                        <div className="flex justify-between">
-                          <span className="text-rice-paper font-medium">Total</span>
-                          <span className="text-2xl font-semibold text-white">
-                            ₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex gap-4 pt-4">
-                      <button
-                        type="button"
-                        onClick={() => setStep(1)}
-                        className="flex-1 border border-clay text-clay py-3 rounded-md font-medium hover:bg-clay/10 transition-colors"
-                      >
-                        Back to Shipping
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setStep(3)}
-                        className="flex-1 bg-clay hover:bg-clay/90 text-white py-3 rounded-md font-medium transition-colors"
-                      >
-                        Continue to Payment
-                      </button>
+                      <p className="text-xs text-stone-500 text-right mt-2">
+                        Including {formatCurrency(taxAmount)} in taxes
+                      </p>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
-
-            {/* Order Summary Sidebar - Desktop Only */}
-            {!isMobile && (
-              <div className="lg:col-span-1">
-                <div className="sticky top-8 bg-charcoal/70 rounded-xl border border-white/5 overflow-hidden transition-all duration-500 ease-out hover:bg-charcoal/80 hover:border-clay/30 hover:shadow-[0_16px_45px_rgba(0,0,0,0.45)] hover:-translate-y-1 hover:scale-[1.02]">
-                  <div className="p-4">
-                    <h3 className="text-xl font-semibold text-rice-paper mb-4 pb-3 border-b border-border-subtle">
-                      Order Summary
-                    </h3>
-
-                    <div className="space-y-3 text-sm">
-                      <div className="space-y-1.5">
-                        {filteredCartItems.map(item => (
-                          <div key={item.id} className="group flex justify-between items-center rounded-lg px-2 py-2 border border-transparent transition-all duration-500 ease-out hover:bg-charcoal/60 hover:border-clay/20">
-                            <div className="flex items-center gap-3">
-                              <div className="w-12 h-12 bg-charcoal rounded-md overflow-hidden">
-                                <img 
-                                  src={item.image} 
-                                  alt={item.name || 'Product image'}
-                                  className="w-full h-full object-cover"
-                                  loading="lazy"
-                                />
-                              </div>
-                              <div>
-                                <p className="text-rice-paper text-sm font-medium transition-colors duration-500 group-hover:text-clay">{item.name}</p>
-                                <p className="text-stone-400 text-xs transition-colors duration-500 group-hover:text-rice-paper/70">Qty: {item.quantity}</p>
-                              </div>
-                            </div>
-                            <span className="text-white font-medium transition-colors duration-500 group-hover:text-clay">
-                              ₹{calculateItemTotal(item.price, item.quantity).toLocaleString('en-IN')}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="border-t border-border-subtle my-4"></div>
-
-                      <div className="space-y-1.5">
-                        <div className="group flex justify-between rounded-lg px-2 py-2 border border-transparent transition-all duration-500 ease-out hover:bg-charcoal/60 hover:border-clay/20">
-                          <span className="text-stone-400">Subtotal</span>
-                          <span className="text-rice-paper">
-                            ₹{filteredSubtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                          </span>
-                        </div>
-                        
-                        <div className="group flex justify-between rounded-lg px-2 py-2 border border-transparent transition-all duration-500 ease-out hover:bg-charcoal/60 hover:border-clay/20">
-                          <div className="flex items-center gap-1">
-                            <span className="text-stone-400">Shipping</span>
-                            <span className="text-xs text-stone-500">
-                              {filteredSubtotal > 1000 ? '(Free over ₹1,000)' : '(Standard)'}
-                            </span>
-                          </div>
-                          <span className={shippingCost > 0 ? 'text-rice-paper' : 'text-green-400'}>
-                            {shippingCost > 0 ? `₹${shippingCost.toLocaleString('en-IN')}` : 'Free'}
-                          </span>
-                        </div>
-                        
-                        <div className="group flex justify-between rounded-lg px-2 py-2 border border-transparent transition-all duration-500 ease-out hover:bg-charcoal/60 hover:border-clay/20">
-                          <div className="flex items-center gap-1">
-                            <span className="text-stone-400">Tax (GST)</span>
-                            <span className="text-xs text-stone-500">18%</span>
-                          </div>
-                          <span className="text-rice-paper">
-                            ₹{taxAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                          </span>
-                        </div>
-
-                        <div className="pt-2">
-                          <div className="flex gap-2">
-                            <input
-                              type="text"
-                              placeholder="Discount code"
-                              className="flex-1 px-3 py-2 text-sm bg-charcoal border border-border-subtle rounded-md text-rice-paper placeholder-stone-500 focus:outline-none focus:ring-1 focus:ring-clay/50"
-                            />
-                            <button 
-                              className="px-4 py-2 bg-charcoal hover:bg-charcoal/80 text-stone-400 text-sm font-medium rounded-md transition-colors border border-border-subtle"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                alert('Discount code functionality will be implemented soon!');
-                              }}
-                            >
-                              Apply
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="border-t border-border-subtle my-4"></div>
-
-                      <div className="group flex justify-between items-center rounded-lg px-2 py-2 border border-transparent transition-all duration-500 ease-out hover:bg-charcoal/60 hover:border-clay/20">
-                        <span className="text-rice-paper font-medium">Total</span>
-                        <div className="text-right">
-                          <p className="text-2xl font-semibold text-white">
-                            ₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                          </p>
-                          <p className="text-xs text-stone-500">Inclusive of all taxes</p>
-                        </div>
-                      </div>
-                    </div>
+                  
+                  {/* Security Badge */}
+                  <div className="bg-charcoal/50 p-4 border-t border-stone-800 flex items-center justify-center gap-2 text-xs text-stone-500">
+                      <span className="material-symbols-outlined text-sm">lock</span>
+                      Secure Checkout powered by Razorpay
                   </div>
                 </div>
               </div>
-            )}
+            </div>
+
           </div>
         </div>
       </main>
       <Footer />
     </div>
+  );
+}
+
+// ==============================================================================
+// DEFAULT EXPORT
+// Wraps content in Suspense for SearchParams compatibility
+// ==============================================================================
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-charcoal flex items-center justify-center">
+        <div className="flex flex-col items-center">
+           <div className="animate-spin rounded-full h-12 w-12 border-4 border-clay border-t-transparent mb-4"></div>
+           <p className="text-stone-400">Loading Checkout...</p>
+        </div>
+      </div>
+    }>
+      <CheckoutContent />
+    </Suspense>
   );
 }

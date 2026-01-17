@@ -12,13 +12,11 @@ import { fetchAllProducts } from "../../lib/productService";
 // Enhanced Notification Component with animation
 const Notification = ({ message, onClose, type = 'success' }) => {
   const [isVisible, setIsVisible] = useState(true);
-
   
   const handleClose = () => {
     setIsVisible(false);
     setTimeout(() => {
       onClose();
-      
     }, 300);
   };
   
@@ -26,9 +24,9 @@ const Notification = ({ message, onClose, type = 'success' }) => {
     const timer = setTimeout(() => {
       handleClose();
     }, 3000);
-
     return () => clearTimeout(timer);
   }, []);
+  
   const bgColor = type === 'success' ? 'bg-charcoal-light' : 'bg-red-900';
   const borderColor = type === 'success' ? 'border-clay/50' : 'border-red-700';
   const icon = type === 'success' ? 'check_circle' : 'error';
@@ -103,8 +101,10 @@ export default function ProductsPage() {
           tags: Array.isArray(p.tags) ? p.tags : (p.tags ? p.tags.split(',') : [])
         }));
 
-        // Filter only active products
-        const activeProducts = processedProducts.filter(p => p.status !== 'inactive');
+        // UPDATED: Show ALL products, even if they are marked 'inactive'
+        // If you want to hide inactive ones later, uncomment the .filter part
+        const activeProducts = processedProducts; // .filter(p => p.status !== 'inactive');
+        
         setProducts(activeProducts);
       } catch (error) {
         console.error("Failed to load products:", error);
