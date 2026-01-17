@@ -15,6 +15,9 @@ import {
   Twitter,
   ArrowRight
 } from "lucide-react";
+// Firebase Imports
+import { db } from "../../lib/firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -26,26 +29,42 @@ export default function Contact() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
+  const [error, setError] = useState(null); // Add error state
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    // Simulate form submission
-    setTimeout(() => {
-      setIsSubmitting(false);
+    setError(null);
+
+    try {
+      // Add document to 'contact_inquiries' collection
+      await addDoc(collection(db, "contact_inquiries"), {
+        name: formData.name,
+        email: formData.email,
+        subject: formData.subject || "General Inquiry",
+        message: formData.message,
+        status: "unread", // Default status
+        createdAt: serverTimestamp(),
+      });
+
       setSubmitted(true);
       setFormData({ name: "", email: "", subject: "", message: "" });
-    }, 1500);
+    } catch (err) {
+      console.error("Error sending message:", err);
+      setError("Failed to send message. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="bg-charcoal min-h-screen selection:bg-clay selection:text-charcoal relative overflow-hidden font-sans text-stone-warm">
       
-      {/* --- Texture Overlay (Consistent with About Page) --- */}
+      {/* --- Texture Overlay --- */}
       <div className="fixed inset-0 opacity-[0.12] pointer-events-none z-0">
           <div
               className="absolute inset-0 animate-grain-shift"
@@ -112,7 +131,7 @@ export default function Contact() {
                       <div className="space-y-3 font-light">
                         <p className="flex items-center gap-3">
                           <span className="text-stone-500 text-sm uppercase tracking-widest w-12">Mail</span>
-                          <span className="text-rice-paper hover:text-clay transition-colors cursor-pointer">hello@bashobyshivangi.com</span>
+                          <span className="text-rice-paper hover:text-clay transition-colors cursor-pointer">bashobyshivangi2019@gmail.com</span>
                         </p>
                         <p className="flex items-center gap-3">
                           <span className="text-stone-500 text-sm uppercase tracking-widest w-12">Call</span>
@@ -296,6 +315,13 @@ export default function Contact() {
                         Your Message
                       </label>
                     </div>
+
+                    {/* Error Message */}
+                    {error && (
+                      <div className="text-red-400 text-sm bg-red-400/10 p-3 rounded">
+                        {error}
+                      </div>
+                    )}
 
                     {/* Submit Button */}
                     <button

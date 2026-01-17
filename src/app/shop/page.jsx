@@ -55,7 +55,7 @@ const Notification = ({ message, onClose, type = 'success' }) => {
   );
 };
 
-const categories = ["All", "Tableware", "Vases", "Sets", "Decorative"];
+const categories = ["All", "Mugs", "Plates", "Platter/Cheeseboard", "Bowls" , "Vase","Dinner Sets",'Trinket Trays',"Bookends","Fancy" ,"Picasso Limited Collection"]; 
 
 export default function ProductsPage() {
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
