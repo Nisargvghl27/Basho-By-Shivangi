@@ -300,11 +300,22 @@ export default function WorkshopsPage() {
                             setPlayingVideo(item.videoUrl);
                         }
                     }}
+                    onMouseEnter={(e) => {
+                       // Auto-play video preview on hover if available
+                       const vid = e.currentTarget.querySelector('video');
+                       if (vid) vid.play().catch(() => {});
+                    }}
+                    onMouseLeave={(e) => {
+                       // Pause video preview on leave
+                       const vid = e.currentTarget.querySelector('video');
+                       if (vid) vid.pause();
+                    }}
                   >
                     {item.type === 'video' && item.videoUrl ? (
                       <video
                         src={item.videoUrl}
-                        poster={item.image}
+                        // FIX: Removed poster={item.image} to avoid showing same template image.
+                        // Now falls back to the generated frame at 0.1s.
                         muted
                         loop
                         playsInline
