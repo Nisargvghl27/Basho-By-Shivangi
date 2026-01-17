@@ -9,12 +9,14 @@ import { useWishlist } from '../context/WishlistContext';
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../lib/firebase";
 
+// UPDATED: Added Collaborations link
 const navLinks = [
   { label: "Home", href: "/" },
   { label: "Shop", href: "/shop" },
   { label: "Workshops", href: "/workshops" },
   { label: "Journal", href: "/journal" },
   { label: "About", href: "/about" },
+  { label: "Collaborations", href: "/corporate" }, // <--- NEW LINK ADDED
 ];
 
 export default function Header() {

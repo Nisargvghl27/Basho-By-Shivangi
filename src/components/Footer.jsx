@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import Link from "next/link"; // Added Link for internal navigation
+import Link from "next/link"; 
 import { subscribeToNewsletter } from "../lib/newsletterService"; 
 import { Loader2, CheckCircle2 } from "lucide-react"; 
 
@@ -26,12 +26,13 @@ export default function Footer() {
     { label: "Workshops", href: "/workshops" }
   ];
 
-  // UPDATED: Replaced 'Support' with 'Discover' to highlight story & content
+  // UPDATED: Added Corporate Inquiries link here
   const discoverLinks = [
     { label: "Our Story", href: "/about" },
     { label: "The Journal", href: "/journal" },
     { label: "Philosophy", href: "/about#philosophy" },
-    { label: "The Process", href: "/about#values" }
+    { label: "The Process", href: "/about#values" },
+    { label: "Corporate Inquiries", href: "/corporate" } // <--- NEW LINK ADDED
   ];
 
   const socialLinks = [
@@ -153,7 +154,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* --- Discover Links (Replaced Support) --- */}
+          {/* --- Discover Links --- */}
           <div
             className={`md:col-span-2 transition-all duration-1000 delay-200 ease-out ${
               isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'

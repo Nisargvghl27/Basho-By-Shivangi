@@ -1,38 +1,56 @@
-// Shipping calculation utilities
 
 export const SHIPPING_RATES = {
   standard: {
-    base: 50,
-    freeThreshold: 500, // Free shipping for orders above ₹500
+    base: 50,            // Base cost for the first 1kg
+    perKg: 40,           // Cost for every additional kg
+    freeThreshold: 2000, // Free shipping if order > ₹2000
   },
   express: {
-    base: 150,
-    freeThreshold: 1000, // Free express shipping for orders above ₹1000
+    base: 150,           // Base cost for the first 1kg
+    perKg: 80,           // Cost for every additional kg
+    freeThreshold: 5000, 
   },
   international: {
-    base: 500,
-    freeThreshold: 2000,
+    base: 1500,
+    perKg: 800,
+    freeThreshold: 25000,
   }
 };
 
 export const TAX_RATES = {
-  // GST rates for India
-  india: 0.18, // 18% GST for most goods
-  // Add other countries if needed
+  india: 0.18, // 18% GST
   usa: 0.08,
   uk: 0.20,
   eu: 0.21,
 };
 
-export const calculateShipping = (subtotal, method, country = 'India') => {
+/**
+ * Calculate shipping cost based on subtotal and weight
+ * @param {number} subtotal - The price subtotal
+ * @param {string} method - 'standard' | 'express' | 'international'
+ * @param {number} totalWeight - Total weight in Kilograms (default 0)
+ * @param {string} country - Destination country
+ */
+export const calculateShipping = (subtotal, method = 'standard', totalWeight = 0, country = 'India') => {
   const rates = SHIPPING_RATES[method] || SHIPPING_RATES.standard;
   
-  // Check if order qualifies for free shipping
+  // 1. Check for Free Shipping eligibility
   if (subtotal >= rates.freeThreshold) {
     return 0;
   }
   
-  return rates.base;
+  // 2. Weight-based Calculation
+  // If weight is 1kg or less (or 0), return just the base rate
+  if (totalWeight <= 1) {
+    return rates.base;
+  }
+
+  // Calculate additional weight (rounding up to nearest kg)
+  // e.g., 1.2kg becomes 2kg total -> 1kg base + 1kg additional
+  const additionalWeight = Math.ceil(totalWeight - 1);
+  const additionalCost = additionalWeight * (rates.perKg || 0);
+  
+  return rates.base + additionalCost;
 };
 
 export const calculateTax = (subtotal, country = 'India') => {
@@ -40,8 +58,11 @@ export const calculateTax = (subtotal, country = 'India') => {
   return subtotal * taxRate;
 };
 
-export const calculateTotal = (subtotal, shippingMethod = 'standard', country = 'India') => {
-  const shipping = calculateShipping(subtotal, shippingMethod, country);
+/**
+ * Helper to calculate all totals at once
+ */
+export const calculateTotal = (subtotal, shippingMethod = 'standard', totalWeight = 0, country = 'India') => {
+  const shipping = calculateShipping(subtotal, shippingMethod, totalWeight, country);
   const tax = calculateTax(subtotal, country);
   
   return {
