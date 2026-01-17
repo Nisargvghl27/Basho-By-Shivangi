@@ -3,6 +3,19 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { 
+  ChevronLeft, 
+  Minus, 
+  Plus, 
+  ShoppingBag, 
+  Heart, 
+  Share2,
+  Check,
+  Truck,
+  ShieldCheck,
+  Package,
+  ArrowRight
+} from 'lucide-react';
 
 import { useCart } from '../../../../context/CartContext';
 import { useWishlist } from '../../../../context/WishlistContext';
@@ -12,12 +25,32 @@ import Footer from '../../../../components/Footer';
 
 import { fetchProductById, getRelatedProducts } from '../../../../lib/productService';
 
+// --- Components ---
+
+const Notification = ({ message, onClose, type = 'success' }) => {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 3000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <div className={`fixed bottom-8 right-8 z-50 px-6 py-4 rounded-sm shadow-2xl flex items-center gap-4 animate-fade-in-up ${
+      type === 'error' ? 'bg-red-900/90 text-white' : 'bg-charcoal-light border border-clay/30 text-rice-paper'
+    }`}>
+      <span className={type === 'error' ? 'text-red-300' : 'text-clay'}>
+        {type === 'error' ? '!' : <Check size={18} />}
+      </span>
+      <p className="font-sans text-sm tracking-wide">{message}</p>
+    </div>
+  );
+};
+
 export default function ProductPage() {
   const params = useParams();
   const router = useRouter();
 
   const { addToCart, cartItems } = useCart();
-  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
+  const { wishlistItems, addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
 
   // DATA STATE
   const [product, setProduct] = useState(null);
@@ -27,12 +60,24 @@ export default function ProductPage() {
   // UI STATE
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
-  const [mainImageLoaded, setMainImageLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState('description');
-  const [hoveredCard, setHoveredCard] = useState(null);
   const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
   const [isAdding, setIsAdding] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+
+  // VISUAL STATE
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      setMousePosition({
+        x: (e.clientX / window.innerWidth - 0.5) * 20,
+        y: (e.clientY / window.innerHeight - 0.5) * 20
+      });
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
 
   // FETCH PRODUCT
   useEffect(() => {
@@ -55,31 +100,40 @@ export default function ProductPage() {
     loadData();
   }, [params.id]);
 
-  // LOADING
+  // LOADING STATE
   if (loading) {
     return (
-      <div className="min-h-screen bg-charcoal flex flex-col">
-        <Header />
-        <div className="flex-grow flex items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-8 h-8 border-2 border-clay border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-stone-warm text-sm uppercase tracking-widest animate-pulse">Loading Product...</p>
-          </div>
+      <div className="min-h-screen bg-charcoal flex flex-col items-center justify-center relative overflow-hidden">
+        {/* Simple Texture Background */}
+         <div className="fixed inset-0 opacity-[0.08] pointer-events-none">
+            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150"></div>
         </div>
-        <Footer />
+        
+        <div className="flex flex-col items-center gap-6 z-10">
+           <div className="w-16 h-16 border border-white/10 rounded-full flex items-center justify-center relative">
+              <div className="absolute inset-0 border-t border-clay rounded-full animate-spin"></div>
+              <div className="w-2 h-2 bg-clay rounded-full"></div>
+           </div>
+           <p className="text-clay text-xs tracking-[0.3em] uppercase animate-pulse">Loading Artifact</p>
+        </div>
       </div>
     );
   }
 
-  // NOT FOUND
+  // NOT FOUND STATE
   if (!product) {
     return (
-      <div className="min-h-screen flex flex-col bg-charcoal text-rice-paper">
+      <div className="min-h-screen flex flex-col bg-charcoal text-rice-paper relative">
         <Header />
-        <main className="flex-grow flex items-center justify-center px-4 pt-24">
-          <div className="text-center">
-            <h1 className="text-2xl mb-4">Product not found</h1>
-            <Link href="/shop" className="text-clay hover:underline">← Back to Shop</Link>
+        <main className="flex-grow flex items-center justify-center px-4 relative z-10">
+          <div className="text-center space-y-6">
+            <h1 className="text-4xl font-serif text-stone-warm">Artifact Not Found</h1>
+            <Link 
+              href="/shop" 
+              className="inline-flex items-center gap-2 text-clay hover:text-rice-paper transition-colors uppercase text-xs tracking-widest border-b border-clay/30 pb-1"
+            >
+              <ChevronLeft size={14} /> Return to Collection
+            </Link>
           </div>
         </main>
         <Footer />
@@ -101,7 +155,6 @@ export default function ProductPage() {
 
   const showToast = (msg, type = 'success') => {
     setNotification({ show: true, message: msg, type });
-    setTimeout(() => setNotification(n => ({ ...n, show: false })), 3000);
   };
 
   const handleAddToCart = async () => {
@@ -140,7 +193,7 @@ export default function ProductPage() {
     setIsAdding(false);
 
     if (result.success) {
-      setTimeout(() => router.push(`/checkout?selected=${product.id}`), 300);
+      router.push(`/checkout?selected=${product.id}`);
     } else {
       showToast(result.message, 'error');
     }
@@ -161,163 +214,251 @@ export default function ProductPage() {
     }
   };
 
-  const incrementQuantity = () => setQuantity(q => Math.min(q + 1, 10));
-  const decrementQuantity = () => setQuantity(q => Math.max(q - 1, 1));
-
   const handleQuantityChange = (change) => {
     if (isUpdating) return;
-    
     const newQuantity = quantity + change;
     if (newQuantity > 0 && newQuantity <= 10) {
-      setIsUpdating(true);
       setQuantity(newQuantity);
-      setIsUpdating(false);
     }
   };
 
   // UI
   return (
-    <div className="min-h-screen flex flex-col bg-charcoal text-rice-paper">
+    <div className="min-h-screen flex flex-col bg-charcoal text-rice-paper relative overflow-x-hidden selection:bg-clay selection:text-charcoal">
+      
+      {/* Background Ambience */}
+      <div className="fixed inset-0 opacity-[0.15] pointer-events-none z-0">
+         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-40 mix-blend-overlay"></div>
+      </div>
+      <div className="fixed top-[-10%] left-[-10%] w-[40vw] h-[40vw] bg-clay/5 rounded-full blur-[100px] animate-float-slow pointer-events-none z-0" />
+      <div className="fixed bottom-[10%] right-[-5%] w-[30vw] h-[30vw] bg-stone-500/5 rounded-full blur-[80px] animate-float-delayed pointer-events-none z-0" />
+
       <Header />
 
-      <main className="flex-grow pt-32 pb-12">
-        <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-2 gap-12">
-
-          {/* IMAGE */}
-          <div>
-            <div className="relative bg-charcoal-light rounded-xl overflow-hidden shadow-2xl">
-              <button
-                onClick={handleWishlistToggle}
-                className={`absolute top-4 right-4 z-10 p-3 rounded-full ${
-                  isInWishlist(product.id)
-                    ? 'bg-red-500/20 text-red-400'
-                    : 'bg-black/40 text-white'
-                }`}
-              >
-                {isInWishlist(product.id) ? '❤️' : '🤍'}
-              </button>
-
-              <img
-                src={images[selectedImage]}
-                onLoad={() => setMainImageLoaded(true)}
-                className="w-full transition-all duration-700"
-                style={{ opacity: mainImageLoaded ? 1 : 0 }}
-              />
-            </div>
-
-            {images.length > 1 && (
-              <div className="flex gap-2 mt-4">
-                {images.map((img, i) => (
-                  <img
-                    key={i}
-                    src={img}
-                    onClick={() => {
-                      setMainImageLoaded(false);
-                      setSelectedImage(i);
-                    }}
-                    className={`w-20 h-20 object-cover rounded cursor-pointer ${
-                      selectedImage === i ? 'ring-2 ring-clay' : 'opacity-60'
-                    }`}
-                  />
-                ))}
-              </div>
-            )}
+      <main className="flex-grow pt-32 pb-20 relative z-10">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12">
+          
+          {/* Breadcrumb / Back */}
+          <div className="mb-12 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+             <Link href="/shop" className="inline-flex items-center gap-2 text-stone-500 hover:text-clay transition-colors text-xs uppercase tracking-widest group">
+                <ChevronLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> 
+                Back to Shop
+             </Link>
           </div>
 
-          {/* INFO */}
-          <div>
-            <p className="text-clay uppercase text-xs">{product.category}</p>
-            <h1 className="text-4xl font-serif mt-2">{product.name}</h1>
+          <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-start">
 
-            <p className="text-clay text-3xl mt-4">₹{priceNumber.toFixed(2)}</p>
-            <p className="text-stone-warm mt-4">{product.description}</p>
+            {/* PRODUCT IMAGES */}
+            <div className="space-y-6 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+              <div 
+                className="relative bg-white/[0.02] aspect-[4/5] rounded-sm overflow-hidden border border-white/5 group"
+                style={{
+                   transform: `translate(${mousePosition.x * -0.5}px, ${mousePosition.y * -0.5}px)`,
+                   transition: 'transform 0.5sease-out'
+                }}
+              >
+                {/* Wishlist Button */}
+                <button
+                  onClick={handleWishlistToggle}
+                  className="absolute top-6 right-6 z-20 p-3 bg-charcoal/60 backdrop-blur-md rounded-full transition-all duration-500 border border-white/10 hover:bg-white hover:scale-110 group/heart"
+                >
+                  <Heart 
+                    size={18} 
+                    className={`transition-colors duration-300 ${
+                      isInWishlist(product.id) ? 'fill-clay text-clay' : 'text-white group-hover/heart:text-clay'
+                    }`}
+                    fill={isInWishlist(product.id) ? "currentColor" : "none"}
+                  />
+                </button>
 
-            {/* QTY */}
-            <div className="flex items-center gap-4 mt-6">
-              <div className="flex items-center border border-border-subtle rounded-md">
-                <button
-                  onClick={() => handleQuantityChange(-1)}
-                  className="px-4 py-2 text-stone-400 hover:text-white hover:bg-charcoal/50 transition-colors text-lg"
-                  aria-label="Decrease quantity"
-                  disabled={isUpdating || quantity <= 1}
-                >
-                  -
-                </button>
-                <span className="w-12 text-center text-base text-rice-paper">
-                  {quantity}
-                </span>
-                <button
-                  onClick={() => handleQuantityChange(1)}
-                  className="px-4 py-2 text-stone-400 hover:text-white hover:bg-charcoal/50 transition-colors text-lg"
-                  aria-label="Increase quantity"
-                  disabled={isUpdating || quantity >= 10}
-                >
-                  +
-                </button>
+                <img
+                  src={images[selectedImage] || 'https://via.placeholder.com/600x800'}
+                  alt={product.name}
+                  className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                />
               </div>
+
+              {/* Thumbnails */}
+              {images.length > 1 && (
+                <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                  {images.map((img, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setSelectedImage(i)}
+                      className={`relative w-20 h-24 flex-shrink-0 rounded-sm overflow-hidden border transition-all duration-300 ${
+                        selectedImage === i ? 'border-clay opacity-100' : 'border-white/10 opacity-50 hover:opacity-80'
+                      }`}
+                    >
+                      <img src={img} alt="" className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* ACTIONS */}
-            <div className="space-y-3 mt-6">
-              {!isInCart ? (
-                <button
-                  onClick={handleAddToCart}
-                  disabled={isAdding || product.stock === 0}
-                  className={`w-full py-3 rounded text-white ${
-                    product.stock === 0 ? 'bg-stone-600 cursor-not-allowed' : 'bg-clay hover:bg-clay/90'
-                  }`}
-                >
-                  {product.stock === 0 ? 'Out of Stock' : isAdding ? 'Adding...' : 'Add to Cart'} 
-                </button>
-              ) : (
-                <Link href="/cart" className="block text-center bg-clay py-3 rounded">
-                  View Cart
-                </Link>
-              )}
+            {/* PRODUCT DETAILS */}
+            <div className="space-y-10 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+              
+              <div className="space-y-4 border-b border-white/5 pb-10">
+                <div className="flex items-center gap-3">
+                    <span className="text-clay text-[10px] uppercase font-bold tracking-[0.2em] px-2 py-1 bg-clay/10 rounded-sm">
+                        {product.category || 'Collection'}
+                    </span>
+                    {product.stock > 0 ? (
+                        <span className="text-emerald-500/80 text-[10px] uppercase font-bold tracking-widest flex items-center gap-1">
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> In Stock
+                        </span>
+                    ) : (
+                         <span className="text-stone-500 text-[10px] uppercase font-bold tracking-widest">Out of Stock</span>
+                    )}
+                </div>
+                
+                <h1 className="text-4xl md:text-5xl font-serif text-rice-paper leading-tight">{product.name}</h1>
+                <p className="text-2xl text-stone-300 font-light flex items-center gap-2">
+                    ₹{priceNumber.toLocaleString('en-IN')}
+                    <span className="text-sm text-stone-600 line-through decoration-clay/50 decoration-2 opacity-60 ml-2">₹{(priceNumber * 1.2).toFixed(0)}</span>
+                </p>
+              </div>
+              
+              <div className="prose prose-invert prose-p:text-stone-warm prose-p:font-light prose-p:leading-relaxed max-w-none">
+                <p>{product.description}</p>
+              </div>
 
-              <button
-                onClick={handleBuyNow}
-                disabled={isAdding || product.stock === 0}
-                className={`w-full border border-clay text-clay py-3 rounded ${
-                   product.stock === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-clay hover:text-white'
-                }`}
-              >
-                 {product.stock === 0 ? 'Out of Stock' : 'Buy Now'}
-              </button>
+              {/* Actions Area */}
+              <div className="space-y-8 pt-6">
+                 
+                 {/* Selectors */}
+                 <div className="flex items-center gap-8">
+                     <div className="space-y-3">
+                         <span className="text-xs text-stone-500 uppercase tracking-widest block">Quantity</span>
+                         <div className="flex items-center border border-white/10 rounded-sm overflow-hidden">
+                            <button
+                              onClick={() => handleQuantityChange(-1)}
+                              className="w-12 h-12 flex items-center justify-center text-stone-400 hover:text-clay hover:bg-white/5 transition-all duration-300 disabled:opacity-30 group"
+                              disabled={quantity <= 1}
+                            >
+                              <Minus size={16} className="group-hover:scale-110 transition-transform" />
+                            </button>
+                            <span className="w-12 text-center text-lg text-rice-paper font-serif">{quantity}</span>
+                            <button
+                              onClick={() => handleQuantityChange(1)}
+                              className="w-12 h-12 flex items-center justify-center text-stone-400 hover:text-clay hover:bg-white/5 transition-all duration-300 disabled:opacity-30 group"
+                              disabled={quantity >= 10 || quantity >= product.stock}
+                            >
+                              <Plus size={16} className="group-hover:scale-110 transition-transform" />
+                            </button>
+                         </div>
+                     </div>
+                 </div>
+
+                 {/* Buttons */}
+                 <div className="flex flex-col sm:flex-row gap-4">
+                    {isInCart ? (
+                        <Link href="/cart" className="flex-1 py-4 bg-white text-charcoal font-bold uppercase tracking-widest text-xs hover:bg-clay hover:text-white transition-all duration-300 text-center flex items-center justify-center gap-2 rounded-sm group">
+                            View In Cart <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                        </Link>
+                    ) : (
+                        <button
+                          onClick={handleAddToCart}
+                          disabled={isAdding || product.stock === 0}
+                          className={`flex-1 py-4 font-bold uppercase tracking-widest text-xs transition-all duration-300 flex items-center justify-center gap-2 rounded-sm ${
+                             product.stock === 0 
+                               ? 'bg-stone-800 text-stone-500 cursor-not-allowed' 
+                               : 'bg-clay text-white hover:bg-white hover:text-clay hover:scale-[1.02] active:scale-[0.98]'
+                          }`}
+                        >
+                          {isAdding ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                              Adding...
+                            </>
+                          ) : (
+                            <>
+                              <ShoppingBag size={16} className="group-hover:scale-110 transition-transform" />
+                              Add to Cart
+                            </>
+                          )}
+                        </button>
+                    )}
+                    
+                    <button
+                        onClick={handleBuyNow}
+                        disabled={isAdding || product.stock === 0}
+                        className={`flex-1 py-4 border border-white/20 font-bold uppercase tracking-widest text-xs transition-all duration-300 rounded-sm group ${
+                            product.stock === 0 
+                              ? 'opacity-30 cursor-not-allowed' 
+                              : 'hover:border-clay hover:text-clay hover:bg-clay/5 text-rice-paper hover:scale-[1.02] active:scale-[0.98]'
+                        }`}
+                    >
+                        Buy Now {!isAdding && <ArrowRight size={14} className="inline ml-1 group-hover:translate-x-1 transition-transform" />}
+                    </button>
+                 </div>
+
+                 {/* Features */}
+                 <div className="grid grid-cols-2 gap-4 pt-8 border-t border-white/5">
+                    <div className="flex items-center gap-3 text-stone-400">
+                        <Truck size={20} className="text-clay/80" />
+                        <span className="text-xs uppercase tracking-wider">Fast Shipping</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-stone-400">
+                        <ShieldCheck size={20} className="text-clay/80" />
+                        <span className="text-xs uppercase tracking-wider">Secure Checkout</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-stone-400">
+                        <Package size={20} className="text-clay/80" />
+                        <span className="text-xs uppercase tracking-wider">Safe Packaging</span>
+                    </div>
+                 </div>
+
+              </div>
+
             </div>
           </div>
         </div>
 
-        {/* RELATED */}
+        {/* RELATED PRODUCTS */}
         {relatedProducts.length > 0 && (
-          <div className="max-w-7xl mx-auto px-4 mt-16">
-            <h2 className="text-3xl mb-6">You May Also Like</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {relatedProducts.map(p => (
+          <section className="mt-32 max-w-7xl mx-auto px-6 lg:px-12 border-t border-white/5 pt-20">
+            <div className="flex items-end justify-between mb-12">
+                <h2 className="text-3xl font-serif text-rice-paper">Curated For You</h2>
+                <Link href="/shop" className="hidden md:flex items-center gap-2 text-xs uppercase tracking-widest text-stone-500 hover:text-clay transition-colors">
+                    View All <ArrowRight size={14} />
+                </Link>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
+              {relatedProducts.map((p, idx) => (
                 <div
                   key={p.id}
-                  className="cursor-pointer"
+                  className="group cursor-pointer"
                   onClick={() => router.push(`/shop/products/${p.id}`)}
                 >
-                  <img src={p.image || p.images?.[0]} className="mb-2" />
-                  <p>{p.name}</p>
-                  <p className="text-clay">₹{Number(p.price).toFixed(2)}</p>
+                  <div className="relative aspect-[3/4] overflow-hidden bg-charcoal-light mb-4 rounded-sm">
+                     <img 
+                        src={p.image || (p.images && p.images[0])} 
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                        alt={p.name}
+                     />
+                     <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  </div>
+                  <h3 className="text-lg font-serif text-rice-paper group-hover:text-clay transition-colors">{p.name}</h3>
+                  <p className="text-sm text-stone-500 mt-1">₹{Number(p.price).toLocaleString('en-IN')}</p>
                 </div>
               ))}
             </div>
-          </div>
+          </section>
         )}
       </main>
 
       <Footer />
 
-      {/* TOAST */}
+      {/* TOAST NOTIFICATION */}
       {notification.show && (
-        <div className={`fixed bottom-8 right-8 px-6 py-4 rounded text-white ${
-          notification.type === 'error' ? 'bg-red-600' : 'bg-black'
-        }`}>
-          {notification.message}
-        </div>
+        <Notification 
+            message={notification.message} 
+            type={notification.type} 
+            onClose={() => setNotification({ ...notification, show: false })} 
+        />
       )}
     </div>
   );
