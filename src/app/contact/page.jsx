@@ -68,11 +68,11 @@ export default function Contact() {
               Contact Us
             </span>
             <h1 className="font-serif text-5xl md:text-7xl text-rice-paper mb-8 leading-tight">
-              Let's start a <br />
+              Let&apos;s start a <br />
               <span className="italic text-stone-500">conversation.</span>
             </h1>
             <p className="text-lg md:text-xl text-stone-warm max-w-2xl font-light leading-relaxed">
-              Whether you're interested in a custom commission, joining a workshop, 
+              Whether you&apos;re interested in a custom commission, joining a workshop, 
               or simply want to say hello—we are here to listen.
             </p>
           </div>
