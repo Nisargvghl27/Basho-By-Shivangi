@@ -32,7 +32,7 @@ export const createRazorpayOrder = async (amount, receipt) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        amount: amount * 100, // Convert to paise
+        amount: amount * 100, 
         currency: 'INR',
         receipt,
       }),

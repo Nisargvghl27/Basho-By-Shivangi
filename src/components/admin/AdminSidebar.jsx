@@ -21,7 +21,6 @@ import {
 
 const menuItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/custom-requests", label: "Custom Requests", icon: MessageSquare }, // Custom Orders
   { href: "/admin/corporate-inquiries", label: "Corporate Inquiries", icon: Briefcase }, // B2B
   { href: "/admin/upcoming-workshop", label: "Upcoming Workshop", icon: Star },
   { href: "/admin/best-seller", label: "Best Seller", icon: Crown },
@@ -33,6 +32,7 @@ const menuItems = [
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/payments", label: "Payments", icon: CreditCard },
   { href: "/admin/inventory", label: "Inventory", icon: Warehouse },
+  { href: "/admin/contact-inquiries", label: "Contact Inquiries", icon: MessageSquare },
 ];
 
 export default function AdminSidebar({ sidebarOpen, setSidebarOpen }) {

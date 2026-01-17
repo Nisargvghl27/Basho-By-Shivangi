@@ -23,24 +23,17 @@ import {
 // Images (Relative Imports for Fallback)
 import heroStudio from "../../assets/hero-studio.jpg";
 
+<<<<<<< HEAD
 // --- NEW: Video URL Validation ---
+=======
+// --- HELPERS ---
+>>>>>>> 36b128448a4913143bdba58ae23ae683b4abc0b1
 const validateVideoUrl = (url) => {
-  if (!url) return false;
-  
+  if (!url || typeof url !== 'string') return false;
+  // Basic validation: allow http/https URLs or relative paths starting with /
   try {
-    const urlObj = new URL(url);
-    // Check if it's a valid video URL
-    const validHosts = [
-      'res.cloudinary.com',
-      'www.youtube.com',
-      'youtu.be',
-      'vimeo.com',
-      'player.vimeo.com'
-    ];
-    
-    return validHosts.some(host => urlObj.hostname.includes(host));
-  } catch (error) {
-    console.error('Invalid video URL:', url, error);
+    return url.startsWith('/') || new URL(url).protocol.startsWith('http');
+  } catch (e) {
     return false;
   }
 };
@@ -80,16 +73,21 @@ const VideoModal = ({ videoUrl, onClose }) => {
           className="w-full h-full object-contain"
           controls
           playsInline
+<<<<<<< HEAD
           onError={(e) => {
             console.error('Video failed to load:', e);
             onClose();
           }}
+=======
+          autoPlay
+>>>>>>> 36b128448a4913143bdba58ae23ae683b4abc0b1
         />
       </div>
     </div>
   );
 };
 
+<<<<<<< HEAD
 // Error Boundary Component
 const ErrorBoundary = ({ children, fallback }) => {
   return (
@@ -99,6 +97,8 @@ const ErrorBoundary = ({ children, fallback }) => {
   );
 };
 
+=======
+>>>>>>> 36b128448a4913143bdba58ae23ae683b4abc0b1
 export default function WorkshopsPage() {
   const [isVisible, setIsVisible] = useState(false);
   const [isMarqueeHovered, setIsMarqueeHovered] = useState(false);
@@ -302,9 +302,6 @@ export default function WorkshopsPage() {
                 <p className="text-stone-warm max-w-2xl font-light leading-relaxed text-lg text-left">From the first throw to the final firing, witness the dedication required to master the wheel. Join our workshops to get your hands dirty.</p>
               </div>
               <div className="flex items-center justify-end flex-shrink-0 px-4 md:px-12 lg:px-24">
-                <button className="flex items-center gap-2 bg-clay text-white px-8 py-3 rounded-xl font-bold transition-all duration-500 hover:bg-clay/90 hover:scale-105 shadow-lg hover:shadow-xl uppercase tracking-wider text-sm">
-                  <CalendarDays size={20} /> Book a Workshop
-                </button>
               </div>
             </div>
           </div>

@@ -8,6 +8,20 @@ import {
 } from "lucide-react";
 import { fetchAllProducts, createProduct, updateProduct, deleteProduct } from "../../lib/productService";
 
+// Defined categories based on your shop page
+const PRODUCT_CATEGORIES = [
+  "Mugs", 
+  "Plates", 
+  "Platter/Cheeseboard", 
+  "Bowls", 
+  "Vase", 
+  "Dinner Sets", 
+  "Trinket Trays", 
+  "Bookends", 
+  "Fancy", 
+  "Picasso Limited Collection"
+];
+
 export default function ProductManagement() {
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -23,7 +37,7 @@ export default function ProductManagement() {
     name: "",
     sku: "",
     brand: "Basho",
-    category: "Dinnerware", 
+    category: PRODUCT_CATEGORIES[0], // Default to first category
     subtitle: "", 
     price: "",
     stock: "",
@@ -63,7 +77,7 @@ export default function ProductManagement() {
       name: product.name,
       sku: product.sku,
       brand: product.brand || "Basho",
-      category: product.category || "Dinnerware",
+      category: product.category || PRODUCT_CATEGORIES[0],
       subtitle: product.subtitle || "",
       price: product.price,
       stock: product.stock,
@@ -79,8 +93,17 @@ export default function ProductManagement() {
   const resetForm = () => {
     setEditingId(null);
     setFormData({
-        name: "", sku: "", brand: "Basho", category: "Dinnerware",
-        subtitle: "", price: "", stock: "", status: "active", tags: "", description: "", imageUrl: ""
+        name: "", 
+        sku: "", 
+        brand: "Basho", 
+        category: PRODUCT_CATEGORIES[0],
+        subtitle: "", 
+        price: "", 
+        stock: "", 
+        status: "active", 
+        tags: "", 
+        description: "", 
+        imageUrl: ""
     });
     setShowAddModal(false);
   };
@@ -133,7 +156,9 @@ export default function ProductManagement() {
       );
     }
 
-    if (selectedCategory !== "all") filtered = filtered.filter(p => p.category === selectedCategory);
+    if (selectedCategory !== "all") {
+        filtered = filtered.filter(p => p.category === selectedCategory);
+    }
     return filtered;
   }, [products, searchTerm, selectedCategory]);
 
@@ -173,10 +198,9 @@ export default function ProductManagement() {
             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent focus:ring-2 focus:ring-blue-500 outline-none appearance-none cursor-pointer"
           >
             <option value="all">All Categories</option>
-            <option value="Dinnerware">Dinnerware</option>
-            <option value="Drinkware">Drinkware</option>
-            <option value="Decor">Decor</option>
-            <option value="Garden">Garden</option>
+            {PRODUCT_CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+            ))}
           </select>
           <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
             <ChevronDown className="w-4 h-4" />
@@ -486,11 +510,9 @@ export default function ProductManagement() {
                               onChange={handleInputChange} 
                               className="w-full p-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none appearance-none cursor-pointer shadow-sm"
                             >
-                              <option value="Dinnerware">Dinnerware</option>
-                              <option value="Drinkware">Drinkware</option>
-                              <option value="Decor">Decor</option>
-                              <option value="Garden">Garden</option>
-                              <option value="Sets">Sets</option>
+                              {PRODUCT_CATEGORIES.map((cat) => (
+                                <option key={cat} value={cat}>{cat}</option>
+                              ))}
                             </select>
                             <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500 dark:text-gray-400">
                                 <ChevronDown className="w-4 h-4" />

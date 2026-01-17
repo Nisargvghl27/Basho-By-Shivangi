@@ -6,10 +6,14 @@ export default function Hero() {
   const videoRef = useRef(null);
 
   useEffect(() => {
+<<<<<<< HEAD
     const handleScroll = () => {
       setScrollY(window.scrollY);
     };
     
+=======
+    const handleScroll = () => setScrollY(window.scrollY);
+>>>>>>> 36b128448a4913143bdba58ae23ae683b4abc0b1
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);

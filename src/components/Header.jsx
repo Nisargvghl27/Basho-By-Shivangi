@@ -10,14 +10,14 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../lib/firebase";
 import MagneticButton from './MagneticButton';
 
-// UPDATED: Added Collaborations link
 const navLinks = [
   { label: "Home", href: "/" },
   { label: "Shop", href: "/shop" },
   { label: "Workshops", href: "/workshops" },
   { label: "Journal", href: "/journal" },
   { label: "About", href: "/about" },
-  { label: "Collaborations", href: "/corporate" }, // <--- NEW LINK ADDED
+  { label: "Collaborations", href: "/corporate" },
+  { label: "Contact Us", href: "/contact" },
 ];
 
 export default function Header() {
@@ -56,114 +56,108 @@ export default function Header() {
       >
         <div className={`absolute inset-0 bg-gradient-to-b from-charcoal/20 to-transparent pointer-events-none transition-opacity duration-[900ms] ${isScrolled ? "opacity-100" : "opacity-0"}`} />
 
-        <div className="relative flex items-center justify-between px-6 md:px-12 max-w-[1440px] mx-auto">
-          
-          {/* Logo - Kept standard (non-magnetic) to anchor the header */}
-          <Link href="/" className="flex items-center gap-3 group relative z-50" onMouseEnter={() => setActiveLink("")}>
-            <div className="absolute -inset-2 bg-clay/0 rounded-full blur-xl transition-all duration-700 group-hover:bg-clay/5" />
-            <div className="relative w-40 h-12 md:w-48 md:h-14 transition-all duration-500 ease-out group-hover:scale-105 group-hover:brightness-150">
-              <Image src="/images/bgr_logo.png" alt="Clay & Soul" fill sizes="(max-width: 768px) 160px, 192px" className="object-contain object-left brightness-200 drop-shadow-lg" priority />
-            </div>
-          </Link>
-
-          {/* Desktop Nav with Magnetic Buttons */}
-          <nav className="hidden md:flex items-center gap-8 ml-16">
-            {navLinks.map((link) => (
-              <MagneticButton key={link.label} href={link.href}>
-                <span 
-                  className="relative group py-2 block px-2"
-                  onMouseEnter={() => setActiveLink(link.label)}
-                  onMouseLeave={() => setActiveLink("")}
-                >
-                  <span className="relative text-[11px] font-bold uppercase tracking-[0.2em] text-stone-warm transition-all duration-700 group-hover:text-rice-paper group-hover:tracking-[0.24em]">
-                    {link.label}
-                  </span>
-                  <span className="absolute bottom-0 left-0 h-[1.5px] w-0 bg-gradient-to-r from-clay/60 via-clay to-clay/60 transition-all duration-700 group-hover:w-full opacity-0 group-hover:opacity-100" />
-                </span>
-              </MagneticButton>
-            ))}
-          </nav>
-
-          {/* Actions with Magnetic Buttons */}
-          <div className="flex items-center gap-1 md:gap-4 z-50 h-8">
+        <div className="relative px-6 md:px-12 max-w-[1440px] mx-auto w-full">
+          {/* GRID LAYOUT: [1fr_auto_1fr]
+            - Changed h-14 to min-h-[3.5rem] so it can grow with the larger logo
+          */}
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center min-h-[3.5rem]">
             
-            {/* Cart Bag */}
-            <Link
-              href="/cart"
-              className="relative group flex items-center justify-center w-10 h-10 text-stone-warm transition-all duration-500 hover:text-rice-paper"
-            >
-              <span className="material-symbols-outlined text-[20px]">shopping_bag</span>
-              {cartCount > 0 && (
-                <span className="absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-clay to-clay/90 text-[9px] font-bold text-white shadow-sm">
-                  {cartCount}
-                </span>
-              )}
-            </Link>
-
-            {/* Wishlist Button */}
-            <MagneticButton 
-              href="/wishlist"
-              className="relative group flex items-center justify-center w-10 h-10 text-stone-warm transition-all duration-500 hover:text-rice-paper"
-            >
-                <span className="material-symbols-outlined text-[20px]">favorite</span>
-                {wishlistCount > 0 && (
-                <span className="absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-clay to-clay/90 text-[9px] font-bold text-white shadow-sm">
-                  {wishlistCount}
-                </span>
-                )}
-            </MagneticButton>
-
-            {/* Profile / Login */}
-            <Link
-              href={user ? "/profile" : "/auth/login"}
-              aria-label="Account"
-              className="relative group transition-all duration-500 hover:-translate-y-0.5 hidden sm:block"
-            >
-              <span className="absolute inset-0 rounded-full bg-clay/0 scale-100 transition-all duration-700 group-hover:scale-150 group-hover:bg-clay/5 group-hover:opacity-0" />
-
-              {!user ? (
-                <span className="material-symbols-outlined text-[20px] font-light text-stone-warm relative drop-shadow-sm group-hover:text-rice-paper">
-                  account_circle
-                </span>
-              ) : user.photoURL ? (
-                <Image
-                  src={user.photoURL}
-                  alt="User Profile"
-                  width={28}
-                  height={28}
-                  className="rounded-full object-cover ring-1 ring-white/20"
-                />
-              ) : (
-                <div className="w-7 h-7 rounded-full bg-clay flex items-center justify-center text-[11px] font-bold text-charcoal">
-                  {user.displayName?.charAt(0).toUpperCase() ||
-                    user.email?.charAt(0).toUpperCase()}
+            {/* LEFT: LOGO */}
+            <div className="flex justify-start">
+              <Link href="/" className="flex items-center gap-3 group relative z-50" onMouseEnter={() => setActiveLink("")}>
+                <div className="absolute -inset-2 bg-clay/0 rounded-full blur-xl transition-all duration-700 group-hover:bg-clay/5" />
+                {/* UPDATED LOGO SIZE:
+                   Mobile: w-40 h-12 (was w-32 h-10)
+                   Desktop: md:w-56 md:h-16 (was md:w-40 md:h-12)
+                */}
+                <div className="relative w-40 h-12 md:w-56 md:h-16 transition-all duration-500 ease-out group-hover:scale-105 group-hover:brightness-150">
+                  <Image src="/images/bgr_logo.png" alt="Clay & Soul" fill sizes="(max-width: 768px) 160px, 224px" className="object-contain object-left brightness-200 drop-shadow-lg" priority />
                 </div>
-              )}
-            </Link>
+              </Link>
+            </div>
 
-            {/* --- Mobile Hamburger Button --- */}
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden relative w-8 h-8 flex flex-col items-center justify-center gap-1.5 group"
-              aria-label="Toggle Menu"
-            >
+            {/* CENTER: NAV LINKS (Hidden on Mobile) */}
+            <nav className="hidden md:flex items-center justify-center gap-6 lg:gap-8">
+              {navLinks.map((link) => (
+                <MagneticButton key={link.label} href={link.href}>
+                  <span 
+                    className="relative group py-2 block px-2"
+                    onMouseEnter={() => setActiveLink(link.label)}
+                    onMouseLeave={() => setActiveLink("")}
+                  >
+                    <span className="relative text-[10px] lg:text-[11px] font-bold uppercase tracking-[0.2em] text-stone-warm transition-all duration-700 group-hover:text-rice-paper group-hover:tracking-[0.24em] whitespace-nowrap">
+                      {link.label}
+                    </span>
+                    <span className="absolute bottom-0 left-0 h-[1.5px] w-0 bg-gradient-to-r from-clay/60 via-clay to-clay/60 transition-all duration-700 group-hover:w-full opacity-0 group-hover:opacity-100" />
+                  </span>
+                </MagneticButton>
+              ))}
+            </nav>
+
+            {/* RIGHT: ACTIONS & MOBILE TOGGLE */}
+            <div className="flex justify-end items-center gap-3 md:gap-6 z-50">
+              {/* Cart Bag */}
+              <Link
+                href="/cart"
+                className="relative group flex items-center justify-center w-10 h-10 text-stone-warm transition-all duration-500 hover:text-rice-paper"
+              >
+                <span className="material-symbols-outlined text-[20px]">shopping_bag</span>
+                {cartCount > 0 && (
+                  <span className="absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-clay to-clay/90 text-[9px] font-bold text-white shadow-sm">
+                    {cartCount}
+                  </span>
+                )}
+              </Link>
+
+              {/* Wishlist Button */}
+              <Link 
+                href="/wishlist"
+                className="relative group flex items-center justify-center w-10 h-10 text-stone-warm transition-all duration-500 hover:text-rice-paper"
+              >
+                  <span className="material-symbols-outlined text-[20px]">favorite</span>
+                  {wishlistCount > 0 && (
+                  <span className="absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-clay to-clay/90 text-[9px] font-bold text-white shadow-sm">
+                      {wishlistCount}
+                  </span>
+                  )}
+              </Link>
+
+              {/* Profile / Login */}
+              <Link
+                href={user ? "/profile" : "/auth/login"}
+                aria-label="Account"
+                className="relative group transition-all duration-500 hover:-translate-y-0.5 hidden sm:block w-10 h-10 flex items-center justify-center"
+              >
+                <span className="absolute inset-0 rounded-full bg-clay/0 scale-100 transition-all duration-700 group-hover:scale-150 group-hover:bg-clay/5 group-hover:opacity-0" />
+
                 {!user ? (
-                  <span className="material-symbols-outlined text-[20px] font-light text-stone-warm group-hover:text-rice-paper">account_circle</span>
+                  <span className="material-symbols-outlined text-[20px] font-light text-stone-warm relative drop-shadow-sm group-hover:text-rice-paper">
+                    account_circle
+                  </span>
                 ) : user.photoURL ? (
-                  <Image src={user.photoURL} alt="Profile" width={28} height={28} className="rounded-full object-cover ring-1 ring-white/20" />
+                  <Image
+                    src={user.photoURL}
+                    alt="User Profile"
+                    width={28}
+                    height={28}
+                    className="rounded-full object-cover ring-1 ring-white/20"
+                  />
                 ) : (
                   <div className="w-7 h-7 rounded-full bg-clay flex items-center justify-center text-[11px] font-bold text-charcoal">
-                    {user.displayName?.charAt(0).toUpperCase() || "U"}
+                    {user.displayName?.charAt(0).toUpperCase() ||
+                      user.email?.charAt(0).toUpperCase()}
                   </div>
                 )}
-            </button>
+              </Link>
 
-            {/* Mobile Menu Toggle (Kept as standard button to avoid complex layout shifts) */}
-            <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="md:hidden relative w-10 h-10 flex flex-col items-center justify-center gap-1.5 group ml-2">
-              <span className={`h-[1px] bg-stone-warm transition-all duration-500 ${isMobileMenuOpen ? "w-6 rotate-45 translate-y-[7px] bg-rice-paper" : "w-6 group-hover:w-8"}`} />
-              <span className={`h-[1px] bg-stone-warm transition-all duration-500 ${isMobileMenuOpen ? "w-0 opacity-0" : "w-4 group-hover:w-8"}`} />
-              <span className={`h-[1px] bg-stone-warm transition-all duration-500 ${isMobileMenuOpen ? "w-6 -rotate-45 -translate-y-[7px] bg-rice-paper" : "w-6 group-hover:w-8"}`} />
-            </button>
+              {/* Mobile Menu Toggle */}
+              <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="md:hidden relative w-10 h-10 flex flex-col items-center justify-center gap-1.5 group ml-2">
+                <span className={`h-[1px] bg-stone-warm transition-all duration-500 ${isMobileMenuOpen ? "w-6 rotate-45 translate-y-[7px] bg-rice-paper" : "w-6 group-hover:w-8"}`} />
+                <span className={`h-[1px] bg-stone-warm transition-all duration-500 ${isMobileMenuOpen ? "w-0 opacity-0" : "w-4 group-hover:w-8"}`} />
+                <span className={`h-[1px] bg-stone-warm transition-all duration-500 ${isMobileMenuOpen ? "w-6 -rotate-45 -translate-y-[7px] bg-rice-paper" : "w-6 group-hover:w-8"}`} />
+              </button>
+            </div>
+
           </div>
         </div>
       </header>

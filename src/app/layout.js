@@ -53,23 +53,27 @@ function CursorGlow({ children }) {
         style={{ opacity: isVisible ? 1 : 0 }}
       >
         <div
-          className="absolute w-64 h-64 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+          className="absolute w-64 h-64 pointer-events-none"
           style={{
-            left: `${mousePosition.x}px`,
-            top: `${mousePosition.y}px`,
+            transform: `translate3d(${mousePosition.x}px, ${mousePosition.y}px, 0) translate(-50%, -50%)`,
+            left: 0,
+            top: 0,
             background: "radial-gradient(circle, rgba(210,180,140,0.06) 0%, rgba(210,180,140,0.03) 30%, transparent 60%)",
             filter: "blur(25px)",
-            transition: "left 0.1s ease-out, top 0.1s ease-out",
+            transition: "transform 0.1s ease-out",
+            willChange: "transform"
           }}
         />
         <div
-          className="absolute w-32 h-32 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+          className="absolute w-32 h-32 pointer-events-none"
           style={{
-            left: `${mousePosition.x}px`,
-            top: `${mousePosition.y}px`,
+            transform: `translate3d(${mousePosition.x}px, ${mousePosition.y}px, 0) translate(-50%, -50%)`,
+            left: 0,
+            top: 0,
             background: "radial-gradient(circle, rgba(210,180,140,0.08) 0%, rgba(210,180,140,0.04) 40%, transparent 70%)",
             filter: "blur(12px)",
-            transition: "left 0.08s ease-out, top 0.08s ease-out",
+            transition: "transform 0.08s ease-out",
+            willChange: "transform"
           }}
         />
       </div>

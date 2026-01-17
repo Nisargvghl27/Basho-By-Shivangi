@@ -242,7 +242,7 @@ function CheckoutContent() {
         if (order.id) {
           handleOrderSuccess();
         } else {
-          console.error('Failed to create COD order');
+          toast.error('Failed to place COD order');
           setLoading(false);
           alert('Failed to place order. Please try again.');
         }
@@ -256,12 +256,17 @@ function CheckoutContent() {
         body: JSON.stringify(orderPayload),
       });
 
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.details || 'Failed to create order');
+      }
+      
       const order = await response.json();
       
       if (order.id) {
         const Razorpay = await loadRazorpay();
         if (!Razorpay) {
-          console.error('Razorpay SDK failed to load');
+          toast.error('Payment gateway failed to load');
           setLoading(false);
           return;
         }
@@ -273,6 +278,7 @@ function CheckoutContent() {
           name: 'Basho by Shivangi',
           description: 'Handcrafted Pottery',
           order_id: order.id,
+          image: "/images/bgr_logo.png",
           handler: async function (response) {
             // Verify Signature
             const verifyResponse = await fetch('/api/verify-payment', {
@@ -299,9 +305,7 @@ function CheckoutContent() {
             email: shippingInfo.email,
             contact: shippingInfo.phone,
           },
-          theme: {
-            color: '#A65D3D', // Clay color
-          },
+          theme: { color: '#A65D3D' },
           modal: {
             ondismiss: function() { setLoading(false); }
           }
@@ -326,16 +330,14 @@ function CheckoutContent() {
   // 5. RENDER
   // ----------------------------------------------------------------------------
 
-  if (cartItems.length === 0) {
+  if (cartItems.length === 0 && !isProcessing) {
     return (
       <div className="min-h-screen bg-charcoal flex flex-col">
         <Header />
         <main className="flex-grow flex items-center justify-center px-4">
           <div className="text-center">
             <h1 className="text-2xl font-medium text-rice-paper mb-4">Your cart is empty</h1>
-            <Link href="/shop" className="text-clay hover:underline">
-              Continue Shopping
-            </Link>
+            <Link href="/shop" className="text-clay hover:underline">Continue Shopping</Link>
           </div>
         </main>
         <Footer />

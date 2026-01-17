@@ -27,13 +27,13 @@
 }
 
 @keyframes fadeInUp {
-  0% { opacity: 0; transform: translateY(40px); filter: blur(10px); }
-  100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+  0% { opacity: 0; transform: translate3d(0, 40px, 0); filter: blur(10px); }
+  100% { opacity: 1; transform: translate3d(0, 0, 0); filter: blur(0); }
 }
 
 @keyframes fadeInDown {
-  0% { opacity: 0; transform: translateY(-40px); filter: blur(5px); }
-  100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+  0% { opacity: 0; transform: translate3d(0, -40px, 0); filter: blur(5px); }
+  100% { opacity: 1; transform: translate3d(0, 0, 0); filter: blur(0); }
 }
 
 @keyframes fadeIn {
@@ -42,13 +42,13 @@
 }
 
 @keyframes panImage {
-  0% { transform: scale(1.1) translate(0%, 0%); }
-  100% { transform: scale(1.25) translate(-2%, -2%); }
+  0% { transform: scale(1.1) translate3d(0%, 0%, 0); }
+  100% { transform: scale(1.25) translate3d(-2%, -2%, 0); }
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -10px, 0); }
 }
 
 @keyframes pulseGlow {
@@ -57,17 +57,17 @@
 }
 
 @keyframes grainShift {
-  0% { transform: translate(0, 0); }
-  10% { transform: translate(-5%, -5%); }
-  20% { transform: translate(-10%, 5%); }
-  30% { transform: translate(5%, -10%); }
-  40% { transform: translate(-5%, 15%); }
-  50% { transform: translate(-10%, 5%); }
-  60% { transform: translate(15%, 0); }
-  70% { transform: translate(0, 10%); }
-  80% { transform: translate(-15%, 0); }
-  90% { transform: translate(10%, 5%); }
-  100% { transform: translate(5%, 0); }
+  0% { transform: translate3d(0, 0, 0); }
+  10% { transform: translate3d(-5%, -5%, 0); }
+  20% { transform: translate3d(-10%, 5%, 0); }
+  30% { transform: translate3d(5%, -10%, 0); }
+  40% { transform: translate3d(-5%, 15%, 0); }
+  50% { transform: translate3d(-10%, 5%, 0); }
+  60% { transform: translate3d(15%, 0, 0); }
+  70% { transform: translate3d(0, 10%, 0); }
+  80% { transform: translate3d(-15%, 0, 0); }
+  90% { transform: translate3d(10%, 5%, 0); }
+  100% { transform: translate3d(5%, 0, 0); }
 }
 
 @keyframes revealCurtainUp {
