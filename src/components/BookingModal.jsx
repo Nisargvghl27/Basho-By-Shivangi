@@ -178,25 +178,25 @@ const BookingModal = ({ workshop, onClose, onSuccess }) => {
 
   return (
     <div 
-      // Changed to fixed inset-0 to cover the whole screen
+      // Changed to fixed inset-0 to cover whole screen
       // Standardized to onClick for consistent behavior
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" 
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm" 
       onClick={onClose}
     >
       <div 
-        className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200"
+        className="relative w-full max-w-lg sm:max-w-xl bg-white rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto"
         // Prevent clicks inside modal from closing it
         onClick={(e) => e.stopPropagation()}
       >
         
         {/* Header */}
-        <div className="bg-gradient-to-r from-[#A0522D] to-[#7A3E1B] p-6 text-white relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+        <div className="bg-gradient-to-r from-[#A0522D] to-[#7A3E1B] p-4 sm:p-6 text-white relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 sm:w-40 h-32 sm:h-40 bg-white/10 rounded-full -mr-16 -mt-16"></div>
           <div className="relative z-10">
-            <h2 className="text-2xl font-serif font-bold tracking-wide">
+            <h2 className="text-xl sm:text-2xl font-serif font-bold tracking-wide">
               {workshop.title}
             </h2>
-            <p className="text-white/90 text-sm mt-1">
+            <p className="text-white/90 text-xs sm:text-sm mt-1">
               Complete your reservation in just a few steps
             </p>
           </div>
@@ -209,43 +209,43 @@ const BookingModal = ({ workshop, onClose, onSuccess }) => {
               e.stopPropagation(); // Stop click from hitting backdrop
               onClose();
             }}
-            className="absolute top-5 right-5 p-2 hover:bg-white/20 rounded-full transition-all z-20"
+            className="absolute top-4 sm:top-5 right-4 sm:right-5 p-2 sm:p-3 hover:bg-white/20 rounded-full transition-all z-20"
             aria-label="Close modal"
           >
-            <X size={20} />
+            <X size={16} />
           </button>
         </div>
 
         {/* Workshop Summary */}
-        <div className="bg-stone-50 p-4 border-b border-stone-200">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-            <div className="flex items-center gap-3 bg-white p-3 rounded-xl shadow-sm">
-              <div className="w-10 h-10 bg-[#A0522D]/10 rounded-full flex items-center justify-center">
-                <Calendar size={18} className="text-[#A0522D]" />
+        <div className="bg-stone-50 p-3 sm:p-4 border-b border-stone-200">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 text-xs sm:text-sm">
+            <div className="flex items-center gap-2 sm:gap-3 bg-white p-2 sm:p-3 rounded-xl shadow-sm">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#A0522D]/10 rounded-full flex items-center justify-center">
+                <Calendar size={14} className="text-[#A0522D]" />
               </div>
               <div>
                 <p className="text-stone-500 text-xs uppercase tracking-wide">Date</p>
-                <p className="font-semibold text-stone-800">
+                <p className="font-semibold text-stone-800 text-xs sm:text-sm">
                   {new Date(workshop.date).toLocaleDateString()}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3 bg-white p-3 rounded-xl shadow-sm">
-              <div className="w-10 h-10 bg-[#A0522D]/10 rounded-full flex items-center justify-center">
-                <Clock size={18} className="text-[#A0522D]" />
+            <div className="flex items-center gap-2 sm:gap-3 bg-white p-2 sm:p-3 rounded-xl shadow-sm">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#A0522D]/10 rounded-full flex items-center justify-center">
+                <Clock size={14} className="text-[#A0522D]" />
               </div>
               <div>
                 <p className="text-stone-500 text-xs uppercase tracking-wide">Time</p>
-                <p className="font-semibold text-stone-800">{workshop.time}</p>
+                <p className="font-semibold text-stone-800 text-xs sm:text-sm">{workshop.time}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 bg-white p-3 rounded-xl shadow-sm">
-              <div className="w-10 h-10 bg-[#A0522D]/10 rounded-full flex items-center justify-center">
-                <Users size={18} className="text-[#A0522D]" />
+            <div className="flex items-center gap-2 sm:gap-3 bg-white p-2 sm:p-3 rounded-xl shadow-sm">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#A0522D]/10 rounded-full flex items-center justify-center">
+                <Users size={14} className="text-[#A0522D]" />
               </div>
               <div>
                 <p className="text-stone-500 text-xs uppercase tracking-wide">Available</p>
-                <p className="font-semibold text-stone-800">
+                <p className="font-semibold text-stone-800 text-xs sm:text-sm">
                   {workshop.seats} Seats
                 </p>
               </div>
@@ -254,12 +254,12 @@ const BookingModal = ({ workshop, onClose, onSuccess }) => {
         </div>
 
         {/* Form */}
-        <form onSubmit={handlePayment} className="p-4 space-y-4">
+        <form onSubmit={handlePayment} className="p-3 sm:p-4 space-y-3 sm:space-y-4">
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-stone-900 uppercase tracking-wide flex items-center gap-2">
-                <div className="w-2 h-2 bg-[#A0522D] rounded-full"></div>
+              <label className="text-xs sm:text-sm font-semibold text-stone-900 uppercase tracking-wide flex items-center gap-2">
+                <div className="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-[#A0522D] rounded-full"></div>
                 Name
               </label>
               <input
@@ -268,13 +268,13 @@ const BookingModal = ({ workshop, onClose, onSuccess }) => {
                 required
                 value={formData.name}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#A0522D] focus:border-transparent outline-none transition-all shadow-sm"
+                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#A0522D] focus:border-transparent outline-none transition-all shadow-sm text-sm"
                 placeholder="Your Full Name"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-stone-900 uppercase tracking-wide flex items-center gap-2">
-                <div className="w-2 h-2 bg-[#A0522D] rounded-full"></div>
+              <label className="text-xs sm:text-sm font-semibold text-stone-900 uppercase tracking-wide flex items-center gap-2">
+                <div className="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-[#A0522D] rounded-full"></div>
                 Phone
               </label>
               <input
@@ -283,15 +283,15 @@ const BookingModal = ({ workshop, onClose, onSuccess }) => {
                 required
                 value={formData.phone}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#A0522D] focus:border-transparent outline-none transition-all shadow-sm"
+                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#A0522D] focus:border-transparent outline-none transition-all shadow-sm text-sm"
                 placeholder="+91 98765 43210"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-stone-900 uppercase tracking-wide flex items-center gap-2">
-              <div className="w-2 h-2 bg-[#A0522D] rounded-full"></div>
+            <label className="text-xs sm:text-sm font-semibold text-stone-900 uppercase tracking-wide flex items-center gap-2">
+              <div className="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-[#A0522D] rounded-full"></div>
               Email Address
             </label>
             <input
@@ -300,18 +300,18 @@ const BookingModal = ({ workshop, onClose, onSuccess }) => {
               required
               value={formData.email}
               onChange={handleChange}
-              className="w-full px-4 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#A0522D] focus:border-transparent outline-none transition-all shadow-sm"
+              className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#A0522D] focus:border-transparent outline-none transition-all shadow-sm text-sm"
               placeholder="you@example.com"
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-stone-900 uppercase tracking-wide flex items-center gap-2">
-              <div className="w-2 h-2 bg-[#A0522D] rounded-full"></div>
+            <label className="text-xs sm:text-sm font-semibold text-stone-900 uppercase tracking-wide flex items-center gap-2">
+              <div className="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-[#A0522D] rounded-full"></div>
               Number of Attendees
             </label>
             <div className="relative">
-              <Users size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-600" />
+              <Users size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-600" />
               <input
                 type="number"
                 name="attendees"
@@ -320,18 +320,18 @@ const BookingModal = ({ workshop, onClose, onSuccess }) => {
                 required
                 value={formData.attendees}
                 onChange={handleChange}
-                className="w-full pl-12 pr-4 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#A0522D] focus:border-transparent outline-none transition-all shadow-sm text-black"
+                className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-2 sm:py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#A0522D] focus:border-transparent outline-none transition-all shadow-sm text-black text-sm"
               />
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-stone-50 to-stone-100 p-5 rounded-2xl border border-stone-200 shadow-sm">
-          <div className="flex justify-between items-center mb-3">
+          <div className="bg-gradient-to-r from-stone-50 to-stone-100 p-3 sm:p-5 rounded-2xl border border-stone-200 shadow-sm">
+          <div className="flex justify-between items-center mb-2 sm:mb-3">
             <div>
-              <p className="text-sm text-stone-500 uppercase tracking-wide">
+              <p className="text-xs sm:text-sm text-stone-500 uppercase tracking-wide">
                 Total Amount
               </p>
-              <p className="text-2xl font-bold text-[#A0522D]">
+              <p className="text-lg sm:text-2xl font-bold text-[#A0522D]">
                 ₹{(workshop.price * formData.attendees).toLocaleString()}
               </p>
             </div>
@@ -340,11 +340,11 @@ const BookingModal = ({ workshop, onClose, onSuccess }) => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#A0522D] hover:bg-[#8B4513] text-white py-3.5 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+            className="w-full bg-[#A0522D] hover:bg-[#8B4513] text-white py-2.5 sm:py-3.5 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed text-sm sm:text-base"
           >
             {loading ? (
               <>
-                <Loader2 size={20} className="animate-spin" />
+                <Loader2 size={16} className="animate-spin" />
                 Processing...
               </>
             ) : (
@@ -352,7 +352,7 @@ const BookingModal = ({ workshop, onClose, onSuccess }) => {
             )}
           </button>
 
-          <p className="text-xs text-center text-stone-600 mt-3">
+          <p className="text-xs text-center text-stone-600 mt-2 sm:mt-3">
             Secure payment powered by Razorpay
           </p>
         </div>
