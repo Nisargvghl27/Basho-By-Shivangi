@@ -1,4 +1,3 @@
-// src/lib/productService.js
 import { db } from "./firebase";
 import { 
   collection, 
@@ -17,9 +16,11 @@ const COLLECTION_NAME = "products";
 
 // --- CRUD Operations ---
 
-// 1. Fetch All Products
+// 1. Fetch All Products (UNLIMITED)
 export const fetchAllProducts = async () => {
   try {
+    // This query fetches ALL documents in the collection, ordered by newest first.
+    // There is no 'limit()' clause here, so it is "infinite".
     const q = query(collection(db, COLLECTION_NAME), orderBy("createdAt", "desc"));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({
@@ -47,19 +48,17 @@ export const fetchProductById = async (id) => {
   }
 };
 
-// 3. Create Product (Accepts Image URL directly)
+// 3. Create Product
 export const createProduct = async (productData, imageUrl) => {
   try {
-    // Use the provided URL or a placeholder
     const finalImageUrl = imageUrl || "https://via.placeholder.com/400";
 
-    // Save to Firestore
     const docRef = await addDoc(collection(db, COLLECTION_NAME), {
       ...productData,
       price: Number(productData.price),
       stock: Number(productData.stock),
-      image: finalImageUrl,       // The provided Cloudinary Link
-      images: [finalImageUrl],    // Array format for compatibility
+      image: finalImageUrl,
+      images: [finalImageUrl],
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
@@ -71,7 +70,7 @@ export const createProduct = async (productData, imageUrl) => {
   }
 };
 
-// 4. Update Product (Accepts Image URL directly)
+// 4. Update Product
 export const updateProduct = async (productId, productData, imageUrl) => {
   try {
     const docRef = doc(db, COLLECTION_NAME, productId);
@@ -83,7 +82,6 @@ export const updateProduct = async (productId, productData, imageUrl) => {
       updatedAt: serverTimestamp()
     };
 
-    // If a new image URL is provided, update it
     if (imageUrl) {
       updateData.image = imageUrl;
       updateData.images = [imageUrl];
@@ -111,5 +109,6 @@ export const deleteProduct = async (productId) => {
 // 6. Get Related Products
 export const getRelatedProducts = async (currentProductId, category) => {
     const all = await fetchAllProducts();
+    // This one DOES have a limit (slice), which is good for "Related Items"
     return all.filter(p => p.id !== currentProductId && p.category === category).slice(0, 4);
 };

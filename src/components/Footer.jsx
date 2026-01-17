@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import { subscribeToNewsletter } from "../lib/newsletterService"; // Import the service
-import { Loader2, CheckCircle2 } from "lucide-react"; // Import icons
+import Link from "next/link"; // Added Link for internal navigation
+import { subscribeToNewsletter } from "../lib/newsletterService"; 
+import { Loader2, CheckCircle2 } from "lucide-react"; 
 
 export default function Footer() {
   // --- 1. State & Refs ---
@@ -25,11 +26,12 @@ export default function Footer() {
     { label: "Workshops", href: "/workshops" }
   ];
 
-  const supportLinks = [
-    { label: "Care Guide", href: "/care-guide" },
-    { label: "Shipping", href: "/shipping" },
-    { label: "Returns", href: "/returns" },
-    { label: "Contact", href: "/contact" }
+  // UPDATED: Replaced 'Support' with 'Discover' to highlight story & content
+  const discoverLinks = [
+    { label: "Our Story", href: "/about" },
+    { label: "The Journal", href: "/journal" },
+    { label: "Philosophy", href: "/about#philosophy" },
+    { label: "The Process", href: "/about#values" }
   ];
 
   const socialLinks = [
@@ -62,7 +64,7 @@ export default function Footer() {
 
   // --- 4. Handle Subscribe Function ---
   const handleSubscribe = async (e) => {
-    e.preventDefault(); // Prevent page reload
+    e.preventDefault(); 
     
     if (!email) return;
 
@@ -73,7 +75,7 @@ export default function Footer() {
       const result = await subscribeToNewsletter(email);
       setSubscriptionStatus(result);
       if (result.success) {
-        setEmail(""); // Clear input on success
+        setEmail(""); 
       }
     } catch (error) {
       setSubscriptionStatus({ success: false, message: "An error occurred." });
@@ -136,7 +138,7 @@ export default function Footer() {
             <ul className="flex flex-col gap-4 text-sm text-stone-warm font-light">
               {shopLinks.map((link) => (
                 <li key={link.label}>
-                  <a
+                  <Link
                     className="group relative inline-flex items-center gap-2 hover:text-clay transition-all duration-500 hover:translate-x-2"
                     href={link.href}
                   >
@@ -145,25 +147,25 @@ export default function Footer() {
                       {link.label}
                       <span className="absolute bottom-0 left-0 h-[1px] w-0 bg-clay/50 transition-all duration-500 group-hover:w-full" />
                     </span>
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* --- Support Links --- */}
+          {/* --- Discover Links (Replaced Support) --- */}
           <div
             className={`md:col-span-2 transition-all duration-1000 delay-200 ease-out ${
               isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
             }`}
           >
             <h4 className="font-bold uppercase tracking-[0.2em] mb-8 text-[11px] text-white transition-all duration-500 hover:text-clay hover:tracking-[0.25em]">
-              Support
+              Discover
             </h4>
             <ul className="flex flex-col gap-4 text-sm text-stone-warm font-light">
-              {supportLinks.map((link) => (
+              {discoverLinks.map((link) => (
                 <li key={link.label}>
-                  <a
+                  <Link
                     className="group relative inline-flex items-center gap-2 hover:text-clay transition-all duration-500 hover:translate-x-2"
                     href={link.href}
                   >
@@ -172,7 +174,7 @@ export default function Footer() {
                       {link.label}
                       <span className="absolute bottom-0 left-0 h-[1px] w-0 bg-clay/50 transition-all duration-500 group-hover:w-full" />
                     </span>
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -196,6 +198,7 @@ export default function Footer() {
               {/* Email Input */}
               <div className="relative">
                 <input
+                  suppressHydrationWarning={true}
                   className={`bg-transparent border-b w-full py-3 text-white focus:outline-none placeholder-stone-600 text-sm transition-all duration-500 ${
                     focusedInput ? 'border-clay' : 'border-white/20 hover:border-white/40'
                   }`}
@@ -222,6 +225,7 @@ export default function Footer() {
 
               {/* Subscribe Button */}
               <button
+                suppressHydrationWarning={true}
                 type="submit"
                 disabled={loading}
                 className="group relative text-[10px] font-bold uppercase tracking-[0.2em] text-obsidian bg-rice-paper hover:bg-clay hover:text-white transition-all duration-700 py-3.5 w-fit px-10 overflow-hidden hover:shadow-[0_8px_24px_rgba(210,180,140,0.3)] hover:scale-105 hover:tracking-[0.25em] disabled:opacity-70 disabled:cursor-not-allowed"
