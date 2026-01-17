@@ -11,14 +11,13 @@ export default function CorporateInquiryManagement() {
   const [inquiries, setInquiries] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const loadData = async () => {
-    setLoading(true);
-    const data = await fetchCorporateInquiries();
-    setInquiries(data);
-    setLoading(false);
-  };
-
   useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      const data = await fetchCorporateInquiries();
+      setInquiries(data);
+      setLoading(false);
+    };
     loadData();
   }, []);
 
@@ -82,7 +81,7 @@ export default function CorporateInquiryManagement() {
 
                 <div className="mt-3 bg-gray-50 dark:bg-gray-900 p-4 rounded-lg text-sm text-gray-700 dark:text-gray-300 italic border border-gray-100 dark:border-gray-700 relative">
                   <MessageSquare size={16} className="absolute top-3 right-3 text-gray-300"/>
-                  "{inq.message}"
+                  {`"${inq.message}"`}
                 </div>
                 
                 <div className="flex gap-4 text-xs font-medium text-gray-500 uppercase tracking-wide pt-1">

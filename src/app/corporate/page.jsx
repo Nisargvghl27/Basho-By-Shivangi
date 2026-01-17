@@ -151,7 +151,7 @@ export default function CorporatePage() {
               <div className="w-14 h-14 bg-clay/10 rounded-full flex items-center justify-center text-clay mb-6 group-hover:bg-clay group-hover:text-white transition-colors duration-500">
                 <Users size={28} />
               </div>
-              <h3 className="text-2xl font-serif text-rice-paper mb-4">"Pottery & Peace" Workshops</h3>
+              <h3 className="text-2xl font-serif text-rice-paper mb-4">&ldquo;Pottery & Peace&rdquo; Workshops</h3>
               <p className="text-stone-warm leading-relaxed mb-6 font-light">
                 A tactile break from screens. Our guided sessions focus on mindfulness, creativity, and team cohesion.
               </p>
@@ -184,7 +184,7 @@ export default function CorporatePage() {
             className="text-center mb-12"
           >
             <h2 className="text-3xl font-serif text-rice-paper mb-4">Start a Collaboration</h2>
-            <p className="text-stone-warm">Fill out the form below and we'll get back to you within 24 hours.</p>
+            <p className="text-stone-warm">Fill out the form below and we&apos;ll get back to you within 24 hours.</p>
           </motion.div>
 
           {submitted ? (

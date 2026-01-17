@@ -30,6 +30,7 @@ export default function Contact() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState(null);
   const [focusedField, setFocusedField] = useState(null);
   const [openFaq, setOpenFaq] = useState(null);
 
