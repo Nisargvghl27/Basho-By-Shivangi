@@ -1,10 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Loader2, Calendar, Clock, MapPin, Users } from 'lucide-react';
 import { toast } from 'react-hot-toast'; 
 import { bookWorkshop } from '../lib/workshopService'; // Corrected Import
 
 const BookingModal = ({ workshop, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -174,13 +182,15 @@ const BookingModal = ({ workshop, onClose, onSuccess }) => {
     };
   }, []);
 
-  if (!workshop) return null;
+  if (!workshop || !mounted) return null;
 
-  return (
+  // Use createPortal to inject the modal into document.body
+  return createPortal(
     <div 
       // Changed to fixed inset-0 to cover whole screen
       // Standardized to onClick for consistent behavior
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm" 
+      // Increased z-index to be higher than header (z-50)
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm" 
       onClick={onClose}
     >
       <div 
@@ -358,7 +368,8 @@ const BookingModal = ({ workshop, onClose, onSuccess }) => {
         </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

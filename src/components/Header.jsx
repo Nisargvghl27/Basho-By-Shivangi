@@ -16,7 +16,8 @@ const navLinks = [
   { label: "Workshops", href: "/workshops" },
   { label: "Journal", href: "/journal" },
   { label: "About", href: "/about" },
-  { label: "Collaborations", href: "/corporate" }, // <--- NEW LINK ADDED
+  { label: "Collaborations", href: "/corporate" },
+  { label: "Contact Us", href: "/contact" },
 ];
 
 export default function Header() {
