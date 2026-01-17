@@ -5,7 +5,7 @@ import {
   Building2, Mail, Phone, Calendar, CheckCircle, MessageSquare 
 } from "lucide-react";
 import { fetchCorporateInquiries, updateCorporateStatus } from "../../lib/corporateService";
-import LottieLoader from "../LottieLoader"; // <--- Import New Loader
+import LottieLoader from "../LottieLoader";
 
 export default function CorporateInquiryManagement() {
   const [inquiries, setInquiries] = useState([]);
