@@ -10,16 +10,19 @@ import {
   Users, 
   CreditCard, 
   Warehouse, 
-  Image as ImageIcon, // Alias 'Image' as 'ImageIcon'
+  Image as ImageIcon, 
   CalendarDays,
   Crown,
   X,
-  Star // Added Star icon
+  Star,
+  MessageSquare, // Icon for Custom Requests
+  Briefcase      // Icon for Corporate Inquiries
 } from "lucide-react";
 
-// Removed Analytics and Settings from the menu items list
 const menuItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/custom-requests", label: "Custom Requests", icon: MessageSquare }, // Custom Orders
+  { href: "/admin/corporate-inquiries", label: "Corporate Inquiries", icon: Briefcase }, // B2B
   { href: "/admin/upcoming-workshop", label: "Upcoming Workshop", icon: Star },
   { href: "/admin/best-seller", label: "Best Seller", icon: Crown },
   { href: "/admin/products", label: "Products", icon: Package },
@@ -70,7 +73,7 @@ export default function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
           </button>
         </div>
 
-        <nav className="mt-4 sm:mt-8">
+        <nav className="mt-4 sm:mt-8 h-[calc(100vh-4rem)] overflow-y-auto custom-scrollbar pb-10">
           <div className="px-2 sm:px-4 space-y-1 sm:space-y-2">
             {menuItems.map((item) => {
               const Icon = item.icon;
@@ -94,8 +97,8 @@ export default function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
                   `}
                   onClick={() => setSidebarOpen(false)}
                 >
-                  <Icon className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3" />
-                  <span className="hidden sm:inline">{item.label}</span>
+                  <Icon className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 shrink-0" />
+                  <span className="truncate">{item.label}</span>
                 </Link>
               );
             })}
