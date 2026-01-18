@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth, db } from "../../lib/firebase";
 import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
-import { Download, LogOut, User, Package, Calendar, DollarSign } from "lucide-react";
+import { Download, LogOut, User, Package, Calendar } from "lucide-react";
 import Header from "../../components/Header";
 
 export default function ProfilePage() {
@@ -35,6 +35,7 @@ export default function ProfilePage() {
     try {
       setLoadingOrders(true);
       const ordersRef = collection(db, "orders");
+      // Note: This query requires the composite index you created earlier
       const q = query(
         ordersRef,
         where("shipping.email", "==", email),
@@ -44,6 +45,7 @@ export default function ProfilePage() {
       const querySnapshot = await getDocs(q);
       const ordersData = querySnapshot.docs.map((doc) => {
         const data = doc.data();
+        // Handle Firestore Timestamp or standard Date
         const dateObj = data.createdAt?.toDate ? data.createdAt.toDate() : new Date();
 
         return {
@@ -121,19 +123,21 @@ export default function ProfilePage() {
       <div className="w-full bg-charcoal py-12 sm:py-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-gradient-to-r from-charcoal-light to-charcoal border-l-4 border-clay rounded-lg p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            {/* Left Side: Title */}
             <div>
-          <div>
-            <h1 className="text-3xl md:text-4xl font-serif text-rice-paper">My Profile</h1>
-            <p className="text-clay text-sm mt-1">View and download your orders</p>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 px-6 py-3 bg-red-900/30 hover:bg-red-900/50 border border-red-700 text-red-300 rounded transition-all duration-300 whitespace-nowrap"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>Logout</span>
-          </button>
+              <h1 className="text-3xl md:text-4xl font-serif text-rice-paper">My Profile</h1>
+              <p className="text-clay text-sm mt-1">View and download your orders</p>
             </div>
+
+            {/* Right Side: Logout Button */}
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-6 py-3 bg-red-900/30 hover:bg-red-900/50 border border-red-700 text-red-300 rounded transition-all duration-300 whitespace-nowrap"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Logout</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -258,7 +262,6 @@ export default function ProfilePage() {
           )}
         </div>
       </div>
-    </div>
     </div>
   );
 }
