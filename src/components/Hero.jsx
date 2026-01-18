@@ -47,7 +47,7 @@ export default function Hero() {
       {/* --- CONTENT --- */}
       <div className="relative z-10 flex flex-col items-center justify-center h-full text-center px-4">
         <span className="text-white/80 text-xs font-bold uppercase tracking-[0.4em] mb-6 animate-fade-in-up">
-          Est. 2023 • Kyoto Inspired
+          Est. 2019 • Basho By Shivangi
         </span>
 
         <h1 className="text-rice-paper text-6xl md:text-8xl lg:text-9xl font-serif tracking-tight leading-none drop-shadow-2xl mb-6">
