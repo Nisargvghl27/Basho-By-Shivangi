@@ -39,6 +39,7 @@ module.exports = {
         "full": "9999px" 
       },
       animation: {
+        'marquee': 'marquee 25s linear infinite',
         'fade-in-down': 'fadeInDown 1s cubic-bezier(0.16, 1, 0.3, 1) forwards',
         'fade-in-up': 'fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards',
         'fade-in': 'fadeIn 1.5s ease-out forwards',
@@ -52,6 +53,10 @@ module.exports = {
         'fade-in': 'fadeIn 0.5s ease-out forwards',
       },
       keyframes: {
+        marquee: {
+          '0%': { transform: 'translateX(0%)' },
+          '100%': { transform: 'translateX(-50%)' },
+        },
         fadeInUp: {
           '0%': { opacity: '0', transform: 'translateY(40px)', filter: 'blur(10px)' },
           '100%': { opacity: '1', transform: 'translateY(0)', filter: 'blur(0)' },

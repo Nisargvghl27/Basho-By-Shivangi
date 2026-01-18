@@ -200,7 +200,7 @@ export default function Collections() {
         </div>
 
         {/* Products Grid - Only Best Sellers */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 auto-rows-[300px] sm:auto-rows-[350px] lg:auto-rows-[380px]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 auto-rows-[450px] sm:auto-rows-[350px] lg:auto-rows-[380px]">
           
           {/* Featured Product - Large (First Best Seller) */}
           {bestSellers.length > 0 && (
@@ -299,7 +299,7 @@ export default function Collections() {
               key={bestSeller.id}
               onMouseEnter={() => setHoveredCard(bestSeller.id)}
               onMouseLeave={() => setHoveredCard(null)}
-              className={`group flex flex-col gap-4 bg-charcoal border border-border-subtle p-4 transition-all duration-700 hover:border-clay/20 hover:bg-white/5 hover:shadow-[0_12px_40px_rgba(0,0,0,0.3)] hover:-translate-y-2 ${
+              className={`group flex flex-col gap-3 sm:gap-4 bg-charcoal border border-border-subtle p-3 sm:p-4 transition-all duration-700 hover:border-clay/20 hover:bg-white/5 hover:shadow-[0_12px_40px_rgba(0,0,0,0.3)] hover:-translate-y-2 ${
                 isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-16'
               }`}
               style={{ transitionDelay: `${400 + index * 100}ms` }}
@@ -315,11 +315,11 @@ export default function Collections() {
               )}
 
               {/* Image Container */}
-              <div className="h-[75%] w-full overflow-hidden relative bg-black/20 group">
+              <div className="h-[85%] sm:h-[75%] w-full overflow-hidden relative bg-black/20 group">
                 <div
-                  className="absolute inset-0 bg-cover bg-center transition-all duration-[1200ms] ease-out group-hover:scale-110 group-hover:rotate-1"
+                  className="absolute inset-0 bg-contain sm:bg-cover bg-center bg-no-repeat transition-all duration-[1200ms] ease-out group-hover:scale-110 group-hover:rotate-1"
                   style={{
-                    backgroundImage: `url("${bestSeller.image}")`,
+                    backgroundImage: `url(\"${bestSeller.image}\")`,
                   }}
                 />
                 
