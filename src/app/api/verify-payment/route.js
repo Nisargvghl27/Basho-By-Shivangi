@@ -12,9 +12,9 @@ export async function POST(request) {
     if (!process.env.RAZORPAY_KEY_SECRET) {
       console.error('Missing RAZORPAY_KEY_SECRET environment variable');
       return NextResponse.json(
-        { 
+        {
           success: false,
-          error: 'Server configuration error', 
+          error: 'Server configuration error',
           details: 'Razorpay key secret not configured'
         },
         { status: 500 }
@@ -22,8 +22,7 @@ export async function POST(request) {
     }
 
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = await request.json();
-    console.log('Payment verification request received:', { razorpay_order_id, razorpay_payment_id });
-    
+
     if (!process.env.RAZORPAY_KEY_SECRET) {
       console.error('RAZORPAY_KEY_SECRET is missing in environment variables');
       return NextResponse.json(
@@ -42,20 +41,17 @@ export async function POST(request) {
     const isAuthentic = expectedSignature === razorpay_signature;
 
     if (!isAuthentic) {
-      console.error('Invalid payment signature', { expected: expectedSignature, received: razorpay_signature });
       return NextResponse.json(
         { success: false, error: 'Invalid payment signature' },
         { status: 400 }
       );
     }
 
-    console.log('Signature verified successfully. Finding order in Firestore...');
-
     // Find order in Firestore
     const ordersRef = collection(db, 'orders');
     const q = query(ordersRef, where('razorpayOrderId', '==', razorpay_order_id));
     const querySnapshot = await getDocs(q);
-    
+
     if (querySnapshot.empty) {
       console.error('Order not found in Firestore for ID:', razorpay_order_id);
       return NextResponse.json(
@@ -66,7 +62,6 @@ export async function POST(request) {
 
     const orderDoc = querySnapshot.docs[0];
     const orderData = orderDoc.data();
-    console.log('Order found:', orderDoc.id, 'Status:', orderData.status);
 
     // Update order status in Firestore
     await updateDoc(doc(db, 'orders', orderDoc.id), {
@@ -77,15 +72,12 @@ export async function POST(request) {
       paidAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
-    
-    console.log('Order updated to completed status.');
 
     // 3. Send Bill/Invoice Email Logic
     try {
       if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
         console.warn('Email credentials missing, skipping invoice email.');
       } else {
-        console.log('Preparing to send invoice email...');
         // Configure Transporter
         const transporter = nodemailer.createTransport({
           service: 'gmail',
@@ -167,14 +159,13 @@ export async function POST(request) {
 
           // Send Mail
           await transporter.sendMail(mailOptions);
-          console.log('Bill sent successfully to:', customerEmail);
         }
       }
     } catch (emailError) {
       console.error('Failed to send bill email:', emailError);
     }
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
       orderId: orderDoc.id,
       paymentId: razorpay_payment_id

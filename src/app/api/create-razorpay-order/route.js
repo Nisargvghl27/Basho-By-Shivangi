@@ -9,13 +9,10 @@ export async function POST(request) {
   try {
     // Check environment variables first
     if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
-      console.error('Missing Razorpay environment variables:', {
-        hasKeyId: !!process.env.RAZORPAY_KEY_ID,
-        hasKeySecret: !!process.env.RAZORPAY_KEY_SECRET
-      });
+      console.error('Server Configuration Error: Razorpay credentials missing.');
       return NextResponse.json(
-        { 
-          error: 'Server configuration error', 
+        {
+          error: 'Server configuration error',
           details: 'Razorpay credentials not configured',
           credentialsMissing: true
         },
@@ -31,9 +28,9 @@ export async function POST(request) {
 
     // Use request.json() instead of request.text() + JSON.parse()
     const data = await request.json();
-    
+
     const { items, shipping, total, amount, receipt } = data;
-    
+
     // Enhanced input validation
     if (!data || typeof data !== 'object') {
       return NextResponse.json(
@@ -57,16 +54,16 @@ export async function POST(request) {
     }
 
     // Convert to paise (Razorpay expects amount in smallest currency unit)
-    const orderAmount = amount || (total * 100); 
+    const orderAmount = amount || (total * 100);
     const orderReceipt = receipt || `order_${Date.now()}`;
-    
+
     if (!orderAmount || orderAmount <= 0) {
       return NextResponse.json(
         { error: 'Invalid amount', details: 'Amount must be greater than 0' },
         { status: 400 }
       );
     }
-    
+
     // Create order with Razorpay
     const razorpayOrder = await razorpay.orders.create({
       amount: Math.round(orderAmount), // Ensure integer paise
@@ -104,24 +101,24 @@ export async function POST(request) {
 
     // Check if it's a credentials error (often happens if env vars are missing)
     if (error.message && (
-        error.message.includes('key_id') || 
-        error.message.includes('key_secret') || 
-        error.message.includes('authentication')
-      )) {
+      error.message.includes('key_id') ||
+      error.message.includes('key_secret') ||
+      error.message.includes('authentication')
+    )) {
       return NextResponse.json(
-        { 
-          error: 'Invalid Razorpay credentials', 
+        {
+          error: 'Invalid Razorpay credentials',
           details: 'Please check your Razorpay API keys in environment variables',
           credentialsMissing: true
         },
         { status: 401 }
       );
     }
-    
+
     // Return detailed error for debugging
     return NextResponse.json(
-      { 
-        error: 'Failed to create Razorpay order', 
+      {
+        error: 'Failed to create Razorpay order',
         details: error.message,
         type: error.constructor.name,
         stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
