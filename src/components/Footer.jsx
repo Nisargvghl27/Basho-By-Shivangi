@@ -1,0 +1,304 @@
+"use client";
+
+import React, { useState, useEffect, useRef } from "react";
+import Image from "next/image";
+import Link from "next/link"; 
+import { subscribeToNewsletter } from "../lib/newsletterService"; 
+import { Loader2, CheckCircle2 } from "lucide-react"; 
+
+export default function Footer() {
+  // --- 1. State & Refs ---
+  const [isVisible, setIsVisible] = useState(false);
+  const [email, setEmail] = useState("");
+  const [focusedInput, setFocusedInput] = useState(false);
+  
+  // New States for subscription handling
+  const [loading, setLoading] = useState(false);
+  const [subscriptionStatus, setSubscriptionStatus] = useState({ success: false, message: "" });
+  
+  const footerRef = useRef(null);
+
+  // --- 2. Data Constants ---
+  const shopLinks = [
+    { label: "All Ceramics", href: "/shop" },
+    { label: "Tableware", href: "/shop?category=tableware" },
+    { label: "Vases", href: "/shop?category=vases" },
+    { label: "Workshops", href: "/workshops" }
+  ];
+
+  // UPDATED: Added Corporate Inquiries link here
+  const discoverLinks = [
+    { label: "Our Story", href: "/about" },
+    { label: "The Journal", href: "/journal" },
+    { label: "Philosophy", href: "/about#philosophy" },
+    { label: "The Process", href: "/about#values" },
+    { label: "Corporate Inquiries", href: "/corporate" },
+    { label: "Contact us", href: "/contact" }
+  ];
+
+  const socialLinks = [
+    { label: "Instagram", href: "#", icon: "instagram" },
+    { label: "Pinterest", href: "#", icon: "push_pin" },
+    { label: "Facebook", href: "#", icon: "facebook" }
+  ];
+
+  // --- 3. Intersection Observer Effect ---
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (footerRef.current) {
+      observer.observe(footerRef.current);
+    }
+
+    return () => {
+      if (footerRef.current) {
+        observer.unobserve(footerRef.current);
+      }
+    };
+  }, []);
+
+  // --- 4. Handle Subscribe Function ---
+  const handleSubscribe = async (e) => {
+    e.preventDefault(); 
+    
+    if (!email) return;
+
+    setLoading(true);
+    setSubscriptionStatus({ success: false, message: "" });
+
+    try {
+      const result = await subscribeToNewsletter(email);
+      setSubscriptionStatus(result);
+      if (result.success) {
+        setEmail(""); 
+      }
+    } catch (error) {
+      setSubscriptionStatus({ success: false, message: "An error occurred." });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <footer 
+      ref={footerRef}
+      className="bg-obsidian text-stone-300 pt-24 pb-12 border-t border-white/5 relative overflow-hidden"
+    >
+      <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-24 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-12 border-b border-white/5 pb-20">
+
+          {/* --- Brand Section --- */}
+          <div
+            className={`md:col-span-5 flex flex-col gap-8 transition-all duration-1000 ease-out ${
+              isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
+            }`}
+          >
+            {/* LOGO */}
+            <div className="group cursor-pointer w-fit relative py-2">
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-clay/15 blur-[30px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none" />
+              <div className="relative z-10 w-48 h-16 md:w-56 md:h-20 transition-all duration-700 ease-out group-hover:-translate-y-1 group-hover:scale-105">
+                <Image
+                  src="/images/bgr_logo.png"
+                  alt="Clay & Soul"
+                  fill
+                  sizes="(max-width: 768px) 192px, 224px"
+                  className="object-contain object-left opacity-100 grayscale-0 brightness-200 transition-all duration-700 group-hover:brightness-150 group-hover:drop-shadow-[0_10px_15px_rgba(0,0,0,0.5)]"
+                />
+              </div>
+              <div className="absolute -bottom-1 left-0 flex items-center gap-2">
+                <div className="h-[1px] bg-gradient-to-r from-clay to-transparent w-4 group-hover:w-24 transition-all duration-700 ease-out opacity-50 group-hover:opacity-100" />
+                <div className="h-1 w-1 rounded-full bg-clay opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-700 delay-100" />
+              </div>
+            </div>
+
+            <p className="text-stone-warm text-sm leading-7 max-w-sm font-light transition-all duration-700 hover:text-stone-200">
+              Handcrafted in small batches. Designed to bring warmth and intention to your daily rituals. We honor the clay and the process.
+            </p>
+
+            <div className="flex items-center gap-3 opacity-40">
+              <span className="h-px w-12 bg-gradient-to-r from-clay/60 to-transparent" />
+              <span className="text-[10px] uppercase tracking-[0.3em] text-clay/60 font-bold">Est. 2023</span>
+            </div>
+          </div>
+
+          {/* --- Shop Links --- */}
+          <div
+            className={`md:col-span-2 transition-all duration-1000 delay-100 ease-out ${
+              isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
+            }`}
+          >
+            <h4 className="font-bold uppercase tracking-[0.2em] mb-8 text-[11px] text-white transition-all duration-500 hover:text-clay hover:tracking-[0.25em]">
+              Shop
+            </h4>
+            <ul className="flex flex-col gap-4 text-sm text-stone-warm font-light">
+              {shopLinks.map((link) => (
+                <li key={link.label}>
+                  <Link
+                    className="group relative inline-flex items-center gap-2 hover:text-clay transition-all duration-500 hover:translate-x-2"
+                    href={link.href}
+                  >
+                    <span className="h-px w-0 bg-clay transition-all duration-500 group-hover:w-3 opacity-0 group-hover:opacity-100" />
+                    <span className="relative">
+                      {link.label}
+                      <span className="absolute bottom-0 left-0 h-[1px] w-0 bg-clay/50 transition-all duration-500 group-hover:w-full" />
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* --- Discover Links --- */}
+          <div
+            className={`md:col-span-2 transition-all duration-1000 delay-200 ease-out ${
+              isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
+            }`}
+          >
+            <h4 className="font-bold uppercase tracking-[0.2em] mb-8 text-[11px] text-white transition-all duration-500 hover:text-clay hover:tracking-[0.25em]">
+              Discover
+            </h4>
+            <ul className="flex flex-col gap-4 text-sm text-stone-warm font-light">
+              {discoverLinks.map((link) => (
+                <li key={link.label}>
+                  <Link
+                    className="group relative inline-flex items-center gap-2 hover:text-clay transition-all duration-500 hover:translate-x-2"
+                    href={link.href}
+                  >
+                    <span className="h-px w-0 bg-clay transition-all duration-500 group-hover:w-3 opacity-0 group-hover:opacity-100" />
+                    <span className="relative">
+                      {link.label}
+                      <span className="absolute bottom-0 left-0 h-[1px] w-0 bg-clay/50 transition-all duration-500 group-hover:w-full" />
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* --- Newsletter Section --- */}
+          <div
+            className={`md:col-span-3 transition-all duration-1000 delay-300 ease-out ${
+              isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
+            }`}
+          >
+            <h4 className="font-bold uppercase tracking-[0.2em] mb-8 text-[11px] text-white transition-all duration-500 hover:text-clay hover:tracking-[0.25em]">
+              Join the community
+            </h4>
+            <p className="text-stone-warm text-sm mb-6 font-light leading-relaxed transition-all duration-500 hover:text-stone-200">
+              Subscribe to receive updates on new kiln firings and workshops.
+            </p>
+
+            {/* Form */}
+            <form onSubmit={handleSubscribe} className="flex flex-col gap-5">
+              {/* Email Input */}
+              <div className="relative">
+                <input
+                  suppressHydrationWarning={true}
+                  className={`bg-transparent border-b w-full py-3 text-white focus:outline-none placeholder-stone-600 text-sm transition-all duration-500 ${
+                    focusedInput ? 'border-clay' : 'border-white/20 hover:border-white/40'
+                  }`}
+                  placeholder="Email address"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onFocus={() => setFocusedInput(true)}
+                  onBlur={() => setFocusedInput(false)}
+                />
+                <span className={`absolute bottom-0 left-0 h-[2px] bg-gradient-to-r from-clay via-clay/80 to-transparent transition-all duration-500 ${
+                  focusedInput ? 'w-full opacity-100' : 'w-0 opacity-0'
+                }`} />
+              </div>
+
+              {/* Status Message */}
+              {subscriptionStatus.message && (
+                <div className={`text-xs flex items-center gap-2 ${subscriptionStatus.success ? 'text-green-400' : 'text-red-400'}`}>
+                  {subscriptionStatus.success && <CheckCircle2 size={12} />}
+                  {subscriptionStatus.message}
+                </div>
+              )}
+
+              {/* Subscribe Button */}
+              <button
+                suppressHydrationWarning={true}
+                type="submit"
+                disabled={loading}
+                className="group relative text-[10px] font-bold uppercase tracking-[0.2em] text-obsidian bg-rice-paper hover:bg-clay hover:text-white transition-all duration-700 py-3.5 w-fit px-10 overflow-hidden hover:shadow-[0_8px_24px_rgba(210,180,140,0.3)] hover:scale-105 hover:tracking-[0.25em] disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                <span className="relative z-10 flex items-center gap-2">
+                   {loading ? (
+                     <>
+                       <Loader2 size={12} className="animate-spin" /> Processing
+                     </>
+                   ) : "Subscribe"}
+                </span>
+                
+                {/* Shimmer Effect */}
+                {!loading && (
+                  <>
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                    </div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-clay/0 via-clay to-clay/0 scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-center" />
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+
+        </div>
+
+        {/* --- Bottom Section --- */}
+        <div 
+          className={`flex flex-col md:flex-row justify-between items-center pt-10 text-[10px] text-stone-600 gap-6 font-bold uppercase tracking-widest transition-all duration-1000 delay-400 ease-out ${
+            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          }`}
+        >
+          <p className="transition-all duration-500 hover:text-stone-400">
+            © 2023 Clay & Soul. All rights reserved.
+          </p>
+          
+          {/* Social Links */}
+          <div className="flex gap-8 items-center">
+            {socialLinks.map((social) => (
+              <a 
+                key={social.label}
+                className="group relative flex items-center gap-2 hover:text-white transition-all duration-500 hover:-translate-y-1"
+                href={social.href}
+              >
+                <span className="absolute -inset-2 bg-clay/0 rounded-full blur-xl transition-all duration-700 group-hover:bg-clay/10" />
+                <span className="relative transition-all duration-500 group-hover:text-clay">
+                  {social.label}
+                </span>
+                <span className="material-symbols-outlined text-[12px] opacity-0 -translate-x-2 transition-all duration-500 group-hover:opacity-100 group-hover:translate-x-0 text-clay">
+                  arrow_outward
+                </span>
+              </a>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <style jsx>{`
+        @keyframes grain-shift {
+          0%, 100% { transform: translate(0, 0); }
+          10% { transform: translate(-5%, -5%); }
+          50% { transform: translate(-10%, 5%); }
+          90% { transform: translate(10%, 5%); }
+        }
+
+        .animate-grain-shift {
+          animation: grain-shift 15s ease-in-out infinite;
+        }
+      `}</style>
+    </footer>
+  );
+}
+

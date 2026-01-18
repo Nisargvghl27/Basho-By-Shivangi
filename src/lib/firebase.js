@@ -1,0 +1,44 @@
+// import { initializeApp } from "firebase/app";
+// import { getAuth } from "firebase/auth";
+// import { getFirestore } from "firebase/firestore";
+// import { getStorage } from "firebase/storage";
+
+// const firebaseConfig = {
+//   apiKey: "AIzaSyActUg8C1L2CaQwHgm5wRcQoWDw5Z4aIZE",
+//   authDomain: "basho-by-shivangi-cd894.firebaseapp.com",
+//   projectId: "basho-by-shivangi-cd894",
+//   storageBucket: "basho-by-shivangi-cd894.firebasestorage.app",
+//   messagingSenderId: "281266048510",
+//   appId: "1:281266048510:web:3d44983c13560f20e544af",
+//   measurementId: "G-FPEQJFWOZR"
+// };
+
+// const app = initializeApp(firebaseConfig);
+
+// export const auth = getAuth(app);
+// export const db = getFirestore(app);
+// export const storage = getStorage(app);
+// export { app };
+
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyActUg8C1L2CaQwHgm5wRcQoWDw5Z4aIZE",
+  authDomain: "basho-by-shivangi-cd894.firebaseapp.com",
+  projectId: "basho-by-shivangi-cd894",
+  storageBucket: "basho-by-shivangi-cd894.firebasestorage.app",
+  messagingSenderId: "281266048510",
+  appId: "1:281266048510:web:3d44983c13560f20e544af",
+  measurementId: "G-FPEQJFWOZR"
+};
+
+// FIX: Check if an app is already initialized before creating a new one
+const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+export const storage = getStorage(app);
+export { app };

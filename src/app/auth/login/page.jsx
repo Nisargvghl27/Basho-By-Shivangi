@@ -1,0 +1,303 @@
+"use client";
+
+import React, { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import AuthVisual from "../AuthVisual";
+import "../auth.css";
+
+// 🔥 Firebase Imports
+import {
+  signInWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup,
+  sendPasswordResetEmail,
+} from "firebase/auth";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore"; // [!code ++]
+import { auth, db } from "../../../lib/firebase"; // [!code ++]
+
+const LoginPage = () => {
+  const router = useRouter();
+
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+
+  const [focusedField, setFocusedField] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  // 🛠️ Helper: Ensure User Exists in Firestore (Upsert)
+  const ensureUserInFirestore = async (user) => {
+    try {
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (!userSnap.exists()) {
+        // Create new user doc if missing
+        await setDoc(userRef, {
+          uid: user.uid,
+          name: user.displayName || user.email.split('@')[0], // Fallback name
+          email: user.email,
+          role: "Customer",
+          status: "Active",
+          joinDate: serverTimestamp(),
+          lastLogin: serverTimestamp(),
+          totalOrders: 0,
+          totalSpent: 0,
+          phone: user.phoneNumber || "N/A"
+        });
+      } else {
+        // Update lastLogin for existing users
+        await setDoc(userRef, {
+          lastLogin: serverTimestamp()
+        }, { merge: true });
+      }
+    } catch (error) {
+      console.error("Error saving user to DB:", error);
+    }
+  };
+
+  // =========================
+  // EMAIL + PASSWORD LOGIN
+  // =========================
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!formData.email || !formData.password) {
+      alert("Please fill in all fields");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      // 1. Authenticate
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        formData.email,
+        formData.password
+      );
+
+      // 2. 🔥 Save/Update in Firestore
+      await ensureUserInFirestore(userCredential.user);
+
+      router.push("/shop");
+    } catch (error) {
+      console.error(error);
+      alert("Invalid email or password");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // =========================
+  // GOOGLE LOGIN (SAFE)
+  // =========================
+  const handleGoogleLogin = async () => {
+    if (googleLoading) return;
+
+    try {
+      setGoogleLoading(true);
+
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({
+        prompt: "select_account",
+      });
+
+      // 1. Authenticate
+      const result = await signInWithPopup(auth, provider);
+      
+      // 2. 🔥 Save/Update in Firestore
+      await ensureUserInFirestore(result.user);
+
+      router.push("/shop");
+    } catch (error) {
+      // Ignore harmless popup close error
+      if (error.code !== "auth/popup-closed-by-user") {
+        alert(error.message);
+      }
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  // =========================
+  // FORGOT PASSWORD
+  // =========================
+  const handleForgotPassword = async () => {
+    if (!formData.email) {
+      alert("Please enter your email address first");
+      return;
+    }
+
+    try {
+      await sendPasswordResetEmail(auth, formData.email);
+      alert("Password reset email sent. Check your inbox.");
+    } catch (error) {
+      alert(error.message);
+    }
+  };
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") handleSubmit(e);
+  };
+
+  return (
+    <div className="basho-auth">
+      <AuthVisual />
+
+      <div className="form-experience">
+        <div className="grain-texture" />
+        <div className="ambient-glow" />
+
+        <div className="form-container">
+          <header className="form-header">
+            <span className="header-accent">Welcome Back</span>
+            <h1 className="form-title">Enter the Studio</h1>
+            <p className="form-subtitle">Continue your creative exploration</p>
+          </header>
+
+          <form className="auth-form" onSubmit={handleSubmit}>
+            <div className="form-field" style={{ animationDelay: "0.1s" }}>
+              <label className={focusedField === "email" ? "focused" : ""}>
+                Email Address
+              </label>
+              <div className="input-wrapper">
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="pottery@basho.studio"
+                  value={formData.email}
+                  onChange={handleChange}
+                  onKeyDown={handleKeyDown}
+                  onFocus={() => setFocusedField("email")}
+                  onBlur={() => setFocusedField(null)}
+                />
+              </div>
+            </div>
+
+            <div className="form-field" style={{ animationDelay: "0.2s" }}>
+              <label className={focusedField === "password" ? "focused" : ""}>
+                Password
+              </label>
+              <div className="input-wrapper">
+                <input
+                  type="password"
+                  name="password"
+                  placeholder="••••••••••"
+                  value={formData.password}
+                  onChange={handleChange}
+                  onKeyDown={handleKeyDown}
+                  onFocus={() => setFocusedField("password")}
+                  onBlur={() => setFocusedField(null)}
+                />
+              </div>
+            </div>
+
+            <div className="form-options" style={{ animationDelay: "0.3s" }}>
+              <label className="remember-me">
+                <input type="checkbox" />
+                <span className="checkbox-custom">
+                  <svg
+                    className="check-icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                  >
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </span>
+                <span>Remember me</span>
+              </label>
+
+              <button
+                type="button"
+                className="link-button"
+                onClick={handleForgotPassword}
+              >
+                Forgot password?
+              </button>
+            </div>
+
+            {/* 🔒 SIGN IN BUTTON */}
+            <button
+              type="submit"
+              className="primary-button"
+              style={{ animationDelay: "0.4s" }}
+              disabled={loading}
+            >
+              <span className="button-content">
+                <span>{loading ? "Signing In..." : "Sign In"}</span>
+                <svg
+                  className="arrow"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+              </span>
+            </button>
+          </form>
+
+          <div className="auth-divider" style={{ animationDelay: "0.5s" }}>
+            <span className="line" />
+            <span className="text">Or continue with</span>
+            <span className="line" />
+          </div>
+
+          {/* 🔵 GOOGLE BUTTON */}
+          <button
+            className="social-button"
+            style={{ animationDelay: "0.6s" }}
+            onClick={handleGoogleLogin}
+            disabled={googleLoading}
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20">
+              <path
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                fill="#4285F4"
+              />
+              <path
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                fill="#34A853"
+              />
+              <path
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22z"
+                fill="#FBBC05"
+              />
+              <path
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                fill="#EA4335"
+              />
+            </svg>
+            <span>
+              {googleLoading ? "Signing in..." : "Continue with Google"}
+            </span>
+          </button>
+
+          <div className="auth-toggle" style={{ animationDelay: "0.7s" }}>
+            <p>
+              New to Basho?{" "}
+              <Link href="/auth/signup" className="toggle-link">
+                Create an account
+              </Link>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default LoginPage;

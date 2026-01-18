@@ -1,0 +1,111 @@
+# Basho Studio | Pottery & Workshop Platform
+
+A premium e-commerce and workshop management platform built for **Basho Studio**, featuring a clay-morphism design aesthetic, seamless animations, and a robust admin dashboard.
+
+![Project Banner](src/assets/hero-studio.jpg) 
+*(Note: Replace with your actual banner screenshot if available)*
+
+## 📖 Overview
+
+Basho Studio is a full-stack Next.js application designed to bridge the gap between artisanal pottery and digital commerce. It serves two main purposes:
+1.  **E-commerce:** A storefront for selling pottery collections with cart, wishlist, and payment integration.
+2.  **Experience:** A booking system for pottery workshops, custom requests, and a journal for storytelling.
+
+The UI is heavily stylized with **Framer Motion** to create a "tactile" feel, using fluid page transitions and organic textures.
+
+## 🛠️ Tech Stack
+
+-   **Framework:** [Next.js 14](https://nextjs.org/) (App Router)
+-   **Styling:** Tailwind CSS, CSS Modules
+-   **Animations:** Framer Motion (Complex page transitions, scroll effects)
+-   **Backend / Database:** Google Firebase (Firestore, Auth, Storage)
+-   **Payments:** Razorpay Integration (Supports Online & COD)
+-   **State Management:** React Context API (Cart, Wishlist, Search)
+
+## ✨ Key Features
+
+### 🛍️ Client / Customer Side
+-   **Immersive Shopping:** Browse collections with filtering, sorting, and detailed product views.
+-   **Secure Checkout:** Integrated Razorpay payment gateway and Cash on Delivery support.
+-   **User Accounts:** Authentication (Login/Signup), profile management, and order history.
+-   **Workshop Booking:** Browse upcoming workshops and book slots directly.
+-   **Wishlist & Cart:** Persistent local storage for guest carts and database syncing for logged-in users.
+-   **Custom Requests:** Dedicated form for commissioning custom pottery pieces.
+-   **Journal:** A blog section for sharing studio stories and philosophy.
+
+### 🛡️ Admin Dashboard (`/admin`)
+A comprehensive CMS built directly into the application:
+-   **Dashboard & Analytics:** Visual reports on sales, user growth, and inventory health.
+-   **Inventory Management:** Add/Edit/Delete products, manage stock levels.
+-   **Order Management:** Process orders, update shipping status, and view payment details.
+-   **Workshop Manager:** Create events, track registrations, and manage attendee lists.
+-   **Gallery & Content:** Manage homepage images and gallery showcases.
+-   **Custom Requests:** View and respond to user commission requests.
+
+## 🚀 Getting Started
+
+### Prerequisites
+-   Node.js (v18 or higher)
+-   npm or yarn
+-   A Firebase Project
+-   Razorpay Account (Test mode keys)
+
+### Installation
+
+1.  **Clone the repository**
+    ```bash
+    git clone [https://github.com/your-username/basho-studio.git](https://github.com/your-username/basho-studio.git)
+    cd basho-studio
+    ```
+
+2.  **Install dependencies**
+    ```bash
+    npm install
+    # or
+    yarn install
+    ```
+
+3.  **Environment Variables**
+    Create a `.env.local` file in the root directory and add your credentials:
+
+    ```env
+    # Firebase Configuration
+    NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
+    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
+    NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+    NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project_id.appspot.com
+    NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+    NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+
+    # Razorpay Payment Gateway
+    NEXT_PUBLIC_RAZORPAY_KEY_ID=your_razorpay_key_id
+    RAZORPAY_KEY_SECRET=your_razorpay_key_secret
+
+    # Admin Access (Optional security layer)
+    ADMIN_EMAIL=admin@bashostudio.com
+    ```
+
+4.  **Run the development server**
+    ```bash
+    npm run dev
+    ```
+
+    Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+## 📂 Project Structure
+
+```text
+src/
+├── app/                 # Next.js App Router pages
+│   ├── admin/           # Admin dashboard routes (Protected)
+│   ├── api/             # API Routes (Razorpay, Checkout, etc.)
+│   ├── auth/            # Login/Signup pages
+│   ├── shop/            # Product listing and details
+│   ├── template.jsx     # Page transition logic (Curtain effect)
+│   └── ...
+├── components/          # Reusable UI components
+│   ├── admin/           # Admin-specific components (Charts, Tables)
+│   └── ...
+├── context/             # Global state (CartContext, WishlistContext)
+├── lib/                 # Service layers (Firebase, ProductService)
+└── utils/               # Helpers (Currency formatting, Date parsing)

@@ -1,0 +1,114 @@
+"use client";
+
+import { Manrope, Playfair_Display } from "next/font/google";
+import { useState, useEffect } from "react";
+import { CartProvider } from "../context/CartContext";
+import { WishlistProvider } from '../context/WishlistContext';
+import { Toaster } from "react-hot-toast";
+import SmoothScroll from "../components/SmoothScroll"; // Import SmoothScroll
+import "./globals.css";
+import { metadata } from './metadata';
+
+const manrope = Manrope({
+  subsets: ["latin"],
+  weight: ["200", "300", "400", "500", "600"],
+  variable: "--font-manrope",
+});
+
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-playfair",
+});
+
+// Component: Handles the Mouse Glow Effect
+function CursorGlow({ children }) {
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      setMousePosition({ x: e.clientX, y: e.clientY });
+      setIsVisible(true);
+    };
+
+    const handleMouseLeave = () => {
+      setIsVisible(false);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseleave', handleMouseLeave);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, []);
+
+  return (
+    <>
+      <div
+        className="pointer-events-none fixed inset-0 z-50 transition-opacity duration-300"
+        style={{ opacity: isVisible ? 1 : 0 }}
+      >
+        <div
+          className="absolute w-64 h-64 pointer-events-none"
+          style={{
+            transform: `translate3d(${mousePosition.x}px, ${mousePosition.y}px, 0) translate(-50%, -50%)`,
+            left: 0,
+            top: 0,
+            background: "radial-gradient(circle, rgba(210,180,140,0.06) 0%, rgba(210,180,140,0.03) 30%, transparent 60%)",
+            filter: "blur(25px)",
+            transition: "transform 0.1s ease-out",
+            willChange: "transform"
+          }}
+        />
+        <div
+          className="absolute w-32 h-32 pointer-events-none"
+          style={{
+            transform: `translate3d(${mousePosition.x}px, ${mousePosition.y}px, 0) translate(-50%, -50%)`,
+            left: 0,
+            top: 0,
+            background: "radial-gradient(circle, rgba(210,180,140,0.08) 0%, rgba(210,180,140,0.04) 40%, transparent 70%)",
+            filter: "blur(12px)",
+            transition: "transform 0.08s ease-out",
+            willChange: "transform"
+          }}
+        />
+      </div>
+      {children}
+    </>
+  );
+}
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en" className="dark">
+      <head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+          rel="stylesheet"
+        />
+        <title>{metadata.title}</title>
+        <meta name="description" content={metadata.description} />
+      </head>
+      <body
+        className={`${manrope.variable} ${playfair.variable} font-sans bg-charcoal text-rice-paper selection:bg-clay selection:text-white transition-colors duration-500 overflow-x-hidden`}
+      >
+        <WishlistProvider>
+          <CartProvider>
+            {/* Wrap everything in SmoothScroll */}
+            <SmoothScroll>
+              <CursorGlow>
+                {children}
+                <Toaster position="bottom-right" toastOptions={{ duration: 4000 }} />
+              </CursorGlow>
+            </SmoothScroll>
+          </CartProvider>
+        </WishlistProvider>
+      </body>
+    </html>
+  );
+}
+
