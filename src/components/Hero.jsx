@@ -2,14 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 
 export default function Hero() {
-  const [scrollY, setScrollY] = useState(0);
   const videoRef = useRef(null);
-
-  useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   // Set video speed to 50% (Slow Motion)
   useEffect(() => {
@@ -20,8 +13,8 @@ export default function Hero() {
 
   return (
     <div className="w-full relative h-screen overflow-hidden">
-      {/* --- VIDEO BACKGROUND --- */}
-      <div className="absolute inset-0 z-0">
+      {/* --- VIDEO BACKGROUND (Desktop) --- */}
+      <div className="absolute inset-0 z-0 hidden md:block">
         <video
           ref={videoRef}
           autoPlay
@@ -29,19 +22,26 @@ export default function Hero() {
           muted
           playsInline
           className="object-cover w-full h-full"
-          // Parallax Effect on Scroll
-          style={{ transform: `translateY(${scrollY * 0.5}px)` }}
         >
           <source src="/videos/hero-video.mp4" type="video/mp4" />
-          {/* Fallback for mobile/low-data */}
-          <div className="absolute inset-0 bg-charcoal" />
         </video>
         
         {/* Overlays for readability and atmosphere */}
-        {/* UPDATED: Increased opacity to 60% for a darker look */}
         <div className="absolute inset-0 bg-black/60" />
         <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-transparent to-black/50" />
-        <div className="absolute inset-0 opacity-[0.08] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay" />
+        <div className="hidden md:block absolute inset-0 opacity-[0.08] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay" />
+      </div>
+
+      {/* --- MOBILE BACKGROUND (Image Fallback) --- */}
+      <div className="absolute inset-0 z-0 md:hidden">
+        <div 
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ 
+            backgroundImage: `url('https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?q=80&w=2000&auto=format&fit=crop')` 
+          }}
+        />
+        <div className="absolute inset-0 bg-black/50" />
+        <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/40 to-black/30" />
       </div>
 
       {/* --- CONTENT --- */}

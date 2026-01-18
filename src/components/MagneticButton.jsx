@@ -7,6 +7,11 @@ export default function MagneticButton({ children, href, onClick, className = ""
   const [position, setPosition] = useState({ x: 0, y: 0 });
 
   const handleMouseMove = (e) => {
+    // Disable magnetic effect on touch devices or small screens to improve performance
+    if (typeof window !== 'undefined' && window.matchMedia("(pointer: coarse)").matches) {
+       return;
+    }
+    
     const { clientX, clientY } = e;
     const { left, top, width, height } = btnRef.current.getBoundingClientRect();
     

@@ -1617,7 +1617,7 @@ function SplitEntry({ entry, index }) {
       }`}
     >
       <div 
-        className={`relative overflow-hidden ${isImageLeft ? 'md:order-1' : 'md:order-2'}`}
+        className={`relative overflow-hidden min-h-[50vh] md:min-h-full ${isImageLeft ? 'md:order-1' : 'md:order-2'}`}
       >
         <div 
           className="absolute inset-0 bg-cover bg-center transition-transform duration-[1500ms]"

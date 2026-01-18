@@ -9,7 +9,7 @@ import { fetchGalleryByCategory, addGalleryItem, deleteGalleryItem } from "../..
 export default function GalleryManagement() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("process"); // 'process' or 'studio'
+  const [activeTab, setActiveTab] = useState("process");
   const [showModal, setShowModal] = useState(false);
   
   // Form State
@@ -17,9 +17,9 @@ export default function GalleryManagement() {
     title: "",
     subtitle: "",
     order: 1,
-    type: "image", // 'image' or 'video'
-    image: "",     // Holds Image URL or Video Poster URL
-    videoUrl: ""   // Holds Video URL
+    type: "image",
+    image: "",
+    videoUrl: ""
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);

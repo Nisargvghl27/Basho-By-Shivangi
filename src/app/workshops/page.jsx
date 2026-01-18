@@ -55,7 +55,7 @@ const VideoModal = ({ videoUrl, onClose }) => {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4">
       <button 
         onClick={onClose}
         className="absolute top-6 right-6 text-white/70 hover:text-white transition-colors bg-white/10 p-2 rounded-full hover:bg-white/20"
@@ -148,15 +148,14 @@ export default function WorkshopsPage() {
       {/* HERO SECTION WITH VIDEO BACKGROUND */}
       <section ref={heroRef} className="relative min-h-screen flex items-center justify-center overflow-hidden">
         {/* Background Video Layer */}
-        <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 z-0 hidden md:block">
           <video
             autoPlay
             loop
             muted
             playsInline
             poster={heroStudio.src}
-            className="w-full h-full object-cover transition-transform duration-[2000ms] ease-out"
-            style={{ transform: isVisible ? 'scale(1)' : 'scale(1.1)' }}
+            className="w-full h-full object-cover"
           >
             {/* IMPORTANT: Move your file '9363488-hd...mp4' to 'public/videos/workshop-hero.mp4' 
             */}
@@ -166,9 +165,16 @@ export default function WorkshopsPage() {
           {/* Overlays for text readability */}
           <div className="absolute inset-0 bg-black/40" />
           <div className="absolute inset-0 bg-gradient-to-b from-charcoal/60 via-charcoal/20 to-charcoal" />
-          
-          {/* Grain Texture */}
-          <div className="absolute inset-0 opacity-[0.15] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay" />
+        </div>
+
+        {/* --- MOBILE BACKGROUND (Image/Fallback) --- */}
+        <div className="absolute inset-0 z-0 md:hidden">
+          <div 
+             className="absolute inset-0 bg-cover bg-center" 
+             style={{ backgroundImage: `url(${heroStudio.src})` }} 
+          />
+          <div className="absolute inset-0 bg-black/50" />
+          <div className="absolute inset-0 bg-gradient-to-b from-charcoal/30 via-charcoal/10 to-charcoal" />
         </div>
 
         {/* Hero Content */}
@@ -212,15 +218,15 @@ export default function WorkshopsPage() {
               </div>
             ) : (
               workshops.map((event, index) => (
-                <div key={event.id} className={`group flex flex-col md:flex-row gap-8 border border-border-subtle p-6 md:p-8 bg-charcoal-light transition-all duration-700 hover:border-clay/30 hover:bg-white/5 hover:shadow-[0_12px_40px_rgba(0,0,0,0.3)] hover:-translate-y-2 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`} style={{ transitionDelay: `${200 * index}ms` }}>
+                <div key={event.id} className={`group flex flex-col md:flex-row gap-8 border border-border-subtle p-6 md:p-8 bg-charcoal-light transition-all duration-700 md:hover:border-clay/30 md:hover:bg-white/5 md:hover:shadow-[0_12px_40px_rgba(0,0,0,0.3)] md:hover:-translate-y-2 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`} style={{ transitionDelay: `${200 * index}ms` }}>
                   
-                  <div className="md:w-1/3 h-56 md:h-64 relative overflow-hidden bg-black/20 rounded-xl border border-white/5 group-hover:border-clay/20 transition-all duration-500">
+                  <div className="md:w-1/3 h-56 md:h-64 relative overflow-hidden bg-black/20 rounded-xl border border-white/5 md:group-hover:border-clay/20 transition-all duration-500">
                     <div 
-                      className="absolute inset-0 bg-cover bg-center transition-all duration-[1200ms] ease-out group-hover:scale-110" 
+                      className="absolute inset-0 bg-cover bg-center transition-all duration-[1200ms] ease-out md:group-hover:scale-110" 
                       style={{ backgroundImage: `url(${event.image || 'https://images.unsplash.com/photo-1493106641515-6b5631de4bb9?q=80&w=2000'})` }} 
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-charcoal/60 via-transparent to-transparent" />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center backdrop-blur-sm">
+                    <div className="hidden md:flex absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 items-center justify-center backdrop-blur-sm">
                       <Eye className="w-8 h-8 text-white transition-transform duration-500 group-hover:scale-110" />
                     </div>
                   </div>
@@ -289,43 +295,56 @@ export default function WorkshopsPage() {
             onMouseLeave={() => setIsMarqueeHovered(false)}
           >
             {processItems.length > 0 && !loading ? (
-              <div className={`flex gap-6 whitespace-nowrap ${isMarqueeHovered ? 'pause-animation' : 'animate-marquee'}`}>
+              <div className={`flex gap-6 whitespace-nowrap ${isMarqueeHovered ? 'pause-animation' : 'animate-marquee'}`} style={{ animationPlayState: isMarqueeHovered ? 'paused' : 'running' }}>
                 {[...processItems, ...processItems, ...processItems].map((item, idx) => (
                   <div 
                     key={`${item.id}-${idx}-${item.type}`} 
                     className="shrink-0 w-[300px] md:w-[380px] aspect-[4/5] rounded-2xl overflow-hidden relative border border-border-subtle transition-all duration-700 hover:border-clay/30 hover:shadow-[0_12px_40px_rgba(0,0,0,0.3)] group/video cursor-pointer"
                     onClick={() => {
+                        // Only open modal if it's a video
                         if (item.type === 'video' && item.videoUrl) {
                             setPlayingVideo(item.videoUrl);
                         }
+                    }}
+                    onMouseEnter={(e) => {
+                       // Auto-play video preview on hover if available (desktop only)
+                       if (typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches) {
+                         const vid = e.currentTarget.querySelector('video');
+                         if (vid) vid.play().catch(() => {});
+                       }
+                    }}
+                    onMouseLeave={(e) => {
+                       // Pause video preview on leave (desktop only)
+                       if (typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches) {
+                         const vid = e.currentTarget.querySelector('video');
+                         if (vid) vid.pause();
+                       }
                     }}
                   >
                     {item.type === 'video' && item.videoUrl ? (
                       <video
                         src={item.videoUrl}
-                        poster={item.image}
+                        autoPlay
                         muted
                         loop
                         playsInline
-                        preload="metadata"
-                        className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover/video:opacity-100 transition-opacity duration-500"
-                        onLoadedData={(e) => {
-                          const video = e.target;
-                          if (video.readyState >= 2) video.currentTime = 0.1;
-                        }}
+                        preload="none"
+                        className="absolute inset-0 w-full h-full object-cover"
                       />
                     ) : (
                       <div 
-                        className="absolute inset-0 bg-cover bg-center transition-all duration-[1200ms] ease-out group-hover/video:scale-110" 
+                        className="absolute inset-0 bg-cover bg-center" 
                         style={{ backgroundImage: `url("${item.image}")` }} 
                       />
                     )}
 
-                    <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-transparent to-transparent opacity-90 transition-opacity duration-500 group-hover/video:opacity-70" />
+                    {/* Gradient Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-transparent to-transparent opacity-80" />
 
+                    {/* Play Icon Overlay (Shows only for videos) */}
                     {item.type === 'video' && (
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <div className="size-16 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white border border-white/30 scale-90 group-hover/video:scale-110 group-hover/video:bg-black/60 transition-all duration-500 shadow-2xl">
+                            <div className="size-16 rounded-full bg-black/50 flex items-center justify-center text-white border border-white/30">
                                 <Play size={28} fill="currentColor" />
                             </div>
                         </div>
@@ -410,14 +429,17 @@ export default function WorkshopsPage() {
           display: flex;
           width: max-content;
           animation: marquee 40s linear infinite;
-          will-change: transform;
         }
         .pause-animation {
           display: flex;
           width: max-content;
           animation: marquee 40s linear infinite;
           animation-play-state: paused;
-          will-change: transform;
+        }
+        @media (max-width: 768px) {
+          .animate-marquee {
+            animation: marquee 60s linear infinite;
+          }
         }
       `}</style>
     </div>

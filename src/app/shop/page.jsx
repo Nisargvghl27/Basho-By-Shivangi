@@ -168,6 +168,7 @@ export default function Shop() {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-500 w-4 h-4" />
                 <input
                   type="text"
+                  suppressHydrationWarning={true}
                   placeholder="Search collection..."
                   value={localSearchQuery}
                   onChange={(e) => setLocalSearchQuery(e.target.value)}
@@ -239,8 +240,9 @@ export default function Shop() {
                       onMouseEnter={() => setHoveredCard(product.id)}
                       onMouseLeave={() => setHoveredCard(null)}
                       className={`group cursor-pointer ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-16'}`}
+                      // FIX: Split 'transition' shorthand into specific properties to avoid conflicts with 'transitionDelay'
                       style={{ 
-                        transitionDelay: `${400 + index * 30}ms`, 
+                        transitionDelay: `${400 + index * 30}ms`,
                         transitionProperty: 'all',
                         transitionDuration: '0.8s',
                         transitionTimingFunction: 'ease-out'
