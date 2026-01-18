@@ -516,7 +516,7 @@ export default function AboutPage() {
                         <div className="mb-12">
                             <div className="w-32 h-32 mx-auto mb-8 rounded-full overflow-hidden border-4 border-clay/30">
                                 <img
-                                    src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200"
+                                    src="https://res.cloudinary.com/dwbk3bwng/image/upload/v1768672086/WhatsApp_Image_2026-01-17_at_11.17.35_PM_ew6w53.jpg"
                                     alt="Shivangi"
                                     className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
                                 />
@@ -568,7 +568,7 @@ export default function AboutPage() {
                                 <div className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
                             </a>
                             <a
-                                href="/collection"
+                                href="/shop"
                                 className="px-10 py-5 border-2 border-rice-paper text-rice-paper uppercase tracking-widest text-sm font-bold hover:bg-rice-paper hover:text-charcoal transition-all duration-300"
                             >
                                 View Collection

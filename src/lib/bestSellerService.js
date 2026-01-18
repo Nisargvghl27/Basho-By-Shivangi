@@ -14,10 +14,9 @@ import {
 
 const COLLECTION_NAME = "products";
 
-// 1. Get All Best Sellers (up to 5)
+// 1. Get Best Sellers (Always returns 5 items if available)
 export const getBestSellers = async () => {
   try {
-    // First get all products, then filter and sort in JavaScript
     const q = query(collection(db, COLLECTION_NAME));
     const snapshot = await getDocs(q);
     
@@ -26,17 +25,29 @@ export const getBestSellers = async () => {
       ...doc.data()
     }));
     
-    // Filter best sellers and sort by createdAt
-    const bestSellers = allProducts
+    // 1. Get explicitly marked Best Sellers
+    const markedBestSellers = allProducts
       .filter(product => product.isBestSeller === true)
       .sort((a, b) => {
         const dateA = a.createdAt?.toDate?.() || new Date(0);
         const dateB = b.createdAt?.toDate?.() || new Date(0);
-        return dateB.getTime() - dateA.getTime(); // Most recent first
-      })
-      .slice(0, 5); // Limit to 5
+        return dateB.getTime() - dateA.getTime();
+      });
+
+    // 2. Get other products to fill the gaps
+    const otherProducts = allProducts
+      .filter(product => product.isBestSeller !== true)
+      .sort((a, b) => {
+        const dateA = a.createdAt?.toDate?.() || new Date(0);
+        const dateB = b.createdAt?.toDate?.() || new Date(0);
+        return dateB.getTime() - dateA.getTime();
+      });
     
-    return bestSellers;
+    // 3. Combine to ensure we have 5 items (1 Main + 4 Side)
+    // This fills the grid even if you haven't marked enough best sellers
+    const finalCollection = [...markedBestSellers, ...otherProducts].slice(0, 5);
+    
+    return finalCollection;
   } catch (error) {
     console.error("Error fetching best sellers:", error);
     return [];
@@ -46,14 +57,12 @@ export const getBestSellers = async () => {
 // 2. Add Product to Best Sellers (max 5)
 export const addToBestSellers = async (productId) => {
   try {
-    // Check current best sellers count
-    const currentBestSellers = await getBestSellers();
+    const currentBestSellersCount = (await getBestSellers()).filter(p => p.isBestSeller).length;
     
-    if (currentBestSellers.length >= 5) {
+    if (currentBestSellersCount >= 5) {
       throw new Error("Maximum 5 best sellers allowed. Please remove one first.");
     }
 
-    // Set product as best seller
     const productRef = doc(db, COLLECTION_NAME, productId);
     await updateDoc(productRef, { 
       isBestSeller: true,
@@ -82,10 +91,9 @@ export const removeFromBestSellers = async (productId) => {
   }
 };
 
-// 4. Get All Products with Best Seller Status
+// 4. Get All Products with Best Seller Status (for Admin)
 export const getProductsWithBestSellerStatus = async () => {
   try {
-    // Simple query without ordering to avoid index requirement
     const q = query(collection(db, COLLECTION_NAME));
     const snapshot = await getDocs(q);
     
@@ -94,11 +102,10 @@ export const getProductsWithBestSellerStatus = async () => {
       ...doc.data()
     }));
     
-    // Sort by createdAt in JavaScript
     return allProducts.sort((a, b) => {
       const dateA = a.createdAt?.toDate?.() || new Date(0);
       const dateB = b.createdAt?.toDate?.() || new Date(0);
-      return dateB.getTime() - dateA.getTime(); // Most recent first
+      return dateB.getTime() - dateA.getTime();
     });
   } catch (error) {
     console.error("Error fetching products with best seller status:", error);
@@ -109,8 +116,9 @@ export const getProductsWithBestSellerStatus = async () => {
 // 5. Get Best Seller Count
 export const getBestSellerCount = async () => {
   try {
-    const bestSellers = await getBestSellers();
-    return bestSellers.length;
+    const q = query(collection(db, COLLECTION_NAME));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.filter(doc => doc.data().isBestSeller === true).length;
   } catch (error) {
     console.error("Error getting best seller count:", error);
     return 0;

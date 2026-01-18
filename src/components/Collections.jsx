@@ -110,10 +110,8 @@ export default function Collections() {
       try {
         setLoading(true);
         const bestSellersData = await getBestSellers();
-        
         setBestSellers(bestSellersData);
-        // Don't fetch regular products - only show best sellers
-        setProducts([]); // Empty array for regular products
+        setProducts([]); 
       } catch (error) {
         console.error("Error loading collections data:", error);
       } finally {
@@ -249,12 +247,14 @@ export default function Collections() {
               <div className="absolute bottom-0 left-0 p-8 md:p-10 text-white w-full">
                 <div className="transform translate-y-4 group-hover:translate-y-0 transition-all duration-700 ease-out">
                   
-                  {/* Badge with Floating Animation */}
-                  <span className="bg-gradient-to-r from-clay/90 to-clay text-white px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.2em] mb-4 inline-block backdrop-blur-md shadow-lg transition-all duration-500 group-hover:shadow-[0_8px_24px_rgba(210,180,140,0.3)] group-hover:scale-105">
-                    <span className="relative inline-block animate-subtle-float">
-                      Best Seller
+                  {/* Badge with Floating Animation - Conditional Display */}
+                  {bestSellers[0].isBestSeller && (
+                    <span className="bg-gradient-to-r from-clay/90 to-clay text-white px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.2em] mb-4 inline-block backdrop-blur-md shadow-lg transition-all duration-500 group-hover:shadow-[0_8px_24px_rgba(210,180,140,0.3)] group-hover:scale-105">
+                        <span className="relative inline-block animate-subtle-float">
+                        Best Seller
+                        </span>
                     </span>
-                  </span>
+                  )}
 
                   {/* Title with Staggered Animation */}
                   <h3 className="text-3xl md:text-4xl lg:text-5xl font-serif italic mb-4 text-rice-paper drop-shadow-2xl transition-all duration-700 group-hover:text-clay/95 group-hover:tracking-tight leading-tight">
@@ -305,12 +305,14 @@ export default function Collections() {
               style={{ transitionDelay: `${400 + index * 100}ms` }}
               onClick={() => router.push(`/shop/products/${bestSeller.id}`)}
             >
-              {/* Best Seller Badge */}
-              <div className="absolute top-3 left-3 z-10">
-                <span className="bg-gradient-to-r from-clay/90 to-clay text-white px-2 py-1 text-[8px] font-bold uppercase tracking-[0.15em] inline-block backdrop-blur-md shadow-lg">
-                  Best Seller
-                </span>
-              </div>
+              {/* Best Seller Badge - Conditional */}
+              {bestSeller.isBestSeller && (
+                <div className="absolute top-3 left-3 z-10">
+                    <span className="bg-gradient-to-r from-clay/90 to-clay text-white px-2 py-1 text-[8px] font-bold uppercase tracking-[0.15em] inline-block backdrop-blur-md shadow-lg">
+                    Best Seller
+                    </span>
+                </div>
+              )}
 
               {/* Image Container */}
               <div className="h-[75%] w-full overflow-hidden relative bg-black/20 group">

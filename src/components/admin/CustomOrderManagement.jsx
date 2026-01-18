@@ -7,7 +7,7 @@ import {
 import { fetchAllRequests, updateRequestStatus } from "../../lib/customOrderService";
 import { auth } from "../../lib/firebase"; 
 import { onAuthStateChanged } from "firebase/auth";
-import LottieLoader from "../LottieLoader"; // <--- Import New Loader
+import LottieLoader from "../LottieLoader";
 
 export default function CustomOrderManagement() {
   const [requests, setRequests] = useState([]);
