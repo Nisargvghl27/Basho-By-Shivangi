@@ -78,6 +78,14 @@ export async function POST(request) {
       // Note: Assuming 'total' in DB includes shipping/tax. You can adjust math based on your DB structure.
 
       // Define Email Content
+      // Get the base URL from environment or construct from request
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 
+                      process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` :
+                      'http://localhost:3000';
+      
+      const downloadBillUrl = `${baseUrl}/api/download-bill?orderId=${orderDoc.id}&email=${encodeURIComponent(orderData.shipping.email)}`;
+      const profileUrl = `${baseUrl}/profile`;
+      
       const mailOptions = {
         from: `"Basho Pottery" <${process.env.EMAIL_USER}>`,
         to: orderData.shipping.email, // Send to the shipping email provided in checkout
@@ -115,9 +123,16 @@ export async function POST(request) {
                   Phone: ${orderData.shipping.phone}
                 </p>
               </div>
+
+              <div style="margin-top: 30px; text-align: center;">
+                <a href="${downloadBillUrl}" style="display: inline-block; padding: 12px 30px; background-color: #A0522D; color: white; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 14px;">
+                  📥 Download Invoice
+                </a>
+              </div>
             </div>
 
             <div style="text-align: center; margin-top: 30px; font-size: 12px; color: #aaa;">
+              <p>You can also view all your orders and download invoices from your account.</p>
               <p>If you have any questions, reply to this email.</p>
               <p>&copy; ${new Date().getFullYear()} Basho Pottery. All rights reserved.</p>
             </div>
