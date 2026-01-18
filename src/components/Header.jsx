@@ -96,12 +96,13 @@ export default function Header() {
               ))}
             </nav>
 
-            {/* RIGHT: ACTIONS & MOBILE TOGGLE */}
-            <div className="flex justify-end items-center gap-3 md:gap-6 z-50">
-              {/* Cart Bag */}
+            {/* RIGHT: ACTIONS (Cart, Wishlist, Profile) & MOBILE TOGGLE */}
+            <div className="flex justify-end items-center gap-1 sm:gap-3 md:gap-6 z-50">
+              
+              {/* 1. Cart Bag */}
               <Link
                 href="/cart"
-                className="relative group flex items-center justify-center w-10 h-10 text-stone-warm transition-all duration-500 hover:text-rice-paper"
+                className="relative group flex items-center justify-center w-10 h-10 text-stone-warm transition-all duration-500 hover:text-rice-paper hover:-translate-y-0.5"
               >
                 <span className="material-symbols-outlined text-[20px]">shopping_bag</span>
                 {cartCount > 0 && (
@@ -124,7 +125,8 @@ export default function Header() {
                   )}
               </Link>
 
-              {/* Profile / Login */}
+              {/* 3. Profile / Login */}
+              {/* Added -translate-y-0.5 to move it up slightly base state, and increased hover to -translate-y-1 */}
               <Link
                 href={user ? "/profile" : "/auth/login"}
                 aria-label="Account"
@@ -153,7 +155,7 @@ export default function Header() {
               </Link>
 
               {/* Mobile Menu Toggle */}
-              <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="md:hidden relative w-10 h-10 flex flex-col items-center justify-center gap-1.5 group ml-2">
+              <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="md:hidden relative w-10 h-10 flex flex-col items-center justify-center gap-1.5 group ml-1">
                 <span className={`h-[1px] bg-stone-warm transition-all duration-500 ${isMobileMenuOpen ? "w-6 rotate-45 translate-y-[7px] bg-rice-paper" : "w-6 group-hover:w-8"}`} />
                 <span className={`h-[1px] bg-stone-warm transition-all duration-500 ${isMobileMenuOpen ? "w-0 opacity-0" : "w-4 group-hover:w-8"}`} />
                 <span className={`h-[1px] bg-stone-warm transition-all duration-500 ${isMobileMenuOpen ? "w-6 -rotate-45 -translate-y-[7px] bg-rice-paper" : "w-6 group-hover:w-8"}`} />
