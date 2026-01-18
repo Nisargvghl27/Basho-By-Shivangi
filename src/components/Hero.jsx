@@ -1,8 +1,10 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Hero() {
   const videoRef = useRef(null);
+  const router = useRouter();
 
   // Set video speed to 50% (Slow Motion)
   useEffect(() => {
@@ -62,7 +64,10 @@ export default function Hero() {
           Embracing the soulful asymmetry of wabi-sabi.
         </p>
 
-        <button className="group relative inline-flex items-center justify-center px-12 py-4 overflow-hidden border border-white/20 bg-white/5 backdrop-blur-md rounded-sm transition-all duration-500 hover:bg-white/10 hover:border-white/40 hover:scale-105 animate-fade-in-up delay-500">
+        <button 
+          onClick={() => router.push('/shop')}
+          className="group relative inline-flex items-center justify-center px-12 py-4 overflow-hidden border border-white/20 bg-white/5 backdrop-blur-md rounded-sm transition-all duration-500 hover:bg-white/10 hover:border-white/40 hover:scale-105 animate-fade-in-up delay-500 cursor-pointer"
+        >
           <span className="relative z-10 text-xs font-bold uppercase tracking-[0.25em] text-white group-hover:text-rice-paper">
             Discover Collection
           </span>

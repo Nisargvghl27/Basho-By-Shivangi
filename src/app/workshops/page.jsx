@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import { fetchAllWorkshops } from "../../lib/workshopService";
@@ -11,95 +12,79 @@ import BookingModal from "../../components/BookingModal";
 import {
   Store,
   Eye,
-  Play,
   CalendarDays,
   Clock,
   Users,
   Loader2,
-  Calendar,
-  X 
+  Calendar
 } from "lucide-react";
 
 // Images (Relative Imports for Fallback)
 import heroStudio from "../../assets/hero-studio.jpg";
 
-// --- HELPERS ---
-const validateVideoUrl = (url) => {
-  if (!url || typeof url !== 'string') return false;
-  // Basic validation: allow http/https URLs or relative paths starting with /
-  try {
-    return url.startsWith('/') || new URL(url).protocol.startsWith('http');
-  } catch (e) {
-    return false;
+const potteryProcessSteps = [
+  {
+    title: "Clay Preparation",
+    subtitle: "Wedging & Kneading",
+    image: "/1.jpg"
+  },
+  {
+    title: "Centering the Clay",
+    subtitle: "Finding Balance",
+    image: "/2.jpg"
+  },
+  {
+    title: "Throwing on the Wheel",
+    subtitle: "Shaping the Form",
+    image: "/3.jpg"
+  },
+  {
+    title: "Precision Trimming",
+    subtitle: "Refining Details",
+    image: "/4.jpg"
+  },
+  {
+    title: "Greenware Drying",
+    subtitle: "Patience & Air",
+    image: "/5.jpg"
+  },
+  {
+    title: "Bisque Firing",
+    subtitle: "The First Heat",
+    image: "/6.jpg"
+  },
+  {
+    title: "Glazing Application",
+    subtitle: "Adding Color & Texture",
+    image: "/7.jpg"
+  },
+  {
+    title: "The Final Piece",
+    subtitle: "Ready for the World",
+    image: "/8.jpg"
   }
-};
-
-// --- VIDEO MODAL COMPONENT ---
-const VideoModal = ({ videoUrl, onClose }) => {
-  if (!videoUrl || !validateVideoUrl(videoUrl)) {
-    console.error('Invalid or unsupported video URL:', videoUrl);
-    return (
-      <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
-        <div className="bg-white rounded-xl p-8 max-w-md text-center">
-          <h3 className="text-xl font-bold mb-4">Video Not Available</h3>
-          <p className="text-gray-600 mb-6">This video cannot be played. The video file may not be accessible from your current network or location.</p>
-          <button 
-            onClick={onClose}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4">
-      <button 
-        onClick={onClose}
-        className="absolute top-6 right-6 text-white/70 hover:text-white transition-colors bg-white/10 p-2 rounded-full hover:bg-white/20"
-      >
-        <X size={32} />
-      </button>
-
-      <div className="relative w-full max-w-5xl aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-white/10">
-        <video
-          src={videoUrl}
-          className="w-full h-full object-contain"
-          controls
-          playsInline
-          autoPlay
-        />
-      </div>
-    </div>
-  );
-};
+];
 
 export default function WorkshopsPage() {
   const [isVisible, setIsVisible] = useState(false);
   const [isMarqueeHovered, setIsMarqueeHovered] = useState(false);
   
   const [workshops, setWorkshops] = useState([]);
-  const [processItems, setProcessItems] = useState([]); 
   const [studioItems, setStudioItems] = useState([]);   
   const [loading, setLoading] = useState(true);
   
   const [selectedWorkshop, setSelectedWorkshop] = useState(null);
-  const [playingVideo, setPlayingVideo] = useState(null);
 
   const heroRef = useRef(null);
 
   const loadData = async () => {
     try {
-      const [workshopsData, processData, studioData] = await Promise.all([
+      const [workshopsData, studioData] = await Promise.all([
         fetchAllWorkshops(),
-        fetchGalleryByCategory("process"),
         fetchGalleryByCategory("studio")
       ]);
 
       setWorkshops(workshopsData.filter(w => w.status === 'active' || !w.status));
-      setProcessItems(processData);
       setStudioItems(studioData);
     } catch (error) {
       console.error("Failed to fetch page data:", error);
@@ -134,47 +119,31 @@ export default function WorkshopsPage() {
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   };
 
+  const processImageItems = potteryProcessSteps.map((step, i) => ({
+    id: `process-step-${i}`,
+    ...step
+  }));
+
   return (
     <div className="relative min-h-screen bg-charcoal text-rice-paper flex flex-col overflow-hidden">
       <Header />
 
-      {playingVideo && (
-        <VideoModal 
-          videoUrl={playingVideo} 
-          onClose={() => setPlayingVideo(null)} 
-        />
-      )}
-
-      {/* HERO SECTION WITH VIDEO BACKGROUND */}
+      {/* HERO SECTION WITH IMAGE BACKGROUND */}
       <section ref={heroRef} className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        {/* Background Video Layer */}
-        <div className="absolute inset-0 z-0 hidden md:block">
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            poster={heroStudio.src}
-            className="w-full h-full object-cover"
-          >
-            {/* IMPORTANT: Move your file '9363488-hd...mp4' to 'public/videos/workshop-hero.mp4' 
-            */}
-            <source src="/videos/workshop-hero.mp4" type="video/mp4" />
-          </video>
+        {/* Background Image Layer */}
+        <div className="absolute inset-0 z-0">
+          <Image
+            src={heroStudio}
+            alt="Workshop Studio"
+            fill
+            className="object-cover"
+            priority
+            placeholder="blur"
+          />
           
           {/* Overlays for text readability */}
           <div className="absolute inset-0 bg-black/40" />
           <div className="absolute inset-0 bg-gradient-to-b from-charcoal/60 via-charcoal/20 to-charcoal" />
-        </div>
-
-        {/* --- MOBILE BACKGROUND (Image/Fallback) --- */}
-        <div className="absolute inset-0 z-0 md:hidden">
-          <div 
-             className="absolute inset-0 bg-cover bg-center" 
-             style={{ backgroundImage: `url(${heroStudio.src})` }} 
-          />
-          <div className="absolute inset-0 bg-black/50" />
-          <div className="absolute inset-0 bg-gradient-to-b from-charcoal/30 via-charcoal/10 to-charcoal" />
         </div>
 
         {/* Hero Content */}
@@ -221,12 +190,15 @@ export default function WorkshopsPage() {
                 <div key={event.id} className={`group flex flex-col md:flex-row gap-8 border border-border-subtle p-6 md:p-8 bg-charcoal-light transition-all duration-700 md:hover:border-clay/30 md:hover:bg-white/5 md:hover:shadow-[0_12px_40px_rgba(0,0,0,0.3)] md:hover:-translate-y-2 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`} style={{ transitionDelay: `${200 * index}ms` }}>
                   
                   <div className="md:w-1/3 h-56 md:h-64 relative overflow-hidden bg-black/20 rounded-xl border border-white/5 md:group-hover:border-clay/20 transition-all duration-500">
-                    <div 
-                      className="absolute inset-0 bg-cover bg-center transition-all duration-[1200ms] ease-out md:group-hover:scale-110" 
-                      style={{ backgroundImage: `url(${event.image || 'https://images.unsplash.com/photo-1493106641515-6b5631de4bb9?q=80&w=2000'})` }} 
+                    <Image 
+                      src={event.image || 'https://images.unsplash.com/photo-1493106641515-6b5631de4bb9?q=80&w=2000'}
+                      alt={event.title}
+                      fill
+                      className="object-cover transition-all duration-[1200ms] ease-out md:group-hover:scale-110"
+                      sizes="(max-width: 768px) 100vw, 33vw"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-charcoal/60 via-transparent to-transparent" />
-                    <div className="hidden md:flex absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 items-center justify-center backdrop-blur-sm">
+                    <div className="absolute inset-0 bg-gradient-to-t from-charcoal/60 via-transparent to-transparent pointer-events-none" />
+                    <div className="hidden md:flex absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 items-center justify-center backdrop-blur-sm z-10">
                       <Eye className="w-8 h-8 text-white transition-transform duration-500 group-hover:scale-110" />
                     </div>
                   </div>
@@ -294,72 +266,38 @@ export default function WorkshopsPage() {
             onMouseEnter={() => setIsMarqueeHovered(true)}
             onMouseLeave={() => setIsMarqueeHovered(false)}
           >
-            {processItems.length > 0 && !loading ? (
-              <div className={`flex gap-6 whitespace-nowrap ${isMarqueeHovered ? 'pause-animation' : 'animate-marquee'}`} style={{ animationPlayState: isMarqueeHovered ? 'paused' : 'running' }}>
-                {[...processItems, ...processItems, ...processItems].map((item, idx) => (
+            <div 
+              className="flex gap-6 whitespace-nowrap animate-marquee" 
+              style={{ animationPlayState: isMarqueeHovered ? 'paused' : 'running' }}
+            >
+              {[...processImageItems, ...processImageItems].map((item, idx) => {
+                const imageUrl = item.image;
+                return (
                   <div 
-                    key={`${item.id}-${idx}-${item.type}`} 
-                    className="shrink-0 w-[300px] md:w-[380px] aspect-[4/5] rounded-2xl overflow-hidden relative border border-border-subtle transition-all duration-700 hover:border-clay/30 hover:shadow-[0_12px_40px_rgba(0,0,0,0.3)] group/video cursor-pointer"
-                    onClick={() => {
-                        // Only open modal if it's a video
-                        if (item.type === 'video' && item.videoUrl) {
-                            setPlayingVideo(item.videoUrl);
-                        }
-                    }}
-                    onMouseEnter={(e) => {
-                       // Auto-play video preview on hover if available (desktop only)
-                       if (typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches) {
-                         const vid = e.currentTarget.querySelector('video');
-                         if (vid) vid.play().catch(() => {});
-                       }
-                    }}
-                    onMouseLeave={(e) => {
-                       // Pause video preview on leave (desktop only)
-                       if (typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches) {
-                         const vid = e.currentTarget.querySelector('video');
-                         if (vid) vid.pause();
-                       }
-                    }}
+                    key={`${item.id}-${idx}`} 
+                    className="shrink-0 w-[240px] md:w-[380px] aspect-[4/5] rounded-2xl overflow-hidden relative border border-border-subtle transition-all duration-700 md:hover:border-clay/30 md:hover:shadow-[0_12px_40px_rgba(0,0,0,0.3)] group"
                   >
-                    {item.type === 'video' && item.videoUrl ? (
-                      <video
-                        src={item.videoUrl}
-                        autoPlay
-                        muted
-                        loop
-                        playsInline
-                        preload="none"
-                        className="absolute inset-0 w-full h-full object-cover"
+                    <div className="absolute inset-0">
+                      <Image
+                        src={imageUrl}
+                        alt={item.title || "Pottery process"}
+                        fill
+                        className="object-cover transition-transform duration-700 md:group-hover:scale-105"
+                        sizes="(max-width: 768px) 240px, 380px"
                       />
-                    ) : (
-                      <div 
-                        className="absolute inset-0 bg-cover bg-center" 
-                        style={{ backgroundImage: `url("${item.image}")` }} 
-                      />
-                    )}
+                    </div>
 
                     {/* Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-transparent to-transparent opacity-80" />
-
-                    {/* Play Icon Overlay (Shows only for videos) */}
-                    {item.type === 'video' && (
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <div className="size-16 rounded-full bg-black/50 flex items-center justify-center text-white border border-white/30">
-                                <Play size={28} fill="currentColor" />
-                            </div>
-                        </div>
-                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-transparent to-transparent opacity-70 md:group-hover:opacity-50 transition-opacity duration-700" />
 
                     <div className="absolute bottom-0 left-0 w-full p-6 text-left">
-                      <p className="text-white font-bold text-lg mb-1 whitespace-normal font-serif">{item.title}</p>
-                      <p className="text-stone-warm text-sm font-light italic">{item.subtitle || item.category}</p>
+                      <p className="text-white font-bold text-lg mb-1 whitespace-normal font-serif">{item.title || "Handcrafted Excellence"}</p>
+                      <p className="text-stone-warm text-sm font-light italic">{item.subtitle || item.category || "The Art of Pottery"}</p>
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-                <div className="text-center py-10 text-stone-600">Loading process gallery...</div>
-            )}
+                );
+              })}
+            </div>
           </div>
         </section>
 
@@ -375,9 +313,15 @@ export default function WorkshopsPage() {
               <div className="md:col-span-2 md:row-span-2 relative rounded-xl overflow-hidden group border border-border-subtle hover:border-clay/30 transition-all duration-500">
                 {studioItems[0] && (
                   <>
-                    <img alt={studioItems[0].title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src={studioItems[0].image} />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-clay/10 transition-all duration-700" />
-                    <div className="absolute bottom-0 left-0 p-6">
+                    <Image 
+                      src={studioItems[0].image} 
+                      alt={studioItems[0].title} 
+                      fill
+                      className="object-cover transition-transform duration-700 group-hover:scale-110"
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-clay/10 transition-all duration-700 pointer-events-none" />
+                    <div className="absolute bottom-0 left-0 p-6 z-10">
                       <div className="bg-black/50 backdrop-blur-md px-4 py-2 rounded-lg inline-block border border-white/10">
                         <p className="text-white font-medium">{studioItems[0].title}</p>
                       </div>
@@ -389,15 +333,17 @@ export default function WorkshopsPage() {
               {studioItems.slice(1, 4).map((item, idx) => (
                 <div 
                   key={item.id} 
-                  className={`relative rounded-xl overflow-hidden group bg-charcoal-light border border-border-subtle hover:border-clay/30 transition-all duration-500 ${idx === 2 ? 'md:col-span-2 md:row-span-1' : 'md:col-span-1 md:row-span-1'}`}
+                  className={`relative rounded-xl overflow-hidden group bg-charcoal-light border border-border-subtle hover:border-clay/30 transition-all duration-500 ${idx === 2 ? 'md:col-span-2 md:row-span-1' : 'md:col-span-1 md:row-span-1'} ${idx === 2 ? 'h-64 md:h-auto' : 'h-64 md:h-auto'}`}
                 >
-                  <img 
-                    alt={item.title} 
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                  <Image 
                     src={item.image} 
+                    alt={item.title} 
+                    fill
+                    className="object-cover transition-transform duration-700 group-hover:scale-110" 
                     style={idx === 2 ? { objectPosition: 'center 30%' } : {}}
+                    sizes="(max-width: 768px) 100vw, 25vw"
                   />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-clay/10 transition-all duration-700" />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-clay/10 transition-all duration-700 pointer-events-none" />
                 </div>
               ))}
             </div>
@@ -438,7 +384,7 @@ export default function WorkshopsPage() {
         }
         @media (max-width: 768px) {
           .animate-marquee {
-            animation: marquee 60s linear infinite;
+            animation: none;
           }
         }
       `}</style>
