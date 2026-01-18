@@ -239,7 +239,12 @@ export default function Shop() {
                       onMouseEnter={() => setHoveredCard(product.id)}
                       onMouseLeave={() => setHoveredCard(null)}
                       className={`group cursor-pointer ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-16'}`}
-                      style={{ transitionDelay: `${400 + index * 30}ms`, transition: 'all 0.8s ease-out' }}
+                      style={{ 
+                        transitionDelay: `${400 + index * 30}ms`, 
+                        transitionProperty: 'all',
+                        transitionDuration: '0.8s',
+                        transitionTimingFunction: 'ease-out'
+                      }}
                       onClick={() => router.push(`/shop/products/${product.id}`)}
                     >
                       {/* Image Container */}
