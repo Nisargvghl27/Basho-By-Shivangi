@@ -57,19 +57,13 @@ export default function Header() {
         <div className={`absolute inset-0 bg-gradient-to-b from-charcoal/20 to-transparent pointer-events-none transition-opacity duration-[900ms] ${isScrolled ? "opacity-100" : "opacity-0"}`} />
 
         <div className="relative px-6 md:px-12 max-w-[1440px] mx-auto w-full">
-          {/* GRID LAYOUT: [1fr_auto_1fr]
-            - Changed h-14 to min-h-[3.5rem] so it can grow with the larger logo
-          */}
+          {/* GRID LAYOUT: [1fr_auto_1fr] */}
           <div className="grid grid-cols-[1fr_auto_1fr] items-center min-h-[3.5rem]">
             
             {/* LEFT: LOGO */}
             <div className="flex justify-start">
               <Link href="/" className="flex items-center gap-3 group relative z-50" onMouseEnter={() => setActiveLink("")}>
                 <div className="absolute -inset-2 bg-clay/0 rounded-full blur-xl transition-all duration-700 group-hover:bg-clay/5" />
-                {/* UPDATED LOGO SIZE:
-                   Mobile: w-40 h-12 (was w-32 h-10)
-                   Desktop: md:w-56 md:h-16 (was md:w-40 md:h-12)
-                */}
                 <div className="relative w-40 h-12 md:w-56 md:h-16 transition-all duration-500 ease-out group-hover:scale-105 group-hover:brightness-150">
                   <Image src="/images/bgr_logo.png" alt="Clay & Soul" fill sizes="(max-width: 768px) 160px, 224px" className="object-contain object-left brightness-200 drop-shadow-lg" priority />
                 </div>
@@ -94,12 +88,13 @@ export default function Header() {
               ))}
             </nav>
 
-            {/* RIGHT: ACTIONS & MOBILE TOGGLE */}
-            <div className="flex justify-end items-center gap-3 md:gap-6 z-50">
-              {/* Cart Bag */}
+            {/* RIGHT: ACTIONS (Cart, Wishlist, Profile) & MOBILE TOGGLE */}
+            <div className="flex justify-end items-center gap-1 sm:gap-3 md:gap-6 z-50">
+              
+              {/* 1. Cart Bag */}
               <Link
                 href="/cart"
-                className="relative group flex items-center justify-center w-10 h-10 text-stone-warm transition-all duration-500 hover:text-rice-paper"
+                className="relative group flex items-center justify-center w-10 h-10 text-stone-warm transition-all duration-500 hover:text-rice-paper hover:-translate-y-0.5"
               >
                 <span className="material-symbols-outlined text-[20px]">shopping_bag</span>
                 {cartCount > 0 && (
@@ -109,10 +104,10 @@ export default function Header() {
                 )}
               </Link>
 
-              {/* Wishlist Button */}
+              {/* 2. Wishlist Heart */}
               <Link 
                 href="/wishlist"
-                className="relative group flex items-center justify-center w-10 h-10 text-stone-warm transition-all duration-500 hover:text-rice-paper"
+                className="relative group flex items-center justify-center w-10 h-10 text-stone-warm transition-all duration-500 hover:text-rice-paper hover:-translate-y-0.5"
               >
                   <span className="material-symbols-outlined text-[20px]">favorite</span>
                   {wishlistCount > 0 && (
@@ -122,11 +117,12 @@ export default function Header() {
                   )}
               </Link>
 
-              {/* Profile / Login */}
+              {/* 3. Profile / Login */}
+              {/* Added -translate-y-0.5 to move it up slightly base state, and increased hover to -translate-y-1 */}
               <Link
                 href={user ? "/profile" : "/auth/login"}
                 aria-label="Account"
-                className="relative group transition-all duration-500 hover:-translate-y-0.5 hidden sm:block w-10 h-10 flex items-center justify-center"
+                className="relative group flex items-center justify-center w-10 h-10 transition-all duration-500 -translate-y-0.5 hover:-translate-y-1"
               >
                 <span className="absolute inset-0 rounded-full bg-clay/0 scale-100 transition-all duration-700 group-hover:scale-150 group-hover:bg-clay/5 group-hover:opacity-0" />
 
@@ -151,7 +147,7 @@ export default function Header() {
               </Link>
 
               {/* Mobile Menu Toggle */}
-              <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="md:hidden relative w-10 h-10 flex flex-col items-center justify-center gap-1.5 group ml-2">
+              <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="md:hidden relative w-10 h-10 flex flex-col items-center justify-center gap-1.5 group ml-1">
                 <span className={`h-[1px] bg-stone-warm transition-all duration-500 ${isMobileMenuOpen ? "w-6 rotate-45 translate-y-[7px] bg-rice-paper" : "w-6 group-hover:w-8"}`} />
                 <span className={`h-[1px] bg-stone-warm transition-all duration-500 ${isMobileMenuOpen ? "w-0 opacity-0" : "w-4 group-hover:w-8"}`} />
                 <span className={`h-[1px] bg-stone-warm transition-all duration-500 ${isMobileMenuOpen ? "w-6 -rotate-45 -translate-y-[7px] bg-rice-paper" : "w-6 group-hover:w-8"}`} />
