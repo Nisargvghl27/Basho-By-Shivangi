@@ -74,8 +74,8 @@ export default function AdminLayout({ children }) {
   // Render Admin Panel if authorized
   return (
     <SearchProvider>
-      <div className={`${manrope.variable} font-sans bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200 min-h-screen`}>
-        <div className="flex h-screen overflow-hidden">
+      <div className={`${manrope.variable} font-sans bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200 min-h-screen flex flex-col`}>
+        <div className="flex flex-1 overflow-hidden">
           {/* Sidebar */}
           <AdminSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
           
