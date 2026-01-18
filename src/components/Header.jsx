@@ -31,8 +31,12 @@ export default function Header() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll);
+    const handleScroll = () => {
+      const shouldBeScrolled = window.scrollY > 20;
+      setIsScrolled(prev => (prev === shouldBeScrolled ? prev : shouldBeScrolled));
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -50,21 +54,25 @@ export default function Header() {
       <header
         className={`fixed top-0 z-50 w-full transition-all duration-[900ms] ease-[cubic-bezier(0.19,1,0.22,1)] ${
           isScrolled || isMobileMenuOpen
-            ? "bg-charcoal/80 backdrop-blur-2xl border-b border-white/[0.08] py-3 shadow-[0_8px_32px_rgba(0,0,0,0.12)]"
+            ? "bg-charcoal/95 md:bg-charcoal/80 backdrop-blur-sm md:backdrop-blur-2xl border-b border-white/[0.08] py-3 shadow-[0_8px_32px_rgba(0,0,0,0.12)]"
             : "bg-transparent border-transparent py-5"
         }`}
       >
         <div className={`absolute inset-0 bg-gradient-to-b from-charcoal/20 to-transparent pointer-events-none transition-opacity duration-[900ms] ${isScrolled ? "opacity-100" : "opacity-0"}`} />
 
-        <div className="relative px-6 md:px-12 max-w-[1440px] mx-auto w-full">
-          {/* GRID LAYOUT: [1fr_auto_1fr] */}
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center min-h-[3.5rem]">
+        <div className="relative px-4 md:px-12 max-w-[1440px] mx-auto w-full">
+          {/* GRID LAYOUT: 
+              Mobile: Flex (Space Between) to prevent layout breakage
+              Desktop: Grid (1fr auto 1fr) for perfect centering
+          */}
+          <div className="flex justify-between md:grid md:grid-cols-[1fr_auto_1fr] items-center min-h-[3.5rem]">
             
             {/* LEFT: LOGO */}
             <div className="flex justify-start">
               <Link href="/" className="flex items-center gap-3 group relative z-50" onMouseEnter={() => setActiveLink("")}>
                 <div className="absolute -inset-2 bg-clay/0 rounded-full blur-xl transition-all duration-700 group-hover:bg-clay/5" />
-                <div className="relative w-40 h-12 md:w-56 md:h-16 transition-all duration-500 ease-out group-hover:scale-105 group-hover:brightness-150">
+                {/* LOGO SIZING */}
+                <div className="relative w-32 h-10 md:w-56 md:h-16 transition-all duration-500 ease-out group-hover:scale-105 group-hover:brightness-150">
                   <Image src="/images/bgr_logo.png" alt="Clay & Soul" fill sizes="(max-width: 768px) 160px, 224px" className="object-contain object-left brightness-200 drop-shadow-lg" priority />
                 </div>
               </Link>
@@ -104,10 +112,10 @@ export default function Header() {
                 )}
               </Link>
 
-              {/* 2. Wishlist Heart */}
+              {/* Wishlist Button - Hidden on Mobile to save space */}
               <Link 
                 href="/wishlist"
-                className="relative group flex items-center justify-center w-10 h-10 text-stone-warm transition-all duration-500 hover:text-rice-paper hover:-translate-y-0.5"
+                className="hidden md:flex relative group items-center justify-center w-10 h-10 text-stone-warm transition-all duration-500 hover:text-rice-paper"
               >
                   <span className="material-symbols-outlined text-[20px]">favorite</span>
                   {wishlistCount > 0 && (
@@ -122,7 +130,7 @@ export default function Header() {
               <Link
                 href={user ? "/profile" : "/auth/login"}
                 aria-label="Account"
-                className="relative group flex items-center justify-center w-10 h-10 transition-all duration-500 -translate-y-0.5 hover:-translate-y-1"
+                className="relative group transition-all duration-500 hover:-translate-y-0.5 w-10 h-10 flex items-center justify-center"
               >
                 <span className="absolute inset-0 rounded-full bg-clay/0 scale-100 transition-all duration-700 group-hover:scale-150 group-hover:bg-clay/5 group-hover:opacity-0" />
 
@@ -175,6 +183,10 @@ export default function Header() {
                 {link.label}
               </Link>
             ))}
+            {/* Mobile Wishlist Link (Hidden in header) */}
+            <Link href="/wishlist" onClick={() => setIsMobileMenuOpen(false)} className="text-3xl font-light tracking-[0.1em] text-stone-warm/80 hover:text-rice-paper transition-colors flex items-center gap-3">
+              Wishlist {wishlistCount > 0 && <span className="text-sm bg-clay text-white px-2 py-0.5 rounded-full">{wishlistCount}</span>}
+            </Link>
           </nav>
         </div>
       </div>

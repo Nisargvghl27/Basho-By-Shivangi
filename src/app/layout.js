@@ -28,6 +28,13 @@ function CursorGlow({ children }) {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
+    // Check if the device supports hover (typically desktop)
+    const mediaQuery = window.matchMedia('(hover: hover) and (pointer: fine)');
+
+    if (!mediaQuery.matches) {
+        return; // Exit if logic is for touch devices
+    }
+
     const handleMouseMove = (e) => {
       setMousePosition({ x: e.clientX, y: e.clientY });
       setIsVisible(true);
