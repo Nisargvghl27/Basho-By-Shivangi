@@ -53,17 +53,19 @@ export default function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
         className={`
           fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 shadow-lg
           transform transition-transform duration-300 ease-in-out
-          lg:translate-x-0 lg:static lg:inset-0
+          lg:translate-x-0 lg:static lg:inset-0 lg:transform-none
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
         `}
       >
         <div className="flex items-center justify-between h-16 px-4 sm:px-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-center flex-1">
-            <img 
-              src="/images/bgr_logo.png" 
-              alt="Basho Logo" 
-              className="w-12 h-12 sm:w-16 sm:h-16 object-contain transition-all duration-300 hover:scale-105"
-            />
+            <Link href="/admin">
+              <img 
+                src="/images/bgr_logo.png" 
+                alt="Basho Logo" 
+                className="w-12 h-12 sm:w-16 sm:h-16 object-contain transition-all duration-300 hover:scale-105 cursor-pointer"
+              />
+            </Link>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}

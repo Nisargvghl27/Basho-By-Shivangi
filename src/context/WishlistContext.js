@@ -1,39 +1,72 @@
-// src/context/WishlistContext.jsx
+// src/context/WishlistContext.js
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "../lib/firebase";
 
 export const WishlistContext = createContext();
 
 export const WishlistProvider = ({ children }) => {
   const [wishlistItems, setWishlistItems] = useState([]);
+  const [user, setUser] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Load wishlist from localStorage
+  // 🔑 Get wishlist key based on user (returns null if unauthenticated)
+  const getWishlistKey = (uid) => (uid ? `wishlist_${uid}` : null);
+
+  // 🔁 Listen to auth changes
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedWishlist = localStorage.getItem('wishlist');
-      if (savedWishlist) {
-        setWishlistItems(JSON.parse(savedWishlist));
+    const unsub = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setWishlistItems([]); // Reset local state on user switch/logout
+
+      if (currentUser?.uid) {
+        // Load saved wishlist from localStorage only for authenticated users
+        const wishlistKey = getWishlistKey(currentUser.uid);
+        if (wishlistKey) {
+          const savedWishlist = localStorage.getItem(wishlistKey);
+          if (savedWishlist) {
+            try {
+              setWishlistItems(JSON.parse(savedWishlist));
+            } catch (e) {
+              console.error("Failed to parse wishlist", e);
+            }
+          }
+        }
       }
+
       setIsInitialized(true);
-    }
+    });
+
+    return () => unsub();
   }, []);
 
-  // Save wishlist to localStorage
+  // 💾 Save wishlist when it changes
   useEffect(() => {
-    if (isInitialized) {
-      localStorage.setItem('wishlist', JSON.stringify(wishlistItems));
-    }
-  }, [wishlistItems, isInitialized]);
+    if (!isInitialized) return;
 
-  const addToWishlist = (product) => {
+    if (user?.uid) {
+      const wishlistKey = getWishlistKey(user.uid);
+      if (wishlistKey) {
+        localStorage.setItem(wishlistKey, JSON.stringify(wishlistItems));
+      }
+    }
+  }, [wishlistItems, user, isInitialized]);
+
+  const addToWishlist = async (product) => {
+    if (!user) {
+      return { success: false, message: "Please log in to add items to wishlist", requiresAuth: true };
+    }
+
     setWishlistItems(prevItems => {
       if (prevItems.some(item => item.id === product.id)) {
         return prevItems; // Already in wishlist
       }
       return [...prevItems, product];
     });
+
+    return { success: true, message: "Added to wishlist" };
   };
 
   const removeFromWishlist = (productId) => {

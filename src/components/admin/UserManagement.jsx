@@ -88,6 +88,10 @@ export default function UserManagement() {
     const newStatus = user.status === 'Active' ? 'Blocked' : 'Active';
     try {
       await updateDoc(doc(db, "users", user.id), { status: newStatus });
+      // Update local state for immediate UI feedback if modal is open
+      if (selectedUser && selectedUser.id === user.id) {
+        setSelectedUser({ ...user, status: newStatus });
+      }
     } catch (error) {
       alert("Failed to update status: " + error.message);
     }
@@ -118,10 +122,70 @@ export default function UserManagement() {
     }
   };
 
+  const handleExportCSV = () => {
+    try {
+      if (users.length === 0) {
+        alert("No user data available to export.");
+        return;
+      }
+
+      const headers = [
+        "User ID",
+        "Name",
+        "Email",
+        "Role",
+        "Status",
+        "Join Date",
+        "Last Login",
+        "Total Orders",
+        "Total Spent ($)"
+      ];
+
+      const rows = users.map(u => [
+        u.id || '',
+        u.name || '',
+        u.email || '',
+        u.role || '',
+        u.status || '',
+        u.joinDate || '',
+        u.lastLogin || '',
+        u.totalOrders || 0,
+        u.totalSpent || 0
+      ]);
+
+      const csvContent = [
+        headers.join(","),
+        ...rows.map(row => 
+          row.map(value => {
+            const valString = String(value ?? "");
+            if (valString.includes(",") || valString.includes('"') || valString.includes("\n")) {
+              return `"${valString.replace(/"/g, '""')}"`;
+            }
+            return valString;
+          }).join(",")
+        )
+      ].join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `users_report_${new Date().toISOString().split("T")[0]}.csv`);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Export failed:", error);
+      alert("Failed to export: " + error.message);
+    }
+  };
+
   // User Details Modal
   const UserDetailsModal = ({ user, onClose }) => {
-    if (!user) return null;
     const [isEditingRole, setIsEditingRole] = useState(false);
+    if (!user) return null;
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
@@ -280,7 +344,10 @@ export default function UserManagement() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">User Management</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">Manage user access and details</p>
         </div>
-        <button className="flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <button 
+          onClick={handleExportCSV}
+          className="flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+        >
           <Download className="w-4 h-4 mr-2" />
           Export CSV
         </button>

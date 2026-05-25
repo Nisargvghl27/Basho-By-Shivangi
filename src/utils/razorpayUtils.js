@@ -10,16 +10,16 @@ export const loadRazorpay = () => {
     const script = document.createElement('script');
     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
     script.async = true;
-    
+
     script.onload = () => {
       resolve(window.Razorpay);
     };
-    
+
     script.onerror = () => {
       console.error('Failed to load Razorpay SDK');
       resolve(null);
     };
-    
+
     document.body.appendChild(script);
   });
 };
@@ -32,7 +32,7 @@ export const createRazorpayOrder = async (amount, receipt) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        amount: amount * 100, 
+        amount: amount * 100,
         currency: 'INR',
         receipt,
       }),

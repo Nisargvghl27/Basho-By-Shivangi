@@ -75,6 +75,32 @@
   100% { clip-path: inset(0 0 0 0); }
 }
 
+/* ── Splash / InitialLoader extras ───────────────────────────────────────── */
+@keyframes loaderBarShimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+/* Animate the brand-name characters (used as a CSS fallback for no-JS) */
+@keyframes splashCharReveal {
+  0%   { opacity: 0; transform: translateY(28px); filter: blur(8px); }
+  100% { opacity: 1; transform: translateY(0);    filter: blur(0);   }
+}
+
+/* Shimmer bar for the progress track */
+.loader-bar-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(166,93,61,0.4) 0%,
+    rgba(166,93,61,1)   40%,
+    rgba(234,232,228,0.6) 50%,
+    rgba(166,93,61,1)   60%,
+    rgba(166,93,61,0.4) 100%
+  );
+  background-size: 200% 100%;
+  animation: loaderBarShimmer 1.8s linear infinite;
+}
+
 body {
   font-family: var(--font-manrope), sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -401,3 +427,121 @@ body {
 .hover\:bg-clay\/90:hover { background-color: rgba(166, 93, 61, 0.9); }
 .hover\:text-clay:hover { color: var(--color-clay); }
 .hover\:border-clay:hover { border-color: var(--color-clay); } */
+
+/* ── Cursor-glow root: isolated compositing layer ─────────────────────────── */
+.cursor-glow-root {
+  /* Promote to its own layer so the CSS-var transform updates on the children
+     never trigger a paint on the page content below. */
+  isolation: isolate;
+  contain: layout style;
+}
+
+/* ── Respect prefers-reduced-motion ───────────────────────────────────────── */
+/* Pause all decorative animations (grain, floating orbs, hero pan) for users
+   who have enabled the OS "reduce motion" setting. */
+@media (prefers-reduced-motion: reduce) {
+  .basho-grain,
+  .basho-orb-slow,
+  .basho-orb-slower,
+  .animate-grain,
+  .animate-float-slow,
+  .animate-float-slower,
+  .animate-slow-pan,
+  .animate-float-delayed,
+  .animate-pulse-glow,
+  .animate-grain-shift {
+    animation: none !important;
+  }
+
+  /* Keep transition-based reveals but make them instant */
+  * {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Print Invoice Styles */
+@media print {
+  /* Hide the rest of the body content */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Ensure the printable invoice and its descendants are visible */
+  #printable-invoice,
+  #printable-invoice * {
+    visibility: visible;
+  }
+
+  /* Position invoice at the top left of the page */
+  #printable-invoice {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    border: none !important;
+    box-shadow: none !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 20px !important;
+  }
+
+  /* Hide print buttons, close icons, dropdowns, etc. */
+  .no-print,
+  .no-print * {
+    display: none !important;
+  }
+
+  /* Ensure backgrounds print correctly */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Clean up colors and borders for printing */
+  #printable-invoice .bg-gray-50,
+  #printable-invoice .dark\:bg-gray-700 {
+    background-color: #f9fafb !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 8px !important;
+  }
+
+  #printable-invoice .border-gray-200,
+  #printable-invoice .dark\:border-gray-600 {
+    border-color: #e5e7eb !important;
+  }
+
+  #printable-invoice .text-gray-900,
+  #printable-invoice .dark\:text-gray-100 {
+    color: #111827 !important;
+  }
+
+  #printable-invoice .text-gray-700,
+  #printable-invoice .dark\:text-gray-300 {
+    color: #374151 !important;
+  }
+
+  #printable-invoice .text-gray-600,
+  #printable-invoice .dark\:text-gray-400 {
+    color: #4b5563 !important;
+  }
+
+  #printable-invoice .text-gray-500 {
+    color: #6b7280 !important;
+  }
+
+  #printable-invoice .text-blue-600,
+  #printable-invoice .dark\:text-blue-400 {
+    color: #2563eb !important;
+  }
+
+  #printable-invoice .max-h-60 {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}
+

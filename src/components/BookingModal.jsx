@@ -77,14 +77,22 @@ const BookingModal = ({ workshop, onClose, onSuccess }) => {
       });
 
       if (!orderResponse.ok) {
-        throw new Error('Failed to create order');
+        const errData = await orderResponse.json().catch(() => ({}));
+        throw new Error(errData.details || 'Failed to create order');
       }
 
       const orderData = await orderResponse.json();
 
       // 4. Configure Razorpay Options
+      const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+      if (!razorpayKey) {
+        toast.error('Razorpay key is not configured on the client.');
+        setLoading(false);
+        return;
+      }
+
       const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY, 
+        key: razorpayKey, 
         amount: orderData.amount,
         currency: orderData.currency,
         name: "Basho Pottery", 
@@ -139,7 +147,7 @@ const BookingModal = ({ workshop, onClose, onSuccess }) => {
 
     } catch (error) {
       console.error('Payment Error:', error);
-      toast.error('Something went wrong initiating payment.');
+      toast.error(error.message || 'Something went wrong initiating payment.');
       setLoading(false);
     }
   };

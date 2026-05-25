@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from 'next/navigation';
 import { Heart, Search, SlidersHorizontal, ChevronDown, ShoppingBag, Check, X } from 'lucide-react';
 import Header from "../../components/Header";
@@ -63,34 +64,60 @@ export default function Shop() {
   }, []);
 
   useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsVisible(true);
+          observer.disconnect(); // done — free the observer
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.05 }
     );
 
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
-    return () => {
-      if (sectionRef.current) {
-        observer.unobserve(sectionRef.current);
-      }
-    };
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
 
   const showNotification = (message, type = 'success') => {
     setNotification({ show: true, message, type });
   };
 
-  const handleAddToCart = (e, product) => {
+  const handleAddToCart = async (e, product) => {
     e.stopPropagation();
-    addToCart(product, 1);
-    showNotification(`Added ${product.name} to cart`);
+    const result = await addToCart(product);
+    if (result && result.success) {
+      showNotification(result.message || `Added ${product.name} to cart`, 'success');
+    } else {
+      showNotification((result && result.message) || `Failed to add ${product.name} to cart`, 'error');
+      if (result && result.requiresAuth) {
+        setTimeout(() => {
+          router.push('/auth/login');
+        }, 1500);
+      }
+    }
+  };
+
+  const handleWishlistToggle = async (e, product) => {
+    e.stopPropagation();
+    if (isInWishlist(product.id)) {
+      removeFromWishlist(product.id);
+      showNotification(`Removed ${product.name} from wishlist`, 'success');
+    } else {
+      const result = await addToWishlist(product);
+      if (result && result.success) {
+        showNotification(result.message || `Added ${product.name} to wishlist`, 'success');
+      } else {
+        showNotification((result && result.message) || `Failed to add ${product.name} to wishlist`, 'error');
+        if (result && result.requiresAuth) {
+          setTimeout(() => {
+            router.push('/auth/login');
+          }, 1500);
+        }
+      }
+    }
   };
 
   const filteredProducts = products.filter(product => {
@@ -116,16 +143,11 @@ export default function Shop() {
     <div className="relative min-h-screen bg-charcoal overflow-x-hidden selection:bg-clay selection:text-charcoal">
       
       {/* Background Ambience */}
-      <div className="fixed inset-0 opacity-[0.15] pointer-events-none z-0">
-         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-40 mix-blend-overlay animate-grain-shift" style={{
-              backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' /%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' /%3E%3C/svg%3E")',
-              backgroundSize: '200px 200px',
-              willChange: 'transform',
-              transform: 'translate3d(0, 0, 0)'
-            }}></div>
-      </div>
-      <div className="fixed top-[-15%] right-[-10%] w-[50vw] h-[50vw] bg-clay/5 rounded-full blur-[120px] animate-float-slow pointer-events-none z-0" style={{ willChange: 'transform' }} />
-      <div className="fixed bottom-[-10%] left-[-10%] w-[40vw] h-[40vw] bg-stone-500/5 rounded-full blur-[100px] animate-float-delayed pointer-events-none z-0" style={{ willChange: 'transform' }} />
+      {/* Orbs: blur reduced + explicit fast cycles (8s / 11s) so they match the snappier page pace */}
+      <div className="fixed top-[-15%] right-[-10%] w-[50vw] h-[50vw] bg-clay/5 rounded-full blur-[80px] pointer-events-none z-0"
+        style={{ willChange: 'transform', animation: 'float 8s ease-in-out infinite' }} />
+      <div className="fixed bottom-[-10%] left-[-10%] w-[40vw] h-[40vw] bg-stone-500/5 rounded-full blur-[80px] pointer-events-none z-0"
+        style={{ willChange: 'transform', animation: 'float 11s ease-in-out 3s infinite' }} />
 
       <Header />
 
@@ -144,7 +166,7 @@ export default function Shop() {
       >
         <div className="max-w-[1800px] mx-auto relative z-10">
           {/* Header Section */}
-          <div className={`mb-20 transition-all duration-1000 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
+          <div className={`mb-20 transition-all duration-300 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
             <div className="flex items-center gap-3 mb-6">
                 <span className="text-clay text-[10px] uppercase font-bold tracking-[0.3em]">Curated Collection</span>
                 <div className="h-px w-16 bg-clay/30"></div>
@@ -159,7 +181,7 @@ export default function Shop() {
           </div>
 
           {/* Filters Bar */}
-          <div className={`mb-16 space-y-8 transition-all duration-1000 delay-200 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+          <div className={`mb-16 space-y-8 transition-all duration-300 delay-75 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
             
             {/* Search & Sort Row */}
             <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
@@ -181,6 +203,7 @@ export default function Shop() {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
+                  suppressHydrationWarning={true}
                   className="w-full bg-white/[0.02] border border-white/10 text-rice-paper text-xs font-bold uppercase tracking-[0.15em] px-4 py-3.5 pr-10 focus:outline-none focus:border-clay/50 transition-all duration-500 appearance-none cursor-pointer rounded-sm"
                 >
                   <option value="default" className="bg-charcoal">Sort By</option>
@@ -198,6 +221,7 @@ export default function Shop() {
                 <button
                   key={category}
                   onClick={() => setSelectedCategory(category)}
+                  suppressHydrationWarning={true}
                   className={`px-5 py-2.5 text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-500 rounded-sm border ${
                     selectedCategory === category
                       ? 'bg-clay text-white border-clay shadow-lg'
@@ -224,7 +248,7 @@ export default function Shop() {
           ) : (
             <>
               {/* Results Count */}
-              <div className={`mb-10 flex items-center gap-4 text-stone-500 text-xs uppercase tracking-widest transition-all duration-1000 delay-300 ease-out ${
+              <div className={`mb-10 flex items-center gap-4 text-stone-500 text-xs uppercase tracking-widest transition-all duration-300 delay-100 ease-out ${
                 isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
               }`}>
                 <span>{sortedProducts.length} {sortedProducts.length === 1 ? 'Piece' : 'Pieces'}</span>
@@ -241,39 +265,32 @@ export default function Shop() {
                       onMouseLeave={() => setHoveredCard(null)}
                       className={`group cursor-pointer ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-16'}`}
                       // FIX: Split 'transition' shorthand into specific properties to avoid conflicts with 'transitionDelay'
-                      style={{ 
-                        transitionDelay: `${400 + index * 30}ms`,
-                        transitionProperty: 'all',
-                        transitionDuration: '0.8s',
-                        transitionTimingFunction: 'ease-out'
+                      style={{
+                        transitionDelay: `${80 + index * 18}ms`,
+                        transitionProperty: 'opacity, transform',
+                        transitionDuration: '0.35s',
+                        transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)'
                       }}
                       onClick={() => router.push(`/shop/products/${product.id}`)}
                     >
                       {/* Image Container */}
-                      <div className="relative aspect-[3/4] w-full overflow-hidden bg-white/[0.02] mb-4 rounded-sm border border-white/5 group-hover:border-clay/30 transition-all duration-700">
+                      <div className="relative aspect-[3/4] w-full overflow-hidden bg-white/[0.02] mb-4 rounded-sm border border-white/5 group-hover:border-clay/30 transition-all duration-200">
                         {/* Main Image */}
-                        <img
+                        <Image
                           src={product.image || '/api/placeholder/400/500'}
                           alt={product.name}
-                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 ease-out group-hover:scale-110"
+                          fill
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                          className="object-cover transition-transform duration-300 ease-out group-hover:scale-105"
                         />
 
                         {/* Gradient Overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-charcoal/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-charcoal/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
 
                         {/* Wishlist Button */}
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (isInWishlist(product.id)) {
-                              removeFromWishlist(product.id);
-                              showNotification(`Removed from wishlist`, 'success');
-                            } else {
-                              addToWishlist(product);
-                              showNotification(`Added to wishlist`, 'success');
-                            }
-                          }}
-                          className={`absolute top-4 right-4 z-20 p-2.5 bg-charcoal/60 backdrop-blur-md rounded-full transition-all duration-500 border border-white/10 ${
+                          onClick={(e) => handleWishlistToggle(e, product)}
+                          className={`absolute top-4 right-4 z-20 p-2.5 bg-charcoal/60 backdrop-blur-md rounded-full transition-all duration-150 border border-white/10 ${
                             hoveredCard === product.id || isInWishlist(product.id)
                               ? 'opacity-100 translate-y-0 scale-100'
                               : 'opacity-0 translate-y-2 scale-90'
@@ -287,7 +304,7 @@ export default function Shop() {
                         </button>
 
                         {/* Quick Add to Cart Overlay */}
-                        <div className={`absolute bottom-0 left-0 right-0 p-4 transform transition-all duration-500 ${
+                        <div className={`absolute bottom-0 left-0 right-0 p-4 transform transition-all duration-200 ${
                           hoveredCard === product.id ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
                         }`}>
                           {cartItems.some(item => item.id === product.id) ? (
@@ -339,7 +356,7 @@ export default function Shop() {
                   ))}
                 </div>
               ) : (
-                <div className={`text-center py-32 border border-dashed border-white/10 rounded-sm transition-all duration-1000 delay-300 ease-out ${
+                <div className={`text-center py-32 border border-dashed border-white/10 rounded-sm transition-all duration-300 delay-100 ease-out ${
                   isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
                 }`}>
                   <div className="w-16 h-16 border border-white/10 rounded-full flex items-center justify-center mx-auto mb-6">

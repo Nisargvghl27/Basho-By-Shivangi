@@ -136,6 +136,64 @@ export default function InventoryManagement() {
   // 櫨 3. ACTIONS
   // ==========================================
 
+  const handleExportCSV = () => {
+    if (products.length === 0) {
+      alert("No data available to export.");
+      return;
+    }
+
+    const headers = [
+      "Product ID",
+      "Product Name",
+      "SKU",
+      "Category",
+      "Current Stock",
+      "Low Stock Threshold",
+      "Unit Price (₹)",
+      "Total Inventory Value (₹)",
+      "Stock Status",
+      "Weekly Sales",
+      "Monthly Sales"
+    ];
+
+    const rows = products.map(p => [
+      p.id,
+      p.name,
+      p.sku,
+      p.category,
+      p.currentStock,
+      p.lowStockThreshold,
+      p.unitPrice,
+      p.totalValue,
+      p.stockStatus,
+      p.weeklySales,
+      p.monthlySales
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => 
+        row.map(value => {
+          const valString = String(value ?? "");
+          if (valString.includes(",") || valString.includes('"') || valString.includes("\n")) {
+            return `"${valString.replace(/"/g, '""')}"`;
+          }
+          return valString;
+        }).join(",")
+      )
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `inventory_report_${new Date().toISOString().split("T")[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const updateStock = async (productId, newStock) => {
     try {
       const productRef = doc(db, "products", productId);
@@ -350,7 +408,10 @@ export default function InventoryManagement() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Inventory Management</h1>
         <div className="flex items-center space-x-3">
-          <button className="flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+          <button 
+            onClick={handleExportCSV}
+            className="flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+          >
             <Download className="w-4 h-4 mr-2" />
             Export
           </button>

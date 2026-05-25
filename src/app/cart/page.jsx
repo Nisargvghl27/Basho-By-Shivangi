@@ -1,8 +1,9 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, memo, useMemo } from "react";
 import { useCart } from "../../context/CartContext";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 
@@ -14,6 +15,114 @@ const calculateItemTotal = (price, quantity) => {
   return numericPrice * quantity;
 };
 
+// ---------------------------------------------------------------------------
+// Isolated & Memoized Cart Item Component
+// ---------------------------------------------------------------------------
+const CartItem = memo(function CartItem({ 
+  item, 
+  isSelected, 
+  onToggleSelect, 
+  onRemoveClick, 
+  onQuantityChange 
+}) {
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const handleQtyChange = async (e, change) => {
+    e.preventDefault();
+    if (isUpdating) return;
+    
+    setIsUpdating(true);
+    await onQuantityChange(item.id, change, item.quantity);
+    setIsUpdating(false);
+  };
+
+  const itemPrice = typeof item.price === 'string' 
+    ? parseFloat(item.price.replace(/[^0-9.-]+/g, "")) 
+    : item.price;
+
+  return (
+    <div className="group bg-charcoal/70 p-5 rounded-2xl shadow-md mb-6 border border-white/5 transition-all duration-300 ease-out hover:bg-charcoal/80 hover:border-clay/30 hover:shadow-lg hover:-translate-y-1 hover:scale-[1.01]">
+      <div className="flex flex-col sm:flex-row gap-5 items-start sm:items-center">
+        <input
+          type="checkbox"
+          className="mt-2 size-4 accent-clay cursor-pointer"
+          checked={isSelected}
+          onChange={() => onToggleSelect(item.id)}
+        />
+        <div className="relative w-32 h-32 flex-shrink-0">
+          {item.image ? (
+            <Image
+              src={item.image}
+              alt={item.name || 'Product image'}
+              fill
+              className="object-cover rounded-xl shadow-sm"
+              sizes="128px"
+            />
+          ) : (
+            <div className="w-full h-full bg-stone-800 rounded-xl shadow-sm" />
+          )}
+        </div>
+        <div className="flex-1 w-full">
+          <div className="flex justify-between items-start w-full">
+            <div>
+              <h3 className="text-lg font-medium text-rice-paper">{item.name}</h3>
+              <p className="text-sm text-stone-400 mt-1">{item.category}</p>
+              <p className="text-xs text-stone-500 mt-1">Free shipping</p>
+            </div>
+            <div className="text-right">
+              <p className="text-lg font-semibold text-white transition-colors duration-300 group-hover:text-clay">
+                ₹{(itemPrice * item.quantity).toLocaleString('en-IN')}
+              </p>
+              {item.quantity > 1 && (
+                <p className="text-xs text-stone-500">
+                  ₹{itemPrice.toLocaleString('en-IN')} each
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between mt-4 pt-3 border-t border-border-subtle">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center border border-border-subtle rounded-md">
+                <button
+                  onClick={(e) => handleQtyChange(e, -1)}
+                  className="px-3 py-1 text-stone-400 hover:text-white hover:bg-charcoal/50 transition-colors"
+                  aria-label="Decrease quantity"
+                  disabled={isUpdating}
+                >
+                  -
+                </button>
+                <span className="w-8 text-center text-sm text-rice-paper">
+                  {item.quantity}
+                </span>
+                <button
+                  onClick={(e) => handleQtyChange(e, 1)}
+                  className="px-3 py-1 text-stone-400 hover:text-white hover:bg-charcoal/50 transition-colors"
+                  aria-label="Increase quantity"
+                  disabled={isUpdating}
+                >
+                  +
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={(e) => onRemoveClick(e, item.id)}
+                className="text-xs text-stone-400 hover:text-clay transition-colors flex items-center gap-1"
+              >
+                <span className="material-symbols-outlined text-base">delete</span>
+                <span>Remove</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Main Cart Page
+// ---------------------------------------------------------------------------
 const CartPage = () => {
   const router = useRouter();
   const { cartItems, updateQuantity, removeFromCart } = useCart();
@@ -21,11 +130,23 @@ const CartPage = () => {
   const [selectedItems, setSelectedItems] = useState([]);
   const [itemToRemove, setItemToRemove] = useState(null);
   const [showRemoveModal, setShowRemoveModal] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false); // [!code ++]
+  const sectionRef = useRef(null);
+  const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
     setIsClient(true);
-  }, []);
+    // Initialize selected items based on all cart items
+    if (cartItems.length > 0 && selectedItems.length === 0) {
+       // setSelectedItems(cartItems.map(item => item.id)); 
+       // Keeping original logic where nothing is selected initially unless we wanted default selection
+    }
+  }, [cartItems]);
+
+  // Removed fragile IntersectionObserver for main content entrance
+
+  useEffect(() => {
+    setIsClient(true);
+  }, [cartItems]);
 
   const toggleSelectItem = (itemId) => {
     setSelectedItems(prev =>
@@ -35,13 +156,6 @@ const CartPage = () => {
     );
   };
 
-  const handleRemoveItem = (itemId) => {
-    removeFromCart(itemId);
-    setSelectedItems(prev => prev.filter(id => id !== itemId));
-    setShowRemoveModal(false);
-    setItemToRemove(null);
-  };
-
   const handleRemoveClick = (e, itemId) => {
     e.preventDefault();
     e.stopPropagation();
@@ -49,64 +163,46 @@ const CartPage = () => {
     setShowRemoveModal(true);
   };
 
-  const handleQuantityChange = async (itemId, change) => { // [!code ++]
-    if (isUpdating) return; // [!code ++]
-    
-    const item = cartItems.find(item => item.id === itemId);
-    if (item) {
-      const newQuantity = item.quantity + change;
-      if (newQuantity > 0) {
-        setIsUpdating(true); // [!code ++]
-        const result = await updateQuantity(itemId, newQuantity); // [!code ++]
-        setIsUpdating(false); // [!code ++]
-        
-        if (!result.success) { // [!code ++]
-            alert(result.message); // Simple alert for cart page error
-        }
-      } else {
-        setItemToRemove(itemId);
-        setShowRemoveModal(true);
+  const handleQuantityChange = async (itemId, change, currentQty) => {
+    const newQuantity = currentQty + change;
+    if (newQuantity > 0) {
+      const result = await updateQuantity(itemId, newQuantity);
+      if (!result.success) {
+          alert(result.message);
       }
+    } else {
+      setItemToRemove(itemId);
+      setShowRemoveModal(true);
     }
   };
 
-  const selectedSubtotal = cartItems
-    .filter(item => selectedItems.includes(item.id))
-    .reduce((sum, item) => {
-      const price = typeof item.price === 'string' 
-        ? parseFloat(item.price.replace(/[^0-9.-]+/g, "")) 
-        : item.price;
-      return sum + (price * item.quantity);
-    }, 0);
-
-  const shipping = selectedSubtotal > 1000 ? 0 : 50;
-  const tax = selectedSubtotal * 0.18;
-  const total = selectedSubtotal + shipping + tax;
-
-  const sectionRef = useRef(null);
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-          observer.unobserve(entry.target);
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
+  // ---------------------------------------------------------------------------
+  // Memoized Subtotal Calculations (Prevents regex calculation on every render)
+  // ---------------------------------------------------------------------------
+  const { selectedSubtotal, shipping, tax, total } = useMemo(() => {
+    if (!cartItems || !Array.isArray(cartItems)) {
+      return { selectedSubtotal: 0, shipping: 0, tax: 0, total: 0 };
     }
+    
+    const sub = cartItems
+      .filter(item => selectedItems.includes(item.id))
+      .reduce((sum, item) => {
+        const price = typeof item.price === 'string' 
+          ? parseFloat(item.price.replace(/[^0-9.-]+/g, "")) 
+          : item.price;
+        return sum + (price * item.quantity);
+      }, 0);
 
-    return () => {
-      if (sectionRef.current) {
-        observer.unobserve(sectionRef.current);
-      }
+    const ship = sub > 1000 ? 0 : 50;
+    const tx = sub * 0.18;
+    
+    return {
+      selectedSubtotal: sub,
+      shipping: ship,
+      tax: tx,
+      total: sub + ship + tx
     };
-  }, []);
+  }, [cartItems, selectedItems]);
 
   if (!isClient) {
     return (
@@ -160,14 +256,19 @@ const CartPage = () => {
           </div>
         </div>
       )}
-      <main className="relative pt-28 pb-16 px-4 sm:px-6 lg:px-8">
-        {/* Enhanced Grain Texture */}
-        <div className="absolute inset-0 opacity-[0.12] pointer-events-none z-0">
+
+      {/* Main Content */}
+      <main 
+        ref={sectionRef} 
+        className={`relative pt-28 pb-16 px-4 sm:px-6 lg:px-8 transition-all duration-500 ease-out ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+      >
+        {/* Lightweight static raster grain */}
+        <div className="absolute inset-0 opacity-20 pointer-events-none z-0 mix-blend-overlay">
           <div 
-            className="absolute inset-0 animate-grain-shift" 
+            className="absolute inset-0" 
             style={{ 
-              backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' /%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' /%3E%3C/svg%3E")',
-              backgroundSize: '200px 200px'
+              backgroundImage: 'url("https://upload.wikimedia.org/wikipedia/commons/7/76/Noise.png")',
+              backgroundSize: '150px'
             }}
           />
         </div>
@@ -180,91 +281,22 @@ const CartPage = () => {
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="max-w-2xl mx-auto md:max-w-7xl">
             <h1 className="text-4xl font-serif text-rice-paper mb-8">
-              Shopping Cart ({cartItems.length} {cartItems.length === 1 ? 'item' : 'items'})
+              Shopping Cart ({(cartItems || []).length} {(cartItems || []).length === 1 ? 'item' : 'items'})
             </h1>
 
             <div className="lg:grid lg:grid-cols-12 lg:gap-6">
               {/* Cart Items */}
               <div className="lg:col-span-7">
-                {cartItems.length > 0 ? (
-                  cartItems.map((item) => (
-                    <div key={item.id} className="group bg-charcoal/70 p-5 rounded-2xl shadow-lg mb-6 border border-white/5 transition-all duration-500 ease-out hover:bg-charcoal/80 hover:border-clay/30 hover:shadow-[0_16px_45px_rgba(0,0,0,0.45)] hover:-translate-y-1 hover:scale-[1.02]">
-                      <div className="flex flex-col sm:flex-row gap-5 items-start sm:items-center">
-                        <input
-                          type="checkbox"
-                          className="mt-2 size-4 accent-clay"
-                          checked={selectedItems.includes(item.id)}
-                          onChange={() => toggleSelectItem(item.id)}
-                        />
-                        <img
-                          src={item.image}
-                          alt={item.name || 'Product image'}
-                          className="w-32 h-32 object-cover rounded-xl shadow-sm"
-                          loading="lazy"
-                        />
-                        <div className="flex-1 w-full">
-                          <div className="flex justify-between items-start w-full">
-                            <div>
-                              <h3 className="text-lg font-medium text-rice-paper">{item.name}</h3>
-                              <p className="text-sm text-stone-400 mt-1">{item.category}</p>
-                              <p className="text-xs text-stone-500 mt-1">Free shipping</p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-lg font-semibold text-white transition-colors duration-500 group-hover:text-clay">
-                                ₹{calculateItemTotal(item.price, item.quantity).toLocaleString('en-IN')}
-                              </p>
-                              {item.quantity > 1 && (
-                                <p className="text-xs text-stone-500">
-                                  ₹{typeof item.price === 'string' 
-                                    ? parseFloat(item.price.replace(/[^0-9.-]+/g, "")).toLocaleString('en-IN') 
-                                    : item.price.toLocaleString('en-IN')} each
-                                </p>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between mt-4 pt-3 border-t border-border-subtle">
-                            <div className="flex items-center gap-3">
-                              <div className="flex items-center border border-border-subtle rounded-md">
-                                <button
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    handleQuantityChange(item.id, -1);
-                                  }}
-                                  className="px-3 py-1 text-stone-400 hover:text-white hover:bg-charcoal/50 transition-colors"
-                                  aria-label="Decrease quantity"
-                                  disabled={isUpdating} // [!code ++]
-                                >
-                                  -
-                                </button>
-                                <span className="w-8 text-center text-sm text-rice-paper">
-                                  {item.quantity}
-                                </span>
-                                <button
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    handleQuantityChange(item.id, 1);
-                                  }}
-                                  className="px-3 py-1 text-stone-400 hover:text-white hover:bg-charcoal/50 transition-colors"
-                                  aria-label="Increase quantity"
-                                  disabled={isUpdating} // [!code ++]
-                                >
-                                  +
-                                </button>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={(e) => handleRemoveClick(e, item.id)}
-                                className="text-xs text-stone-400 hover:text-clay transition-colors flex items-center gap-1"
-                              >
-                                <span className="material-symbols-outlined text-base">delete</span>
-                                <span>Remove</span>
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                {(cartItems || []).length > 0 ? (
+                  (cartItems || []).map((item) => (
+                    <CartItem 
+                      key={item.id}
+                      item={item}
+                      isSelected={selectedItems.includes(item.id)}
+                      onToggleSelect={toggleSelectItem}
+                      onRemoveClick={handleRemoveClick}
+                      onQuantityChange={handleQuantityChange}
+                    />
                   ))
                 ) : (
                   <div className="text-center py-16">
@@ -283,7 +315,7 @@ const CartPage = () => {
 
               {/* Order Summary */}
               <div className="lg:col-span-5 mt-8 lg:mt-0">
-                <div className="sticky top-8 bg-charcoal/70 rounded-xl border border-white/5 overflow-hidden transition-all duration-500 ease-out hover:bg-charcoal/80 hover:border-clay/30 hover:shadow-[0_16px_45px_rgba(0,0,0,0.45)] hover:-translate-y-1 hover:scale-[1.02]">
+                <div className="sticky top-8 bg-charcoal/70 rounded-xl border border-white/5 overflow-hidden transition-all duration-300 ease-out hover:bg-charcoal/80 hover:border-clay/30 hover:shadow-lg hover:-translate-y-1 hover:scale-[1.01]">
                   <div className="p-4">
                     <h3 className="text-xl font-semibold text-rice-paper mb-4 pb-3 border-b border-border-subtle">
                       Order Summary
@@ -297,25 +329,30 @@ const CartPage = () => {
                       ) : (
                         <>
                           <div className="space-y-1.5">
-                            {cartItems
+                            {(cartItems || [])
                               .filter(item => selectedItems.includes(item.id))
                               .map(item => (
-                                <div key={item.id} className="group flex justify-between items-center rounded-lg px-2 py-2 border border-transparent transition-all duration-500 ease-out hover:bg-charcoal/60 hover:border-clay/20">
+                                <div key={item.id} className="group flex justify-between items-center rounded-lg px-2 py-2 border border-transparent transition-all duration-300 ease-out hover:bg-charcoal/60 hover:border-clay/20">
                                   <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 bg-charcoal rounded-md overflow-hidden">
-                                      <img 
-                                        src={item.image} 
-                                        alt={item.name || 'Product image'}
-                                        className="w-full h-full object-cover"
-                                        loading="lazy"
-                                      />
+                                    <div className="relative w-12 h-12 bg-charcoal rounded-md overflow-hidden flex-shrink-0">
+                                      {item.image ? (
+                                        <Image 
+                                          src={item.image} 
+                                          alt={item.name || 'Product image'}
+                                          fill
+                                          className="object-cover"
+                                          sizes="48px"
+                                        />
+                                      ) : (
+                                        <div className="w-full h-full bg-stone-800" />
+                                      )}
                                     </div>
                                     <div>
-                                      <p className="text-rice-paper text-sm font-medium transition-colors duration-500 group-hover:text-clay">{item.name}</p>
-                                      <p className="text-stone-400 text-xs transition-colors duration-500 group-hover:text-rice-paper/70">Qty: {item.quantity}</p>
+                                      <p className="text-rice-paper text-sm font-medium transition-colors duration-300 group-hover:text-clay">{item.name}</p>
+                                      <p className="text-stone-400 text-xs transition-colors duration-300 group-hover:text-rice-paper/70">Qty: {item.quantity}</p>
                                     </div>
                                   </div>
-                                  <span className="text-white font-medium transition-colors duration-500 group-hover:text-clay">
+                                  <span className="text-white font-medium transition-colors duration-300 group-hover:text-clay">
                                     ₹{calculateItemTotal(item.price, item.quantity).toLocaleString('en-IN')}
                                   </span>
                                 </div>
@@ -325,14 +362,14 @@ const CartPage = () => {
                           <div className="border-t border-border-subtle my-4"></div>
 
                           <div className="space-y-1.5">
-                            <div className="group flex justify-between rounded-lg px-2 py-2 border border-transparent transition-all duration-500 ease-out hover:bg-charcoal/60 hover:border-clay/20">
+                            <div className="group flex justify-between rounded-lg px-2 py-2 border border-transparent transition-all duration-300 ease-out hover:bg-charcoal/60 hover:border-clay/20">
                               <span className="text-stone-400">Subtotal</span>
                               <span className="text-rice-paper">
                                 ₹{selectedSubtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                               </span>
                             </div>
                             
-                            <div className="group flex justify-between rounded-lg px-2 py-2 border border-transparent transition-all duration-500 ease-out hover:bg-charcoal/60 hover:border-clay/20">
+                            <div className="group flex justify-between rounded-lg px-2 py-2 border border-transparent transition-all duration-300 ease-out hover:bg-charcoal/60 hover:border-clay/20">
                               <div className="flex items-center gap-1">
                                 <span className="text-stone-400">Shipping</span>
                                 <span className="text-xs text-stone-500">
@@ -344,7 +381,7 @@ const CartPage = () => {
                               </span>
                             </div>
                             
-                            <div className="group flex justify-between rounded-lg px-2 py-2 border border-transparent transition-all duration-500 ease-out hover:bg-charcoal/60 hover:border-clay/20">
+                            <div className="group flex justify-between rounded-lg px-2 py-2 border border-transparent transition-all duration-300 ease-out hover:bg-charcoal/60 hover:border-clay/20">
                               <div className="flex items-center gap-1">
                                 <span className="text-stone-400">Tax (GST)</span>
                                 <span className="text-xs text-stone-500">18%</span>
@@ -376,7 +413,7 @@ const CartPage = () => {
 
                           <div className="border-t border-border-subtle my-4"></div>
 
-                          <div className="group flex justify-between items-center rounded-lg px-2 py-2 border border-transparent transition-all duration-500 ease-out hover:bg-charcoal/60 hover:border-clay/20">
+                          <div className="group flex justify-between items-center rounded-lg px-2 py-2 border border-transparent transition-all duration-300 ease-out hover:bg-charcoal/60 hover:border-clay/20">
                             <span className="text-rice-paper font-medium">Total</span>
                             <div className="text-right">
                               <p className="text-2xl font-semibold text-white">
@@ -392,15 +429,14 @@ const CartPage = () => {
 
                   <div className="p-4 bg-charcoal/50 border-t border-border-subtle">
                     <button
-                      className={`w-full py-3.5 px-4 rounded-lg transition-all font-medium flex items-center justify-center gap-2 ${
+                      className={`w-full py-3.5 px-4 rounded-lg transition-all duration-300 font-medium flex items-center justify-center gap-2 ${
                         selectedItems.length > 0
-                          ? 'bg-clay hover:bg-clay/90 text-white shadow-lg hover:shadow-clay/20'
+                          ? 'bg-clay hover:bg-clay/90 text-white shadow-md hover:shadow-clay/20 hover:scale-[1.02]'
                           : 'bg-gray-700 cursor-not-allowed text-gray-500'
                       }`}
                       disabled={selectedItems.length === 0}
                       onClick={() => {
                         if (selectedItems.length > 0) {
-                          // Pass selected item IDs as query parameters
                           const selectedParams = selectedItems.map(id => `selected=${id}`).join('&');
                           router.push(`/checkout?${selectedParams}`);
                         }

@@ -1,175 +1,108 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import { usePathname } from "next/navigation";
+/**
+ * src/app/template.jsx
+ *
+ * Next.js App Router re-mounts this component on every navigation,
+ * which gives us a free enter animation on every route change.
+ *
+ * Exit animations are handled via AnimatePresence at the layout level,
+ * but since template.jsx is re-mounted per route, the `exit` variant
+ * fires automatically when the component unmounts during navigation.
+ *
+ * Performance notes:
+ *  - Only `opacity` and `transform: translateY` are animated.
+ *  - Both are composited on the GPU — zero layout/paint cost.
+ *  - `will-change` is NOT set explicitly; Framer Motion handles it
+ *    internally and removes it after the animation completes.
+ */
 
-// ============================================================
-// 1. CONFIGURATION & PHYSICS
-// ============================================================
+import React, { useState } from "react";
+import { motion, AnimatePresence, usePresence } from "framer-motion";
 
-// "Basho" Easing: Heavy entrance, smooth settling
-const CURVE_EASE = [0.76, 0, 0.24, 1]; 
+// ─── Variants ────────────────────────────────────────────────────────────────
 
-const COLORS = {
-  charcoal: "#1a1a1a", // Deep Kiln Black
-  clay: "#A67C58",     // Earthy Terracotta
-  ricePaper: "#FDFBF7" // Soft White text
-};
-
-const ROUTES = {
-  "/": "Basho Studio",
-  "/shop": "The Collection",
-  "/workshops": "Workshops",
-  "/journal": "Journal",
-  "/about": "Our Story",
-  "/cart": "Your Cart",
-  "/checkout": "Checkout",
-  "/auth": "Account",
-  "/profile": "My Profile"
-};
-
-const getPageTitle = (path) => {
-  if (!path) return "Basho";
-  if (ROUTES[path]) return ROUTES[path];
-  const key = Object.keys(ROUTES).find(key => key !== "/" && path.startsWith(key));
-  return key ? ROUTES[key] : "Basho";
-};
-
-// ============================================================
-// 2. MAIN COMPONENT
-// ============================================================
-
-export default function Template({ children }) {
-  const pathname = usePathname();
-  const [title, setTitle] = useState("");
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-    setTitle(getPageTitle(pathname));
-
-    const resize = () => {
-      setDimensions({
-        width: window.innerWidth,
-        height: window.innerHeight
-      });
-    };
-    resize();
-    window.addEventListener("resize", resize);
-    return () => window.removeEventListener("resize", resize);
-  }, [pathname]);
-
-  // ============================================================
-  // 3. ANIMATION VARIANTS
-  // ============================================================
-
-  // CONTENT: Slides UP from the bottom (Entering)
-  // "Old page slides down" effect is simulated by the new page covering it.
-  const contentVariants = {
-    initial: { y: "100vh" },
-    animate: { 
-      y: 0, 
-      transition: { 
-        duration: 0.9, 
-        ease: CURVE_EASE,
-        delay: 0.2 // Wait for curtain to start
-      } 
+/**
+ * Cinematic page transition:
+ *  Enter  — fades in + drifts up 18px, eased with an expo-out curve.
+ *  Exit   — fades out + drifts up a further 10px, eased with a fast
+ *            ease-in so the outgoing page leaves quickly.
+ *
+ * Total visible motion budget: ~18px upward — subtle but intentional.
+ */
+const pageVariants = {
+  hidden: {
+    opacity: 0,
+    y: 18,
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      // Expo-out: starts very fast, decelerates to rest — cinematic "settle"
+      duration: 0.52,
+      ease: [0.22, 1, 0.36, 1],
     },
-    exit: { 
-      y: "100vh", 
-      transition: { duration: 0.9, ease: CURVE_EASE } 
-    }
-  };
+  },
+  exit: {
+    opacity: 0,
+    y: -10,
+    transition: {
+      // Fast ease-in: page disappears quickly so the next one isn't held up
+      duration: 0.22,
+      ease: [0.4, 0, 1, 1],
+    },
+  },
+};
 
-  // CURTAIN (Decorative Background Layer): 
-  // Adds depth behind the content
-  const curtainVariants = {
-    initial: { d: `M0 0 L${dimensions.width} 0 L${dimensions.width} ${dimensions.height} Q${dimensions.width/2} ${dimensions.height + 300} 0 ${dimensions.height} L0 0` },
-    animate: { 
-      d: `M0 0 L${dimensions.width} 0 L${dimensions.width} 0 Q${dimensions.width/2} 0 0 0 L0 0`,
-      transition: { duration: 0.9, ease: CURVE_EASE } 
-    }
-  };
+// ─── Wrapper Component ───────────────────────────────────────────────────────
 
-  // TEXT: Staggered Blur Reveal
-  const textContainer = {
-    initial: { opacity: 1 },
-    animate: { opacity: 0, transition: { delay: 0.6, duration: 0.4 } }
-  };
-
-  const textLetter = {
-    initial: { y: 40, opacity: 0, filter: "blur(10px)" },
-    animate: { 
-      y: 0, 
-      opacity: 1, 
-      filter: "blur(0px)",
-      transition: { duration: 0.6, ease: "easeOut" } 
-    }
-  };
-
-  if (!isClient) return <div className="min-h-screen bg-[#1a1a1a]">{children}</div>;
+function PageTransitionWrapper({ children }) {
+  const [isPresent] = usePresence();
+  const [animationDone, setAnimationDone] = useState(false);
 
   return (
-    <div className="relative min-h-screen bg-[#1a1a1a] overflow-hidden">
-      
-      {/* --- 1. TITLE OVERLAY (Fades out) --- */}
-      <motion.div 
-        className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
-        variants={textContainer}
-        initial="initial"
-        animate="animate"
-      >
-        <div className="overflow-hidden flex gap-2 md:gap-4">
-          {title.split(" ").map((word, i) => (
-            <div key={i} className="flex">
-              {word.split("").map((char, j) => (
-                <motion.span
-                  key={j}
-                  variants={textLetter}
-                  className="text-6xl md:text-9xl font-serif italic text-[#FDFBF7]"
-                >
-                  {char}
-                </motion.span>
-              ))}
-            </div>
-          ))}
-        </div>
-      </motion.div>
+    <motion.div
+      variants={pageVariants}
+      initial="hidden"
+      animate="visible"
+      exit="exit"
+      onAnimationComplete={(definition) => {
+        if (definition === "visible") {
+          setAnimationDone(true);
+        }
+      }}
+      style={{
+        willChange: isPresent && !animationDone ? "opacity, transform" : "opacity",
+        transform: isPresent && animationDone ? "none" : undefined,
+      }}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
-      {/* --- 2. LIQUID CURTAIN (The "Clay" Slide) --- */}
-      <motion.svg 
-        className="fixed inset-0 z-40 w-full h-full pointer-events-none"
-        style={{ fill: COLORS.clay }}
-      >
-        <motion.path 
-          variants={curtainVariants} 
-          initial="initial" 
-          animate="animate" 
-        />
-      </motion.svg>
+// ─── Component ───────────────────────────────────────────────────────────────
 
-      {/* --- 3. PAGE CONTENT (Slides Up) --- */}
-      <motion.div
-        className="relative z-30 min-h-screen bg-[#1a1a1a] origin-top"
-        variants={contentVariants}
-        initial="initial"
-        animate="animate"
-        exit="exit"
-      >
-         {/* --- GRAIN TEXTURE (Inside Content) --- */}
-        <div className="fixed inset-0 opacity-15 pointer-events-none z-[60] mix-blend-overlay">
-          <svg className="w-full h-full">
-            <filter id="noise">
-              <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" stitchTiles="stitch" />
-            </filter>
-            <rect width="100%" height="100%" filter="url(#noise)" />
-          </svg>
-        </div>
-        
-        {children}
-      </motion.div>
-    </div>
+export default function Template({ children }) {
+  return (
+    <>
+      {/*
+        AnimatePresence is required here so that the `exit` variant fires
+        before the component unmounts on navigation.
+
+        mode="wait"  → outgoing page finishes exiting before the incoming
+                       page starts entering, preventing two pages being
+                       visible simultaneously. Remove if you prefer instant
+                       crossfades.
+        initial={false} is intentionally NOT set here so the enter
+                       animation always plays on first load too.
+      */}
+      <AnimatePresence mode="wait">
+        <PageTransitionWrapper>
+          {children}
+        </PageTransitionWrapper>
+      </AnimatePresence>
+    </>
   );
 }

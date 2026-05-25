@@ -92,15 +92,24 @@ export default function Collections() {
     }
   };
 
-  const handleWishlistToggle = (e, product) => {
+  const handleWishlistToggle = async (e, product) => {
     e.preventDefault();
     e.stopPropagation();
     if (isInWishlist(product.id)) {
       removeFromWishlist(product.id);
       showNotification(`Removed ${product.name} from wishlist`, 'success');
     } else {
-      addToWishlist(product);
-      showNotification(`Added ${product.name} to wishlist`, 'success');
+      const result = await addToWishlist(product);
+      if (result && result.success) {
+        showNotification(result.message || `Added ${product.name} to wishlist`, 'success');
+      } else {
+        showNotification((result && result.message) || `Failed to add ${product.name} to wishlist`, 'error');
+        if (result && result.requiresAuth) {
+          setTimeout(() => {
+            router.push('/auth/login');
+          }, 1500);
+        }
+      }
     }
   };
 
@@ -153,7 +162,7 @@ export default function Collections() {
         <div 
           className="absolute inset-0 animate-grain-shift" 
           style={{ 
-            backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' /%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' /%3E%3C/svg%3E")',
+            backgroundImage: 'url("https://upload.wikimedia.org/wikipedia/commons/7/76/Noise.png")',
             backgroundSize: '200px 200px'
           }}
         />

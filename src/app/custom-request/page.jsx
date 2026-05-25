@@ -37,10 +37,25 @@ export default function CustomRequestPage() {
         userId: "guest", // Replace with auth ID if available
       };
 
-      await submitCustomRequest(requestData, imageFile);
+      const result = await submitCustomRequest(requestData, imageFile);
+      
+      // Trigger custom request email notification non-blockingly
+      fetch("/api/send-custom-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userName: formData.userName,
+          email: formData.email,
+          budgetRange: formData.budgetRange,
+          description: formData.description,
+          referenceImage: result?.imageUrl || null,
+        }),
+      }).catch((err) => console.error("Failed to send custom request emails:", err));
+
       alert("Request submitted successfully! We will contact you shortly.");
       router.push('/shop');
     } catch (error) {
+      console.error(error);
       alert("Failed to submit request.");
     } finally {
       setLoading(false);

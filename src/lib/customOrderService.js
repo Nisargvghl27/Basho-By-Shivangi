@@ -69,7 +69,7 @@ export const submitCustomRequest = async (requestData, imageFile) => {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
-    return docRef.id;
+    return { id: docRef.id, imageUrl };
   } catch (error) {
     console.error("Error submitting request:", error); // Check Console for this error
     throw error;

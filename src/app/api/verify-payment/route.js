@@ -3,6 +3,7 @@ import { getFirestore, collection, doc, updateDoc, query, where, getDocs, server
 import { app } from '../../../lib/firebase';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer'; // 1. Import Nodemailer
+import { generatePdfInvoice } from '../../../utils/generatePdfInvoice';
 
 const db = getFirestore(app);
 
@@ -10,8 +11,16 @@ export async function POST(request) {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = await request.json();
     console.log('Payment verification request:', { razorpay_order_id, razorpay_payment_id });
-    
+
     // Verify Razorpay signature
+    if (!process.env.RAZORPAY_KEY_SECRET) {
+      console.error('Razorpay secret key (RAZORPAY_KEY_SECRET) is not configured on the server');
+      return NextResponse.json(
+        { success: false, error: 'Payment gateway not configured', details: 'Razorpay secret key is missing on the server.' },
+        { status: 500 }
+      );
+    }
+
     const body = razorpay_order_id + "|" + razorpay_payment_id;
     const expectedSignature = crypto
       .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
@@ -32,7 +41,7 @@ export async function POST(request) {
     const ordersRef = collection(db, 'orders');
     const q = query(ordersRef, where('razorpayOrderId', '==', razorpay_order_id));
     const querySnapshot = await getDocs(q);
-    
+
     if (querySnapshot.empty) {
       return NextResponse.json(
         { success: false, error: 'Order not found' },
@@ -64,79 +73,185 @@ export async function POST(request) {
         },
       });
 
-      // Generate Items HTML List
-      const itemsHtml = orderData.items.map(item => `
-        <tr style="border-bottom: 1px solid #eee;">
-          <td style="padding: 10px; color: #555;">${item.name} <span style="font-size: 12px; color: #888;">(x${item.quantity})</span></td>
-          <td style="padding: 10px; text-align: right; color: #555;">₹${(item.price * item.quantity).toLocaleString('en-IN')}</td>
+      const dateObj = orderData.createdAt?.toDate ? orderData.createdAt.toDate() : new Date();
+      const formattedDate = dateObj.toLocaleDateString("en-US", {
+        year: 'numeric', month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      });
+
+      const shippingName = `${orderData.shipping?.firstName || 'Guest'} ${orderData.shipping?.lastName || ''}`.trim();
+      const shippingEmail = orderData.shipping?.email || 'No Email';
+      const shippingPhone = orderData.shipping?.phone || 'No Phone';
+      const shippingAddressString = [
+        orderData.shipping?.address,
+        orderData.shipping?.city,
+        orderData.shipping?.state ? `${orderData.shipping.state} - ${orderData.shipping.zipCode || ''}` : orderData.shipping?.zipCode,
+        orderData.shipping?.country || 'India'
+      ].filter(Boolean).join(", ");
+
+      const subtotalVal = orderData.subtotal !== undefined ? orderData.subtotal : (orderData.items || []).reduce((acc, item) => acc + ((item.price || 0) * (item.quantity || 1)), 0);
+      const shippingCostVal = orderData.shippingCost !== undefined ? orderData.shippingCost : (orderData.shipping_cost || 0);
+      const taxVal = orderData.tax !== undefined ? orderData.tax : (orderData.subtotal !== undefined ? (orderData.tax || 0) : subtotalVal * 0.18);
+      const totalAmount = orderData.total || (subtotalVal + shippingCostVal + taxVal);
+
+      const notesText = typeof orderData.notes === 'string' ? orderData.notes : (orderData.notes?.customerNote || orderData.notes?.note || orderData.notes?.message || '');
+      const notesHtml = notesText 
+        ? `<p style="margin: 6px 0 0 0; font-size: 12px; color: #4b5563; border-top: 1px solid #e5e7eb; padding-top: 6px;"><strong>Note:</strong> ${notesText}</p>` 
+        : '';
+
+      const compactItemsHtml = (orderData.items || []).map(item => `
+        <tr>
+          <td style="padding-bottom: 8px; font-size: 12px; color: #374151;">
+            <div style="font-weight: 500;">${item.name || item.title || 'Unknown Item'}</div>
+            <div style="font-size: 11px; color: #6b7280;">Qty: ${item.quantity || 1}</div>
+          </td>
+          <td align="right" valign="top" style="padding-bottom: 8px; font-size: 12px; font-weight: 500; color: #111827;">
+            ₹${((item.price || 0) * (item.quantity || 1)).toLocaleString('en-IN')}
+          </td>
         </tr>
       `).join('');
 
-      // Calculate totals (Handling cases where total might be stored differently)
-      const totalAmount = orderData.total || 0;
-      const shippingCost = totalAmount < 1000 ? 50 : 0; // Or fetch from orderData if saved
-      // Note: Assuming 'total' in DB includes shipping/tax. You can adjust math based on your DB structure.
+      // Generate PDF using jsPDF utility
+      const orderDocData = {
+        items: orderData.items || [],
+        shipping: orderData.shipping || {},
+        total: totalAmount,
+        subtotal: subtotalVal,
+        shippingCost: shippingCostVal,
+        tax: taxVal,
+        paymentMethod: orderData.paymentMethod || 'Razorpay/Online',
+        createdAt: orderData.createdAt || { toDate: () => dateObj },
+        status: orderData.status || 'completed',
+        notes: notesText,
+        razorpayPaymentId: orderData.razorpayPaymentId || 'N/A'
+      };
+      const pdf = generatePdfInvoice(orderDoc.id, orderDocData);
+      const pdfBuffer = Buffer.from(pdf.output('arraybuffer'));
 
-      // Define Email Content
-      // Get the base URL from environment or construct from request
-      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 
-                      process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` :
-                      'http://localhost:3000';
-      
-      const downloadBillUrl = `${baseUrl}/api/download-bill?orderId=${orderDoc.id}&email=${encodeURIComponent(orderData.shipping.email)}`;
-      const profileUrl = `${baseUrl}/profile`;
-      
       const mailOptions = {
         from: `"Basho Pottery" <${process.env.EMAIL_USER}>`,
         to: orderData.shipping.email, // Send to the shipping email provided in checkout
         subject: `Order Confirmed - #${orderDoc.id.slice(0, 8).toUpperCase()}`,
+        attachments: [
+          {
+            filename: `Invoice_${orderDoc.id.slice(0, 8).toUpperCase()}.pdf`,
+            content: pdfBuffer,
+          }
+        ],
         html: `
-          <div style="font-family: 'Georgia', serif; color: #2c2c2c; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9; border: 1px solid #e0e0e0;">
-            
-            <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #A0522D; padding-bottom: 20px;">
-              <h1 style="color: #A0522D; font-size: 24px; letter-spacing: 2px; text-transform: uppercase; margin: 0;">Basho Pottery</h1>
-              <p style="font-size: 14px; color: #888; margin-top: 5px;">Payment Receipt</p>
-            </div>
+          <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f3f4f6; padding: 20px 10px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #1f2937;">
+            <tr>
+              <td align="center">
+                <table cellpadding="0" cellspacing="0" border="0" width="600" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid #e5e7eb; overflow: hidden; text-align: left; padding: 24px;">
+                  
+                  <!-- Header -->
+                  <tr>
+                    <td style="padding-bottom: 20px; border-bottom: 1px solid #f3f4f6;">
+                      <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                        <tr>
+                          <td>
+                            <h2 style="margin: 0; font-size: 20px; font-weight: bold; color: #111827;">Order Details</h2>
+                            <p style="margin: 4px 0 0 0; font-size: 12px; color: #6b7280;">ID: ${orderDoc.id.toUpperCase()}</p>
+                          </td>
+                          <td align="right">
+                            <span style="font-family: 'Georgia', serif; font-size: 18px; font-weight: bold; color: #A65D3D; letter-spacing: 1px; text-transform: uppercase;">Basho Pottery</span>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
 
-            <div style="background-color: white; padding: 30px; border-radius: 4px;">
-              <p style="color: #555; font-size: 16px;">Hi ${orderData.shipping.firstName},</p>
-              <p style="color: #555; font-size: 16px;">Thank you for your purchase! Your payment has been successfully verified.</p>
-              
-              <div style="margin-top: 25px;">
-                <h3 style="color: #333; font-size: 18px; border-bottom: 1px solid #ddd; padding-bottom: 10px;">Order Summary</h3>
-                <p style="font-size: 14px; color: #888;">Order ID: #${orderDoc.id.toUpperCase()}</p>
-                
-                <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
-                  ${itemsHtml}
+                  <!-- Main Columns Content -->
+                  <tr>
+                    <td style="padding-top: 24px; padding-bottom: 10px;">
+                      <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                        <tr>
+                          <!-- Left Column -->
+                          <td width="48%" valign="top">
+                            
+                            <!-- Customer Information -->
+                            <h4 style="margin: 0 0 8px 0; font-size: 13px; font-weight: 600; color: #374151; text-transform: uppercase; letter-spacing: 0.5px;">Customer Information</h4>
+                            <div style="background-color: #f9fafb; border-radius: 8px; padding: 12px; margin-bottom: 16px; border: 1px solid #e5e7eb; min-height: 80px;">
+                              <p style="margin: 0 0 4px 0; font-size: 13px; color: #111827; font-weight: 600;">${shippingName}</p>
+                              <p style="margin: 0 0 4px 0; font-size: 12px; color: #4b5563;">${shippingEmail}</p>
+                              <p style="margin: 0; font-size: 12px; color: #4b5563;">Phone: ${shippingPhone}</p>
+                            </div>
+
+                            <!-- Shipping Address -->
+                            <h4 style="margin: 0 0 8px 0; font-size: 13px; font-weight: 600; color: #374151; text-transform: uppercase; letter-spacing: 0.5px;">Shipping Address</h4>
+                            <div style="background-color: #f9fafb; border-radius: 8px; padding: 12px; margin-bottom: 16px; border: 1px solid #e5e7eb; min-height: 70px;">
+                              <p style="margin: 0; font-size: 12px; color: #4b5563; line-height: 1.4;">${shippingAddressString}</p>
+                            </div>
+
+                            <!-- Payment Information -->
+                            <h4 style="margin: 0 0 8px 0; font-size: 13px; font-weight: 600; color: #374151; text-transform: uppercase; letter-spacing: 0.5px;">Payment Information</h4>
+                            <div style="background-color: #f9fafb; border-radius: 8px; padding: 12px; border: 1px solid #e5e7eb;">
+                              <p style="margin: 0 0 4px 0; font-size: 12px; color: #4b5563; text-transform: capitalize;">Method: ${orderData.paymentMethod || 'Razorpay/Online'}</p>
+                              <p style="margin: 0 0 4px 0; font-size: 13px; color: #A65D3D; font-weight: 600;">Total: ₹${(totalAmount || 0).toLocaleString('en-IN')}</p>
+                              <p style="margin: 0; font-size: 11px; color: #9ca3af; word-break: break-all;">Ref: ${orderData.razorpayPaymentId || 'N/A'}</p>
+                            </div>
+
+                          </td>
+
+                          <!-- Spacer -->
+                          <td width="4%">&nbsp;</td>
+
+                          <!-- Right Column -->
+                          <td width="48%" valign="top">
+
+                            <!-- Order Information -->
+                            <h4 style="margin: 0 0 8px 0; font-size: 13px; font-weight: 600; color: #374151; text-transform: uppercase; letter-spacing: 0.5px;">Order Information</h4>
+                            <div style="background-color: #f9fafb; border-radius: 8px; padding: 12px; margin-bottom: 16px; border: 1px solid #e5e7eb;">
+                              <p style="margin: 0 0 4px 0; font-size: 12px; color: #4b5563;">Date: ${formattedDate}</p>
+                              <p style="margin: 0 0 4px 0; font-size: 12px; color: #4b5563;">Status: Completed</p>
+                              ${notesHtml}
+                            </div>
+
+                            <!-- Items -->
+                            <h4 style="margin: 0 0 8px 0; font-size: 13px; font-weight: 600; color: #374151; text-transform: uppercase; letter-spacing: 0.5px;">Items</h4>
+                            <div style="background-color: #f9fafb; border-radius: 8px; padding: 12px; border: 1px solid #e5e7eb;">
+                              <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                                ${compactItemsHtml}
+                                <tr style="border-top: 1px solid #e5e7eb;">
+                                  <td style="padding-top: 8px; font-size: 12px; color: #4b5563;">Subtotal</td>
+                                  <td align="right" style="padding-top: 8px; font-size: 12px; color: #111827;">₹${(subtotalVal || 0).toLocaleString('en-IN')}</td>
+                                </tr>
+                                <tr>
+                                  <td style="padding-top: 4px; font-size: 12px; color: #4b5563;">Shipping</td>
+                                  <td align="right" style="padding-top: 4px; font-size: 12px; color: #111827;">₹${(shippingCostVal || 0).toLocaleString('en-IN')}</td>
+                                </tr>
+                                <tr>
+                                  <td style="padding-top: 4px; font-size: 12px; color: #4b5563;">Tax (18% GST)</td>
+                                  <td align="right" style="padding-top: 4px; font-size: 12px; color: #111827;">₹${(taxVal || 0).toLocaleString('en-IN')}</td>
+                                </tr>
+                                <tr>
+                                  <td style="padding-top: 8px; border-top: 1px solid #e5e7eb; font-weight: bold; font-size: 12px; color: #111827;">Total</td>
+                                  <td align="right" style="padding-top: 8px; border-top: 1px solid #e5e7eb; font-weight: bold; font-size: 12px; color: #A65D3D;">₹${(totalAmount || 0).toLocaleString('en-IN')}</td>
+                                </tr>
+                              </table>
+                            </div>
+
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                  <!-- Footer & Call to Action -->
+                  <tr>
+                    <td align="center" style="padding-top: 24px; border-top: 1px solid #f3f4f6;">
+                      <p style="margin: 0; font-size: 11px; color: #9ca3af; text-align: center; line-height: 1.4;">
+                        Your payment has been successfully verified.<br>
+                        This is an automated order confirmation invoice from Basho Pottery.<br>
+                        For any support, please contact: <strong>bashothelabel@gmail.com</strong>
+                      </p>
+                    </td>
+                  </tr>
+
                 </table>
-
-                <div style="margin-top: 15px; text-align: right;">
-                  <p style="margin: 5px 0; font-size: 18px; font-weight: bold; color: #A0522D;">Total: ₹${totalAmount.toLocaleString('en-IN')}</p>
-                </div>
-              </div>
-
-              <div style="margin-top: 30px; background-color: #f5f5f5; padding: 15px; border-radius: 4px;">
-                <h4 style="margin: 0 0 10px 0; color: #333;">Shipping To:</h4>
-                <p style="margin: 0; color: #666; font-size: 14px; line-height: 1.5;">
-                  ${orderData.shipping.address}<br>
-                  ${orderData.shipping.city}, ${orderData.shipping.state} - ${orderData.shipping.zipCode}<br>
-                  Phone: ${orderData.shipping.phone}
-                </p>
-              </div>
-
-              <div style="margin-top: 30px; text-align: center;">
-                <a href="${downloadBillUrl}" style="display: inline-block; padding: 12px 30px; background-color: #A0522D; color: white; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 14px;">
-                  📥 Download Invoice
-                </a>
-              </div>
-            </div>
-
-            <div style="text-align: center; margin-top: 30px; font-size: 12px; color: #aaa;">
-              <p>You can also view all your orders and download invoices from your account.</p>
-              <p>If you have any questions, reply to this email.</p>
-              <p>&copy; ${new Date().getFullYear()} Basho Pottery. All rights reserved.</p>
-            </div>
-          </div>
+              </td>
+            </tr>
+          </table>
         `,
       };
 
@@ -149,7 +264,7 @@ export async function POST(request) {
       console.error('Failed to send bill email:', emailError);
     }
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
       orderId: orderDoc.id,
       paymentId: razorpay_payment_id

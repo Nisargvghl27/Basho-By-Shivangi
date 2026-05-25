@@ -69,7 +69,7 @@ export default function OrderSuccessPage() {
             </Link>
             
             <Link 
-              href="/profile/orders"
+              href="/profile"
               className="block w-full border border-clay text-clay hover:bg-clay hover:text-white py-3 rounded-md font-medium transition-colors"
             >
               View My Orders

@@ -10,7 +10,9 @@ import {
   doc, 
   updateDoc, 
   addDoc, 
-  serverTimestamp 
+  serverTimestamp,
+  getDocs,
+  where
 } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 
@@ -69,6 +71,7 @@ export default function PaymentManagement() {
           transactionId: data.razorpayPaymentId || "N/A",
           date: dateObj.toLocaleDateString(),
           time: dateObj.toLocaleTimeString(),
+          refundRequested: data.refundRequested || false,
           refundEligible: data.paymentStatus === 'paid' // Only paid orders can be refunded
         };
       });
@@ -114,13 +117,17 @@ export default function PaymentManagement() {
   // 🔥 3. FILTERING LOGIC
   // ==========================================
   const filteredPayments = payments.filter(payment => {
-    const matchesSearch = payment.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         payment.orderId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         payment.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         payment.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const searchTermLower = searchTerm.toLowerCase();
+    const idMatches = payment.id ? payment.id.toLowerCase().includes(searchTermLower) : false;
+    const orderIdMatches = payment.orderId ? payment.orderId.toLowerCase().includes(searchTermLower) : false;
+    const customerMatches = payment.customer ? payment.customer.toLowerCase().includes(searchTermLower) : false;
+    const emailMatches = payment.email ? payment.email.toLowerCase().includes(searchTermLower) : false;
+    
+    const matchesSearch = idMatches || orderIdMatches || customerMatches || emailMatches;
     
     // Normalize status for comparison
-    const pStatus = payment.status.includes('Pending') ? 'Pending' : payment.status;
+    const statusStr = payment.status || "";
+    const pStatus = statusStr.includes('Pending') ? 'Pending' : statusStr;
     const matchesStatus = selectedStatus === "all" || pStatus === selectedStatus;
     const matchesMethod = selectedPaymentMethod === "all" || payment.paymentMethod === selectedPaymentMethod;
     
@@ -128,10 +135,12 @@ export default function PaymentManagement() {
   });
 
   const filteredRefunds = refunds.filter(refund => {
-    const matchesSearch = refund.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         refund.orderId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         refund.customer.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesSearch;
+    const searchTermLower = searchTerm.toLowerCase();
+    const idMatches = refund.id ? refund.id.toLowerCase().includes(searchTermLower) : false;
+    const orderIdMatches = refund.orderId ? refund.orderId.toLowerCase().includes(searchTermLower) : false;
+    const customerMatches = refund.customer ? refund.customer.toLowerCase().includes(searchTermLower) : false;
+    
+    return idMatches || orderIdMatches || customerMatches;
   });
 
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -149,21 +158,168 @@ export default function PaymentManagement() {
   // ==========================================
   
   // Approve/Reject Refund
-  const updateRefundStatus = async (refundId, newStatus) => {
+  const updateRefundStatus = async (refundId, newStatus, paymentId) => {
+    if (!window.confirm(`Are you sure you want to mark this refund as ${newStatus}?`)) return;
     try {
       await updateDoc(doc(db, "refunds", refundId), {
         status: newStatus,
         processedAt: serverTimestamp()
       });
+
+      // If approved, flag the Order as "refunded"
+      if (newStatus === "Approved" && paymentId) {
+        await updateDoc(doc(db, "orders", paymentId), {
+          paymentStatus: "refunded"
+        });
+      } 
+      // If rejected, un-flag the order so that a user might dispute or we know it's no longer "refund requested active"
+      // or optionally leave it true. Based on requirement: "if request is rejectted then it should not be request for refund again". 
+      // So we KEEP it true because if we turn it false, the customer can request again!
+      // But we can add a 'refundRejected' flag if we want the frontend to show "Refund Rejected".
+      else if (newStatus === "Rejected" && paymentId) {
+        await updateDoc(doc(db, "orders", paymentId), {
+          refundRejected: true
+        });
+      }
     } catch (error) {
       console.error("Error updating refund:", error);
       alert("Failed to update refund status");
     }
   };
 
+  // Mark Payment as Paid
+  const updatePaymentStatus = async (paymentId, newStatus) => {
+    if (!window.confirm(`Are you sure you want to mark this payment as ${newStatus}?`)) return;
+    try {
+      await updateDoc(doc(db, "orders", paymentId), {
+        paymentStatus: newStatus
+      });
+    } catch (error) {
+      console.error("Error updating payment status:", error);
+      alert("Failed to update payment status");
+    }
+  };
+
   const processRefund = (payment) => {
     setSelectedPayment(payment);
     setShowRefundModal(true);
+  };
+
+  const handleExportCSV = () => {
+    try {
+      if (activeTab === "payments") {
+        if (payments.length === 0) {
+          alert("No payment data available to export.");
+          return;
+        }
+
+        const headers = [
+          "Payment ID",
+          "Order ID",
+          "Customer Name",
+          "Customer Email",
+          "Amount (₹)",
+          "Payment Method",
+          "Transaction ID",
+          "Date",
+          "Time",
+          "Status"
+        ];
+
+        const rows = payments.map(p => [
+          p.id || '',
+          p.orderId || '',
+          p.customer || 'Guest',
+          p.email || 'N/A',
+          p.amount || 0,
+          p.paymentMethod || 'Unknown',
+          p.transactionId || 'N/A',
+          p.date || '',
+          p.time || '',
+          p.status || ''
+        ]);
+
+        const csvContent = [
+          headers.join(","),
+          ...rows.map(row => 
+            row.map(value => {
+              const valString = String(value ?? "");
+              if (valString.includes(",") || valString.includes('"') || valString.includes("\n")) {
+                return `"${valString.replace(/"/g, '""')}"`;
+              }
+              return valString;
+            }).join(",")
+          )
+        ].join("\n");
+
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `payments_report_${new Date().toISOString().split("T")[0]}.csv`);
+        link.style.visibility = "hidden";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } else {
+        if (refunds.length === 0) {
+          alert("No refund data available to export.");
+          return;
+        }
+
+        const headers = [
+          "Refund ID",
+          "Order ID",
+          "Customer Name",
+          "Original Amount (₹)",
+          "Refund Amount (₹)",
+          "Reason",
+          "Status",
+          "Requested Date",
+          "Refund Method"
+        ];
+
+        const rows = refunds.map(r => [
+          r.id || '',
+          r.orderId || '',
+          r.customer || '',
+          r.originalAmount || 0,
+          r.refundAmount || 0,
+          r.reason || '',
+          r.status || 'Pending',
+          r.requestedDate || '',
+          r.refundMethod || ''
+        ]);
+
+        const csvContent = [
+          headers.join(","),
+          ...rows.map(row => 
+            row.map(value => {
+              const valString = String(value ?? "");
+              if (valString.includes(",") || valString.includes('"') || valString.includes("\n")) {
+                return `"${valString.replace(/"/g, '""')}"`;
+              }
+              return valString;
+            }).join(",")
+          )
+        ].join("\n");
+
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `refunds_report_${new Date().toISOString().split("T")[0]}.csv`);
+        link.style.visibility = "hidden";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error("Export failed:", error);
+      alert("Failed to export: " + error.message);
+    }
   };
 
   // Helper UI functions
@@ -197,7 +353,18 @@ export default function PaymentManagement() {
       setIsSubmitting(true);
       
       try {
-        await addDoc(collection(db, "refunds"), {
+        // 🔥 Check if refund request already exists
+        const refundsRef = collection(db, "refunds");
+        const q = query(refundsRef, where("paymentId", "==", payment.id));
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+          alert("A refund request has already been submitted for this order.");
+          onClose();
+          return;
+        }
+
+        await addDoc(refundsRef, {
           paymentId: payment.id, // This is the Firestore Order ID
           orderId: payment.orderId, // Display ID (Razorpay/COD)
           customer: payment.customer,
@@ -207,6 +374,11 @@ export default function PaymentManagement() {
           status: "Pending",
           requestedAt: serverTimestamp(),
           refundMethod: refundMethod
+        });
+
+        // Update the main order document so we know a refund was requested
+        await updateDoc(doc(db, "orders", payment.id), {
+          refundRequested: true
         });
         
         onClose();
@@ -326,7 +498,10 @@ export default function PaymentManagement() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Payment & Refund Management</h1>
-        <button className="flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+        <button 
+          onClick={handleExportCSV}
+          className="flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+        >
           <Download className="w-4 h-4 mr-2" />
           Generate Report
         </button>
@@ -559,13 +734,25 @@ export default function PaymentManagement() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex items-center space-x-2">
-                            {item.refundEligible && (
+                            {item.status.includes('Completed') && !item.refundRequested && (
                               <button
                                 onClick={() => processRefund(item)}
                                 title="Process Refund"
-                                className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300"
+                                className="flex items-center gap-1 text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300 bg-yellow-100 p-2 rounded-lg"
                               >
-                                <RefreshCw className="w-4 h-4" />
+                                <RefreshCw className="w-4 h-4" /> Refund
+                              </button>
+                            )}
+                            {item.status.includes('Completed') && item.refundRequested && (
+                              <span className="text-xs text-yellow-600 font-medium px-2 py-1 bg-yellow-50 rounded">Refund Requested</span>
+                            )}
+                            {item.status.includes('Pending') && (
+                              <button
+                                onClick={() => updatePaymentStatus(item.id, 'paid')}
+                                title="Mark as Paid"
+                                className="flex items-center gap-1 text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 bg-green-100 p-2 rounded-lg"
+                              >
+                                <CheckCircle className="w-4 h-4" /> Mark Paid
                               </button>
                             )}
                           </div>
@@ -601,18 +788,18 @@ export default function PaymentManagement() {
                             {item.status === 'Pending' && (
                               <>
                                 <button
-                                  onClick={() => updateRefundStatus(item.id, 'Approved')}
+                                  onClick={() => updateRefundStatus(item.id, 'Approved', item.paymentId)}
                                   title="Approve"
-                                  className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
+                                  className="flex items-center gap-1 text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 bg-green-100 p-2 rounded-lg"
                                 >
-                                  <CheckCircle className="w-4 h-4" />
+                                  <CheckCircle className="w-4 h-4" /> Approve
                                 </button>
                                 <button
-                                  onClick={() => updateRefundStatus(item.id, 'Rejected')}
+                                  onClick={() => updateRefundStatus(item.id, 'Rejected', item.paymentId)}
                                   title="Reject"
-                                  className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                  className="flex items-center gap-1 text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 bg-red-100 p-2 rounded-lg"
                                 >
-                                  <XCircle className="w-4 h-4" />
+                                  <XCircle className="w-4 h-4" /> Reject
                                 </button>
                               </>
                             )}

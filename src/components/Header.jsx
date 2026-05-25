@@ -25,10 +25,23 @@ export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeLink, setActiveLink] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   
   const { cartItems } = useCart();
   const { wishlistItems } = useWishlist();
   const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    requestAnimationFrame(() => {
+      if (active) {
+        setIsMounted(true);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -105,7 +118,7 @@ export default function Header() {
                 className="relative group flex items-center justify-center w-10 h-10 text-stone-warm transition-all duration-500 hover:text-rice-paper hover:-translate-y-0.5"
               >
                 <span className="material-symbols-outlined text-[20px]">shopping_bag</span>
-                {cartCount > 0 && (
+                {isMounted && cartCount > 0 && (
                   <span className="absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-clay to-clay/90 text-[9px] font-bold text-white shadow-sm">
                     {cartCount}
                   </span>
@@ -118,7 +131,7 @@ export default function Header() {
                 className="hidden md:flex relative group items-center justify-center w-10 h-10 text-stone-warm transition-all duration-500 hover:text-rice-paper"
               >
                   <span className="material-symbols-outlined text-[20px]">favorite</span>
-                  {wishlistCount > 0 && (
+                  {isMounted && wishlistCount > 0 && (
                   <span className="absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-clay to-clay/90 text-[9px] font-bold text-white shadow-sm">
                       {wishlistCount}
                   </span>
@@ -185,7 +198,7 @@ export default function Header() {
             ))}
             {/* Mobile Wishlist Link (Hidden in header) */}
             <Link href="/wishlist" onClick={() => setIsMobileMenuOpen(false)} className="text-3xl font-light tracking-[0.1em] text-stone-warm/80 hover:text-rice-paper transition-colors flex items-center gap-3">
-              Wishlist {wishlistCount > 0 && <span className="text-sm bg-clay text-white px-2 py-0.5 rounded-full">{wishlistCount}</span>}
+              Wishlist {isMounted && wishlistCount > 0 && <span className="text-sm bg-clay text-white px-2 py-0.5 rounded-full">{wishlistCount}</span>}
             </Link>
           </nav>
         </div>

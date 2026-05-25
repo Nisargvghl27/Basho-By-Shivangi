@@ -1,11 +1,12 @@
 "use client";
 
 import { Manrope, Playfair_Display } from "next/font/google";
-import { useState, useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { CartProvider } from "../context/CartContext";
 import { WishlistProvider } from '../context/WishlistContext';
 import { Toaster } from "react-hot-toast";
-import SmoothScroll from "../components/SmoothScroll"; // Import SmoothScroll
+import SmoothScroll from "../components/SmoothScroll";
+import AuthGlobalListener from "../components/AuthGlobalListener";
 import "./globals.css";
 import { metadata } from './metadata';
 
@@ -22,65 +23,103 @@ const playfair = Playfair_Display({
   variable: "--font-playfair",
 });
 
-// Component: Handles the Mouse Glow Effect
+// ─── Zero-React-render cursor glow ───────────────────────────────────────────
+// Mouse coordinates are written directly to CSS custom properties on the DOM
+// element via requestAnimationFrame, so React's render cycle is never touched.
 function CursorGlow({ children }) {
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [isVisible, setIsVisible] = useState(false);
+  const glowRef = useRef(null);
+  const rafRef = useRef(null);
+  // Pending mouse position — raw values captured synchronously
+  const pendingPos = useRef({ x: -9999, y: -9999 });
+  const isPointer = useRef(false);
 
   useEffect(() => {
-    // Check if the device supports hover (typically desktop)
-    const mediaQuery = window.matchMedia('(hover: hover) and (pointer: fine)');
+    // Only run on true pointer devices (desktops/laptops with mice)
+    const mq = window.matchMedia('(hover: hover) and (pointer: fine)');
+    if (!mq.matches) return;
 
-    if (!mediaQuery.matches) {
-        return; // Exit if logic is for touch devices
-    }
+    isPointer.current = true;
 
-    const handleMouseMove = (e) => {
-      setMousePosition({ x: e.clientX, y: e.clientY });
-      setIsVisible(true);
+    const el = glowRef.current;
+    if (!el) return;
+
+    // Show the element now that we know we have a mouse
+    el.style.opacity = '0';
+
+    // The RAF loop: flush the latest position to the CSS vars once per frame.
+    // This is the only work done per frame — one style write, no VDOM diff.
+    const tick = () => {
+      const { x, y } = pendingPos.current;
+      el.style.setProperty('--mx', `${x}px`);
+      el.style.setProperty('--my', `${y}px`);
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+
+    const onMove = (e) => {
+      pendingPos.current = { x: e.clientX, y: e.clientY };
+      // Fade in on first move
+      if (el.style.opacity === '0') el.style.opacity = '1';
     };
 
-    const handleMouseLeave = () => {
-      setIsVisible(false);
-    };
+    const onLeave = () => { el.style.opacity = '0'; };
 
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseleave', handleMouseLeave);
+    window.addEventListener('mousemove', onMove, { passive: true });
+    document.addEventListener('mouseleave', onLeave, { passive: true });
 
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseleave', handleMouseLeave);
+      window.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseleave', onLeave);
+      cancelAnimationFrame(rafRef.current);
     };
   }, []);
 
   return (
     <>
+      {/*
+        The glow element reads --mx / --my via CSS calc() inside the transform.
+        Because we never call setState, React never re-renders this subtree.
+        `will-change: transform` tells the compositor to keep this on its own
+        GPU layer so the transform update never triggers a paint.
+      */}
       <div
-        className="pointer-events-none fixed inset-0 z-50 transition-opacity duration-300"
-        style={{ opacity: isVisible ? 1 : 0 }}
+        ref={glowRef}
+        className="cursor-glow-root"
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 50,
+          pointerEvents: 'none',
+          opacity: 0,
+          transition: 'opacity 0.4s ease',
+        }}
       >
+        {/* Outer soft halo — large, very faint */}
         <div
-          className="absolute w-64 h-64 pointer-events-none"
           style={{
-            transform: `translate3d(${mousePosition.x}px, ${mousePosition.y}px, 0) translate(-50%, -50%)`,
+            position: 'absolute',
             left: 0,
             top: 0,
-            background: "radial-gradient(circle, rgba(210,180,140,0.06) 0%, rgba(210,180,140,0.03) 30%, transparent 60%)",
-            filter: "blur(25px)",
-            transition: "transform 0.1s ease-out",
-            willChange: "transform"
+            width: '16rem',
+            height: '16rem',
+            transform: 'translate3d(calc(var(--mx, 0px) - 50%), calc(var(--my, 0px) - 50%), 0)',
+            background: 'radial-gradient(circle, rgba(210,180,140,0.06) 0%, rgba(210,180,140,0.03) 30%, transparent 60%)',
+            filter: 'blur(25px)',
+            willChange: 'transform',
           }}
         />
+        {/* Inner tighter glow */}
         <div
-          className="absolute w-32 h-32 pointer-events-none"
           style={{
-            transform: `translate3d(${mousePosition.x}px, ${mousePosition.y}px, 0) translate(-50%, -50%)`,
+            position: 'absolute',
             left: 0,
             top: 0,
-            background: "radial-gradient(circle, rgba(210,180,140,0.08) 0%, rgba(210,180,140,0.04) 40%, transparent 70%)",
-            filter: "blur(12px)",
-            transition: "transform 0.08s ease-out",
-            willChange: "transform"
+            width: '8rem',
+            height: '8rem',
+            transform: 'translate3d(calc(var(--mx, 0px) - 50%), calc(var(--my, 0px) - 50%), 0)',
+            background: 'radial-gradient(circle, rgba(210,180,140,0.08) 0%, rgba(210,180,140,0.04) 40%, transparent 70%)',
+            filter: 'blur(12px)',
+            willChange: 'transform',
           }}
         />
       </div>
@@ -103,6 +142,7 @@ export default function RootLayout({ children }) {
       <body
         className={`${manrope.variable} ${playfair.variable} font-sans bg-charcoal text-rice-paper selection:bg-clay selection:text-white transition-colors duration-500 overflow-x-hidden`}
       >
+        <AuthGlobalListener />
         <WishlistProvider>
           <CartProvider>
             {/* Wrap everything in SmoothScroll */}

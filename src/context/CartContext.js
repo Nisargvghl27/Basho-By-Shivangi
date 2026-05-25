@@ -9,28 +9,45 @@ export const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
-  const [cartSubtotal, setCartSubtotal] = useState(0);
   const [user, setUser] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // 🔑 Get cart key based on user
-  const getCartKey = (uid) => (uid ? `cart_${uid}` : "guest_cart");
+  // 🔑 Get cart key based on user (returns null if unauthenticated)
+  const getCartKey = (uid) => (uid ? `cart_${uid}` : null);
 
   // 🔁 Listen to auth changes
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      setCartItems([]); // Reset local state on user switch
+      setCartItems([]); // Reset local state on user switch/logout
 
-      // Load saved cart from localStorage
-      const cartKey = getCartKey(currentUser?.uid);
-      const savedCart = localStorage.getItem(cartKey);
-
-      if (savedCart) {
-        try {
-          setCartItems(JSON.parse(savedCart));
-        } catch (e) {
-          console.error("Failed to parse cart", e);
+      if (currentUser?.uid) {
+        // Load saved cart from localStorage only for authenticated users
+        const cartKey = getCartKey(currentUser.uid);
+        if (cartKey) {
+          const savedCart = localStorage.getItem(cartKey);
+          if (savedCart) {
+            try {
+              const parsed = JSON.parse(savedCart);
+              if (Array.isArray(parsed)) {
+                // Merge duplicate items by id to clean up any existing duplicate key states
+                const merged = [];
+                parsed.forEach(item => {
+                  const existing = merged.find(m => m.id === item.id);
+                  if (existing) {
+                    existing.quantity = (existing.quantity || 0) + (item.quantity || 1);
+                  } else {
+                    merged.push({ ...item, quantity: item.quantity || 1 });
+                  }
+                });
+                setCartItems(merged);
+              } else {
+                setCartItems([]);
+              }
+            } catch (e) {
+              console.error("Failed to parse cart", e);
+            }
+          }
         }
       }
 
@@ -44,15 +61,19 @@ export const CartProvider = ({ children }) => {
   useEffect(() => {
     if (!isInitialized) return;
 
-    const cartKey = getCartKey(user?.uid);
-    localStorage.setItem(cartKey, JSON.stringify(cartItems));
-
-    const subtotal = cartItems.reduce(
-      (sum, item) => sum + (parseFloat(item.price) || 0) * item.quantity,
-      0
-    );
-    setCartSubtotal(subtotal);
+    if (user?.uid) {
+      const cartKey = getCartKey(user.uid);
+      if (cartKey) {
+        localStorage.setItem(cartKey, JSON.stringify(cartItems));
+      }
+    }
   }, [cartItems, user, isInitialized]);
+
+  // Calculate cart subtotal dynamically on render to avoid sync state update in useEffect
+  const cartSubtotal = cartItems.reduce(
+    (sum, item) => sum + (parseFloat(item.price) || 0) * item.quantity,
+    0
+  );
 
   // 🔍 Helper: Check Stock in Firestore
   const checkStock = async (productId, requestedQuantity) => {
@@ -88,6 +109,10 @@ export const CartProvider = ({ children }) => {
 
   // ➕ ADD TO CART (Async with Validation)
   const addToCart = async (product) => {
+    if (!user) {
+      return { success: false, message: "Please log in to add items", requiresAuth: true };
+    }
+
     const existingItem = cartItems.find((item) => item.id === product.id);
     const currentQty = existingItem ? existingItem.quantity : 0;
     const itemsToAdd = product.quantity || 1;
@@ -101,7 +126,8 @@ export const CartProvider = ({ children }) => {
     }
 
     setCartItems((prevItems) => {
-      if (existingItem) {
+      const itemExists = prevItems.find((item) => item.id === product.id);
+      if (itemExists) {
         return prevItems.map((item) =>
           item.id === product.id
             ? { ...item, quantity: item.quantity + itemsToAdd }
@@ -150,8 +176,12 @@ export const CartProvider = ({ children }) => {
   // 🧹 CLEAR CART
   const clearCart = () => {
     setCartItems([]);
-    const cartKey = getCartKey(user?.uid);
-    localStorage.removeItem(cartKey);
+    if (user?.uid) {
+      const cartKey = getCartKey(user.uid);
+      if (cartKey) {
+        localStorage.removeItem(cartKey);
+      }
+    }
   };
 
   // 🔢 CART COUNT

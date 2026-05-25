@@ -76,15 +76,33 @@ export default function Dashboard() {
         }));
         setRawOrders(ordersList);
 
+        // Fetch Users (True user count)
+        let totalUsers = 0;
+        try {
+          const usersSnapshot = await getDocs(collection(db, "users"));
+          totalUsers = usersSnapshot.size;
+        } catch (usersErr) {
+          console.error("Error fetching users for stats, falling back to unique emails:", usersErr);
+          const uniqueEmails = new Set(ordersList.map(o => o.shipping?.email).filter(Boolean));
+          totalUsers = uniqueEmails.size;
+        }
+
         // --- STATS CALCULATIONS ---
-        const totalRevenue = ordersList.reduce((acc, order) => acc + (parseFloat(order.total) || 0), 0);
+        // Exclude cancelled orders from total revenue/income
+        const totalRevenue = ordersList.reduce((acc, order) => {
+          if (order.status?.toLowerCase() === 'cancelled') return acc;
+          return acc + (parseFloat(order.total) || 0);
+        }, 0);
+        
         const totalOrders = ordersList.length;
+        
+        // Exclude cancelled orders from total items sold
         const totalItemsSold = ordersList.reduce((acc, order) => {
+            if (order.status?.toLowerCase() === 'cancelled') return acc;
             const items = order.items || [];
             return acc + items.reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0);
         }, 0);
         
-        const uniqueEmails = new Set(ordersList.map(o => o.shipping?.email).filter(Boolean));
         const uniqueCategories = new Set(productsList.map(p => p.category).filter(Boolean)).size;
 
         setStats({
@@ -92,7 +110,7 @@ export default function Dashboard() {
           revenue: totalRevenue,
           profit: totalRevenue * 0.30, 
           orders: totalOrders,
-          users: uniqueEmails.size,
+          users: totalUsers,
           products: productsList.length,
           categories: uniqueCategories
         });
@@ -107,7 +125,7 @@ export default function Dashboard() {
     fetchDashboardData();
   }, []);
 
-  // 2. Dynamic Sales Chart Data
+  // 2. Dynamic Sales Chart Data (Excluding cancelled orders from charts)
   const salesData = useMemo(() => {
     if (!rawOrders.length) return [];
 
@@ -119,6 +137,7 @@ export default function Dashboard() {
       months.forEach(m => dataMap[m] = { label: m, sales: 0, orders: 0 });
 
       rawOrders.forEach(order => {
+        if (order.status?.toLowerCase() === 'cancelled') return;
         const d = order.createdAtDate;
         if (d.getFullYear() === currentYear) {
           const month = d.toLocaleString('default', { month: 'short' });
@@ -132,6 +151,7 @@ export default function Dashboard() {
     } 
     else {
       rawOrders.forEach(order => {
+        if (order.status?.toLowerCase() === 'cancelled') return;
         const year = order.createdAtDate.getFullYear().toString();
         if (!dataMap[year]) {
           dataMap[year] = { label: year, sales: 0, orders: 0 };
@@ -143,16 +163,20 @@ export default function Dashboard() {
     }
   }, [rawOrders, selectedPeriod]);
 
-  // 3. Stock Alerts
+  // 3. Stock Alerts (Matching Inventory thresholds and sorting by lowest stock first)
   const stockAlerts = useMemo(() => {
-    const lowStockThreshold = 5;
     return rawProducts
-      .filter(p => (parseInt(p.stock) || 0) < lowStockThreshold)
+      .filter(p => {
+        const stock = parseInt(p.stock) || 0;
+        const threshold = parseInt(p.lowStockThreshold) || 10;
+        return stock <= threshold;
+      })
       .map(p => ({
         name: p.name,
-        stock: p.stock,
-        threshold: lowStockThreshold
+        stock: parseInt(p.stock) || 0,
+        threshold: parseInt(p.lowStockThreshold) || 10
       }))
+      .sort((a, b) => a.stock - b.stock)
       .slice(0, 5);
   }, [rawProducts]);
 
@@ -170,6 +194,7 @@ export default function Dashboard() {
     // Best Sellers
     const productSalesMap = {};
     rawOrders.forEach(order => {
+      if (order.status?.toLowerCase() === 'cancelled') return;
       (order.items || []).forEach(item => {
         const name = item.title || item.name || "Unknown Product";
         const qty = parseInt(item.quantity) || 0;
@@ -189,6 +214,83 @@ export default function Dashboard() {
 
     return { bestSellingProducts: bestSellers, recentOrders: recent };
   }, [rawOrders]);
+
+  const handleExportCSV = () => {
+    try {
+      // 1. Summary section
+      const summaryLines = [
+        "--- STORE PERFORMANCE SUMMARY ---",
+        "Metric,Value",
+        `Total Items Sold,${stats.totalSales}`,
+        `Total Revenue (₹),${stats.revenue}`,
+        `Estimated Profit (₹),${stats.profit}`,
+        `Total Orders,${stats.orders}`,
+        `Total Users,${stats.users}`,
+        `Total Products,${stats.products}`,
+        `Total Categories,${stats.categories}`,
+        ""
+      ];
+
+      // 2. Sales Trend Section
+      const salesTrendLines = [
+        "--- SALES TRENDS ---",
+        `Period (${selectedPeriod === 'monthly' ? 'Monthly' : 'Yearly'}),Revenue (₹),Orders`,
+        ...salesData.map(d => `${d.label},${d.sales},${d.orders}`),
+        ""
+      ];
+
+      // 3. Recent Orders Section
+      const recentOrdersLines = [
+        "--- RECENT ORDERS ---",
+        "Order ID,Customer,Amount (₹),Status,Date",
+        ...recentOrders.map(o => `${o.id || ''},${o.customer || 'Guest'},${o.amount || 0},${o.status || 'Pending'},${o.date || ''}`),
+        ""
+      ];
+
+      // 4. Best Sellers Section
+      const bestSellersLines = [
+        "--- TOP PERFORMING PRODUCTS ---",
+        "Product Name,Units Sold,Revenue Generated (₹),Rating",
+        ...bestSellingProducts.map(p => {
+          const safeName = (p.name || '').includes(",") ? `"${p.name.replace(/"/g, '""')}"` : (p.name || '');
+          return `${safeName},${p.sales || 0},${p.revenue || 0},${p.rating || 5.0}`;
+        }),
+        ""
+      ];
+
+      // 5. Stock Alerts Section
+      const stockAlertLines = [
+        "--- LOW STOCK ALERTS ---",
+        "Product Name,Current Stock,Threshold",
+        ...stockAlerts.map(a => {
+          const safeName = (a.name || '').includes(",") ? `"${a.name.replace(/"/g, '""')}"` : (a.name || '');
+          return `${safeName},${a.stock || 0},${a.threshold || 10}`;
+        })
+      ];
+
+      const csvContent = [
+        ...summaryLines,
+        ...salesTrendLines,
+        ...recentOrdersLines,
+        ...bestSellersLines,
+        ...stockAlertLines
+      ].join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `dashboard_report_${new Date().toISOString().split("T")[0]}.csv`);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Export failed:", error);
+      alert("Failed to export dashboard report: " + error.message);
+    }
+  };
 
   const maxSalesValue = Math.max(...salesData.map(d => d.sales), 1);
 
@@ -222,7 +324,10 @@ export default function Dashboard() {
             <option value="monthly">Monthly (Current Year)</option>
             <option value="yearly">Yearly (All Time)</option>
           </select>
-          <button className="flex items-center px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm transition-colors">
+          <button 
+            onClick={handleExportCSV}
+            className="flex items-center px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm transition-colors cursor-pointer"
+          >
             <Download className="w-4 h-4 mr-2" />
             <span className="hidden sm:inline">Export</span>
           </button>

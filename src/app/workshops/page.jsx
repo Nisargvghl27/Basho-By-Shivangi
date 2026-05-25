@@ -98,19 +98,21 @@ export default function WorkshopsPage() {
   }, []);
 
   useEffect(() => {
+    const el = heroRef.current;
+    if (!el) return;
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsVisible(true);
+          observer.disconnect(); // done — free the observer
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.05 }
     );
 
-    if (heroRef.current) observer.observe(heroRef.current);
-    return () => {
-      if (heroRef.current) observer.unobserve(heroRef.current);
-    };
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
 
   const formatDate = (dateString) => {
@@ -148,18 +150,18 @@ export default function WorkshopsPage() {
 
         {/* Hero Content */}
         <div className="relative z-10 max-w-6xl mx-auto px-4 md:px-12 lg:px-24 text-center">
-          <div className={`mb-8 transition-all duration-1000 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
+          <div className={`mb-8 transition-all duration-300 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
             <span className="inline-block text-clay text-xs font-bold uppercase tracking-[0.4em] mb-4">
               Basho On Tour
             </span>
             <div className="w-24 h-[1px] bg-clay/50 mx-auto mb-8" />
           </div>
 
-          <h1 className={`font-serif text-5xl md:text-7xl lg:text-8xl text-rice-paper mb-8 leading-[0.9] transition-all duration-1000 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`} style={{ transitionDelay: '200ms' }}>
+          <h1 className={`font-serif text-5xl md:text-7xl lg:text-8xl text-rice-paper mb-8 leading-[0.9] transition-all duration-300 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`} style={{ transitionDelay: '60ms' }}>
             Workshops & Exhibitions
           </h1>
 
-          <p className={`text-stone-200 text-xl md:text-2xl max-w-3xl mx-auto leading-relaxed mb-12 font-light transition-all duration-1000 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`} style={{ transitionDelay: '400ms' }}>
+          <p className={`text-stone-200 text-xl md:text-2xl max-w-3xl mx-auto leading-relaxed mb-12 font-light transition-all duration-300 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`} style={{ transitionDelay: '120ms' }}>
             Experience handcrafted pottery through immersive workshops and exhibitions across the globe.
           </p>
         </div>
@@ -172,7 +174,7 @@ export default function WorkshopsPage() {
 
           <div className="max-w-7xl mx-auto space-y-12 relative z-10">
             <div className="flex items-center gap-4 mb-4">
-              <h2 className={`text-3xl md:text-4xl lg:text-5xl font-serif font-light text-rice-paper transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>Upcoming Events</h2>
+              <h2 className={`text-3xl md:text-4xl lg:text-5xl font-serif font-light text-rice-paper transition-all duration-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>Upcoming Events</h2>
               <div className="h-px flex-1 bg-white/10"></div>
             </div>
 
@@ -187,19 +189,19 @@ export default function WorkshopsPage() {
               </div>
             ) : (
               workshops.map((event, index) => (
-                <div key={event.id} className={`group flex flex-col md:flex-row gap-8 border border-border-subtle p-6 md:p-8 bg-charcoal-light transition-all duration-700 md:hover:border-clay/30 md:hover:bg-white/5 md:hover:shadow-[0_12px_40px_rgba(0,0,0,0.3)] md:hover:-translate-y-2 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`} style={{ transitionDelay: `${200 * index}ms` }}>
+                <div key={event.id} className={`group flex flex-col md:flex-row gap-8 border border-border-subtle p-6 md:p-8 bg-charcoal-light transition-all duration-200 md:hover:border-clay/30 md:hover:bg-white/5 md:hover:shadow-[0_12px_40px_rgba(0,0,0,0.3)] md:hover:-translate-y-1 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`} style={{ transitionDelay: `${60 * index}ms` }}>
                   
-                  <div className="md:w-1/3 h-56 md:h-64 relative overflow-hidden bg-black/20 rounded-xl border border-white/5 md:group-hover:border-clay/20 transition-all duration-500">
+                  <div className="md:w-1/3 h-56 md:h-64 relative overflow-hidden bg-black/20 rounded-xl border border-white/5 md:group-hover:border-clay/20 transition-all duration-150">
                     <Image 
                       src={event.image || 'https://images.unsplash.com/photo-1493106641515-6b5631de4bb9?q=80&w=2000'}
                       alt={event.title}
                       fill
-                      className="object-cover transition-all duration-[1200ms] ease-out md:group-hover:scale-110"
+                      className="object-cover transition-transform duration-300 ease-out md:group-hover:scale-105"
                       sizes="(max-width: 768px) 100vw, 33vw"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-charcoal/60 via-transparent to-transparent pointer-events-none" />
-                    <div className="hidden md:flex absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 items-center justify-center backdrop-blur-sm z-10">
-                      <Eye className="w-8 h-8 text-white transition-transform duration-500 group-hover:scale-110" />
+                    <div className="hidden md:flex absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-150 items-center justify-center backdrop-blur-sm z-10">
+                      <Eye className="w-8 h-8 text-white transition-transform duration-150 group-hover:scale-110" />
                     </div>
                   </div>
 
@@ -214,7 +216,7 @@ export default function WorkshopsPage() {
                            {formatDate(event.date)}
                         </span>
                       </div>
-                      <h3 className="text-2xl md:text-3xl font-serif font-light text-rice-paper mb-3 group-hover:text-clay transition-colors duration-500">
+                      <h3 className="text-2xl md:text-3xl font-serif font-light text-rice-paper mb-3 group-hover:text-clay transition-colors duration-150">
                         {event.title}
                       </h3>
                       <p className="text-stone-warm font-light leading-relaxed text-base line-clamp-3">
@@ -230,13 +232,13 @@ export default function WorkshopsPage() {
                       </div>
                     </div>
 
-                    <div className="flex justify-between items-center pt-4 border-t border-white/5 group-hover:border-clay/20 transition-colors duration-500">
-                      <span className="text-lg md:text-xl font-serif text-white group-hover:text-clay transition-colors duration-500">
+                    <div className="flex justify-between items-center pt-4 border-t border-white/5 group-hover:border-clay/20 transition-colors duration-150">
+                      <span className="text-lg md:text-xl font-serif text-white group-hover:text-clay transition-colors duration-150">
                         ₹{event.price}
                       </span>
                       <button 
                         onClick={() => setSelectedWorkshop(event)}
-                        className="flex items-center gap-2 bg-clay text-white px-6 py-2.5 text-xs font-bold uppercase tracking-widest hover:bg-clay/90 hover:scale-105 transition-all duration-500 shadow-lg hover:shadow-xl rounded-sm"
+                        className="flex items-center gap-2 bg-clay text-white px-6 py-2.5 text-xs font-bold uppercase tracking-widest hover:bg-clay/90 hover:scale-105 transition-all duration-150 shadow-lg hover:shadow-xl rounded-sm"
                       >
                         <Calendar size={14} /> Book Now
                       </button>
@@ -251,7 +253,7 @@ export default function WorkshopsPage() {
         {/* MARQUEE SECTION */}
         <section className="py-12 md:py-16 bg-charcoal-light border-t border-border-subtle relative overflow-hidden">
           <div className="relative z-10 mb-12">
-            <div className={`flex flex-col md:flex-row justify-between items-start md:items-center gap-6 transition-all duration-1000 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
+            <div className={`flex flex-col md:flex-row justify-between items-start md:items-center gap-6 transition-all duration-300 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
               <div className="space-y-4 px-4 md:px-12 lg:px-24 flex-1">
                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-serif font-light text-rice-paper text-left">The Process in Motion</h2>
                 <p className="text-stone-warm max-w-2xl font-light leading-relaxed text-lg text-left">From the first throw to the final firing, witness the dedication required to master the wheel. Join our workshops to get your hands dirty.</p>
@@ -275,20 +277,20 @@ export default function WorkshopsPage() {
                 return (
                   <div 
                     key={`${item.id}-${idx}`} 
-                    className="shrink-0 w-[240px] md:w-[380px] aspect-[4/5] rounded-2xl overflow-hidden relative border border-border-subtle transition-all duration-700 md:hover:border-clay/30 md:hover:shadow-[0_12px_40px_rgba(0,0,0,0.3)] group"
+                    className="shrink-0 w-[240px] md:w-[380px] aspect-[4/5] rounded-2xl overflow-hidden relative border border-border-subtle transition-all duration-150 md:hover:border-clay/30 md:hover:shadow-[0_12px_40px_rgba(0,0,0,0.3)] group"
                   >
                     <div className="absolute inset-0">
                       <Image
                         src={imageUrl}
                         alt={item.title || "Pottery process"}
                         fill
-                        className="object-cover transition-transform duration-700 md:group-hover:scale-105"
+                        className="object-cover transition-transform duration-200 md:group-hover:scale-105"
                         sizes="(max-width: 768px) 240px, 380px"
                       />
                     </div>
 
                     {/* Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-transparent to-transparent opacity-70 md:group-hover:opacity-50 transition-opacity duration-700" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-transparent to-transparent opacity-70 md:group-hover:opacity-50 transition-opacity duration-150" />
 
                     <div className="absolute bottom-0 left-0 w-full p-6 text-left">
                       <p className="text-white font-bold text-lg mb-1 whitespace-normal font-serif">{item.title || "Handcrafted Excellence"}</p>
@@ -310,17 +312,17 @@ export default function WorkshopsPage() {
           
           {studioItems.length > 0 && !loading ? (
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 h-auto md:h-[600px]">
-              <div className="md:col-span-2 md:row-span-2 relative rounded-xl overflow-hidden group border border-border-subtle hover:border-clay/30 transition-all duration-500">
+              <div className="md:col-span-2 md:row-span-2 relative rounded-xl overflow-hidden group border border-border-subtle hover:border-clay/30 transition-all duration-150">
                 {studioItems[0] && (
                   <>
                     <Image 
                       src={studioItems[0].image} 
                       alt={studioItems[0].title} 
                       fill
-                      className="object-cover transition-transform duration-700 group-hover:scale-110"
+                      className="object-cover transition-transform duration-200 group-hover:scale-105"
                       sizes="(max-width: 768px) 100vw, 50vw"
                     />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-clay/10 transition-all duration-700 pointer-events-none" />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-clay/10 transition-all duration-150 pointer-events-none" />
                     <div className="absolute bottom-0 left-0 p-6 z-10">
                       <div className="bg-black/50 backdrop-blur-md px-4 py-2 rounded-lg inline-block border border-white/10">
                         <p className="text-white font-medium">{studioItems[0].title}</p>
@@ -333,17 +335,17 @@ export default function WorkshopsPage() {
               {studioItems.slice(1, 4).map((item, idx) => (
                 <div 
                   key={item.id} 
-                  className={`relative rounded-xl overflow-hidden group bg-charcoal-light border border-border-subtle hover:border-clay/30 transition-all duration-500 ${idx === 2 ? 'md:col-span-2 md:row-span-1' : 'md:col-span-1 md:row-span-1'} ${idx === 2 ? 'h-64 md:h-auto' : 'h-64 md:h-auto'}`}
+                  className={`relative rounded-xl overflow-hidden group bg-charcoal-light border border-border-subtle hover:border-clay/30 transition-all duration-150 ${idx === 2 ? 'md:col-span-2 md:row-span-1' : 'md:col-span-1 md:row-span-1'} ${idx === 2 ? 'h-64 md:h-auto' : 'h-64 md:h-auto'}`}
                 >
                   <Image 
                     src={item.image} 
                     alt={item.title} 
                     fill
-                    className="object-cover transition-transform duration-700 group-hover:scale-110" 
+                    className="object-cover transition-transform duration-200 group-hover:scale-105" 
                     style={idx === 2 ? { objectPosition: 'center 30%' } : {}}
                     sizes="(max-width: 768px) 100vw, 25vw"
                   />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-clay/10 transition-all duration-700 pointer-events-none" />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-clay/10 transition-all duration-150 pointer-events-none" />
                 </div>
               ))}
             </div>
@@ -374,12 +376,12 @@ export default function WorkshopsPage() {
         .animate-marquee {
           display: flex;
           width: max-content;
-          animation: marquee 40s linear infinite;
+          animation: marquee 22s linear infinite;
         }
         .pause-animation {
           display: flex;
           width: max-content;
-          animation: marquee 40s linear infinite;
+          animation: marquee 22s linear infinite;
           animation-play-state: paused;
         }
         @media (max-width: 768px) {

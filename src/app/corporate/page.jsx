@@ -2,14 +2,15 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Building2, 
-  Users, 
-  Gift, 
-  Briefcase, 
-  Send, 
-  Loader2, 
-  CheckCircle2 
+import {
+  Building2,
+  Users,
+  Gift,
+  Briefcase,
+  Send,
+  Loader2,
+  CheckCircle2,
+  ChevronDown
 } from 'lucide-react';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
@@ -32,7 +33,7 @@ const staggerContainer = {
 export default function CorporatePage() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     companyName: "",
     contactPerson: "",
@@ -49,8 +50,25 @@ export default function CorporatePage() {
     setLoading(true);
     try {
       await submitCorporateInquiry(formData);
+      
+      // Trigger corporate email notification non-blockingly
+      fetch("/api/send-corporate-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      }).catch((err) => console.error("Failed to send corporate emails:", err));
+
       setSubmitted(true);
-      // Reset form logic could go here, but usually better to show success state
+      setFormData({
+        companyName: "",
+        contactPerson: "",
+        email: "",
+        phone: "",
+        teamSize: "",
+        budget: "",
+        inquiryType: "gifting",
+        message: ""
+      });
     } catch (error) {
       console.error(error);
       alert("Failed to submit inquiry. Please try again.");
@@ -70,39 +88,38 @@ export default function CorporatePage() {
 
       {/* --- HERO SECTION --- */}
       <section className="relative pt-32 pb-20 px-4 overflow-hidden">
-        {/* Background Grain */}
-        <div className="absolute inset-0 opacity-10 pointer-events-none mix-blend-overlay">
-          <svg className="w-full h-full">
-            <filter id="noise">
-              <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch" />
-            </filter>
-            <rect width="100%" height="100%" filter="url(#noise)" />
-          </svg>
-        </div>
+        {/* Lightweight static raster grain (replaces heavy SVG feTurbulence) */}
+        <div 
+          className="absolute inset-0 opacity-20 mix-blend-overlay pointer-events-none"
+          style={{ 
+            backgroundImage: 'url("https://upload.wikimedia.org/wikipedia/commons/7/76/Noise.png")',
+            backgroundSize: '150px'
+          }}
+        />
 
         <div className="max-w-4xl mx-auto text-center relative z-10">
-          <motion.div 
-            initial="hidden" 
-            animate="visible" 
+          <motion.div
+            initial="hidden"
+            animate="visible"
             variants={fadeInUp}
             className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-clay/30 bg-clay/10 text-clay text-xs uppercase tracking-widest font-bold mb-6"
           >
             <Briefcase size={14} />
             Corporate Partnerships
           </motion.div>
-          
-          <motion.h1 
-            initial="hidden" 
-            animate="visible" 
+
+          <motion.h1
+            initial="hidden"
+            animate="visible"
             variants={fadeInUp}
             className="text-4xl md:text-6xl font-serif text-rice-paper mb-6 leading-tight"
           >
             Mindful Gifting for <span className="text-clay italic">Modern Teams</span>
           </motion.h1>
-          
-          <motion.p 
-            initial="hidden" 
-            animate="visible" 
+
+          <motion.p
+            initial="hidden"
+            animate="visible"
             variants={fadeInUp}
             className="text-lg md:text-xl text-stone-warm max-w-2xl mx-auto font-light leading-relaxed"
           >
@@ -114,10 +131,10 @@ export default function CorporatePage() {
       {/* --- SERVICES GRID --- */}
       <section className="px-4 py-16 md:py-24 bg-charcoal-light/30 border-y border-border-subtle">
         <div className="max-w-6xl mx-auto">
-          <motion.div 
-            variants={staggerContainer} 
-            initial="hidden" 
-            whileInView="visible" 
+          <motion.div
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="visible"
             viewport={{ once: true }}
             className="grid md:grid-cols-2 gap-8 lg:gap-12"
           >
@@ -177,9 +194,9 @@ export default function CorporatePage() {
       {/* --- INQUIRY FORM --- */}
       <section className="py-20 px-4">
         <div className="max-w-3xl mx-auto">
-          <motion.div 
-            initial={{ opacity: 0 }} 
-            whileInView={{ opacity: 1 }} 
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             className="text-center mb-12"
           >
@@ -188,8 +205,8 @@ export default function CorporatePage() {
           </motion.div>
 
           {submitted ? (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }} 
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               className="bg-charcoal-light border border-clay/30 rounded-2xl p-12 text-center"
             >
@@ -198,7 +215,7 @@ export default function CorporatePage() {
               </div>
               <h3 className="text-2xl font-serif text-rice-paper mb-2">Inquiry Received!</h3>
               <p className="text-stone-warm">Thank you for reaching out. We are excited to see what we can create together.</p>
-              <button 
+              <button
                 onClick={() => setSubmitted(false)}
                 className="mt-8 text-clay hover:text-white underline underline-offset-4"
               >
@@ -206,11 +223,11 @@ export default function CorporatePage() {
               </button>
             </motion.div>
           ) : (
-            <motion.form 
+            <motion.form
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              onSubmit={handleSubmit} 
+              onSubmit={handleSubmit}
               className="bg-white/5 p-8 md:p-10 rounded-2xl border border-white/10 space-y-8"
             >
               {/* Company & Contact Info */}
@@ -219,7 +236,7 @@ export default function CorporatePage() {
                   <label className="text-sm font-medium text-stone-300">Company Name</label>
                   <div className="relative">
                     <Building2 className="absolute left-3 top-3.5 text-stone-500 w-5 h-5" />
-                    <input 
+                    <input
                       required
                       name="companyName"
                       value={formData.companyName}
@@ -231,7 +248,7 @@ export default function CorporatePage() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-stone-300">Contact Person</label>
-                  <input 
+                  <input
                     required
                     name="contactPerson"
                     value={formData.contactPerson}
@@ -244,7 +261,7 @@ export default function CorporatePage() {
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-stone-300">Email Address</label>
-                  <input 
+                  <input
                     required
                     type="email"
                     name="email"
@@ -255,7 +272,7 @@ export default function CorporatePage() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-stone-300">Phone Number</label>
-                  <input 
+                  <input
                     required
                     type="tel"
                     name="phone"
@@ -270,21 +287,26 @@ export default function CorporatePage() {
               <div className="grid md:grid-cols-3 gap-6">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-stone-300">Inquiry Type</label>
-                  <select 
-                    name="inquiryType"
-                    value={formData.inquiryType}
-                    onChange={handleChange}
-                    className="w-full bg-charcoal-light border border-white/10 rounded-lg px-4 py-3 text-white focus:border-clay focus:outline-none focus:ring-1 focus:ring-clay appearance-none cursor-pointer"
-                  >
-                    <option value="gifting">Corporate Gifting</option>
-                    <option value="workshop">Team Workshop</option>
-                    <option value="collaboration">Brand Collaboration</option>
-                    <option value="other">Other</option>
-                  </select>
+                  <div className="relative">
+                    <select
+                      name="inquiryType"
+                      value={formData.inquiryType}
+                      onChange={handleChange}
+                      className="w-full bg-charcoal-light border border-white/10 rounded-lg pl-4 pr-10 py-3 text-white focus:border-clay focus:outline-none focus:ring-1 focus:ring-clay appearance-none cursor-pointer"
+                    >
+                      <option value="gifting">Corporate Gifting</option>
+                      <option value="workshop">Team Workshop</option>
+                      <option value="collaboration">Brand Collaboration</option>
+                      <option value="other">Other</option>
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-stone-500">
+                      <ChevronDown className="w-5 h-5" />
+                    </div>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-stone-300">Estimated Team Size</label>
-                  <input 
+                  <input
                     type="text"
                     name="teamSize"
                     value={formData.teamSize}
@@ -295,7 +317,7 @@ export default function CorporatePage() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-stone-300">Approx. Budget</label>
-                  <input 
+                  <input
                     type="text"
                     name="budget"
                     value={formData.budget}
@@ -308,7 +330,7 @@ export default function CorporatePage() {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-stone-300">Tell us about your requirement</label>
-                <textarea 
+                <textarea
                   required
                   rows={4}
                   name="message"
@@ -319,8 +341,8 @@ export default function CorporatePage() {
                 />
               </div>
 
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 disabled={loading}
                 className="w-full py-4 bg-clay hover:bg-clay/90 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-clay/20 hover:scale-[1.01] disabled:opacity-70 disabled:scale-100"
               >

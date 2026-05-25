@@ -1,38 +1,16 @@
-// import { initializeApp } from "firebase/app";
-// import { getAuth } from "firebase/auth";
-// import { getFirestore } from "firebase/firestore";
-// import { getStorage } from "firebase/storage";
-
-// const firebaseConfig = {
-//   apiKey: "AIzaSyActUg8C1L2CaQwHgm5wRcQoWDw5Z4aIZE",
-//   authDomain: "basho-by-shivangi-cd894.firebaseapp.com",
-//   projectId: "basho-by-shivangi-cd894",
-//   storageBucket: "basho-by-shivangi-cd894.firebasestorage.app",
-//   messagingSenderId: "281266048510",
-//   appId: "1:281266048510:web:3d44983c13560f20e544af",
-//   measurementId: "G-FPEQJFWOZR"
-// };
-
-// const app = initializeApp(firebaseConfig);
-
-// export const auth = getAuth(app);
-// export const db = getFirestore(app);
-// export const storage = getStorage(app);
-// export { app };
-
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyActUg8C1L2CaQwHgm5wRcQoWDw5Z4aIZE",
-  authDomain: "basho-by-shivangi-cd894.firebaseapp.com",
-  projectId: "basho-by-shivangi-cd894",
-  storageBucket: "basho-by-shivangi-cd894.firebasestorage.app",
-  messagingSenderId: "281266048510",
-  appId: "1:281266048510:web:3d44983c13560f20e544af",
-  measurementId: "G-FPEQJFWOZR"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
 // FIX: Check if an app is already initialized before creating a new one

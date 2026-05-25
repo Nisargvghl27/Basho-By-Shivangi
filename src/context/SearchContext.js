@@ -23,8 +23,9 @@ export const SearchProvider = ({ children }) => {
       // 2. If query is complex (e.g., "gift for a sad friend"), use AI.
       if (query.split(' ').length > 2) {
         console.log("Creating vibe search for:", query);
-        const aiKeywords = await generateSearchTags(query);
-        console.log("AI suggested keywords:", aiKeywords);
+        // Fallback: use simple keywords split by space instead of undefined generateSearchTags
+        const aiKeywords = query.toLowerCase().split(' ').filter(word => word.length > 2);
+        console.log("Suggested keywords (fallback):", aiKeywords);
         setSemanticKeywords(aiKeywords);
       }
     } catch (error) {

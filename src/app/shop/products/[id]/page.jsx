@@ -211,18 +211,27 @@ export default function ProductPage() {
     }
   };
 
-  const handleWishlistToggle = () => {
+  const handleWishlistToggle = async () => {
     if (isInWishlist(product.id)) {
       removeFromWishlist(product.id);
       showToast('Removed from wishlist');
     } else {
-      addToWishlist({
+      const result = await addToWishlist({
         id: product.id,
         name: product.name,
         price: priceNumber,
         image: images[0],
       });
-      showToast('Added to wishlist');
+      if (result && result.success) {
+        showToast('Added to wishlist');
+      } else {
+        showToast((result && result.message) || 'Failed to add to wishlist', 'error');
+        if (result && result.requiresAuth) {
+          setTimeout(() => {
+            router.push('/auth/login');
+          }, 1500);
+        }
+      }
     }
   };
 

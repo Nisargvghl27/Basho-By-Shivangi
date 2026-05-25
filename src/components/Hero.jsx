@@ -1,24 +1,13 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import React from "react";
+import Link from "next/link";
 
 export default function Hero() {
-  const videoRef = useRef(null);
-  const router = useRouter();
-
-  // Set video speed to 50% (Slow Motion)
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.playbackRate = 0.5;
-    }
-  }, []);
-
   return (
     <div className="w-full relative h-screen overflow-hidden">
       {/* --- VIDEO BACKGROUND (Desktop) --- */}
       <div className="absolute inset-0 z-0 hidden md:block">
         <video
-          ref={videoRef}
           autoPlay
           loop
           muted
@@ -31,7 +20,6 @@ export default function Hero() {
         {/* Overlays for readability and atmosphere */}
         <div className="absolute inset-0 bg-black/60" />
         <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-transparent to-black/50" />
-        <div className="hidden md:block absolute inset-0 opacity-[0.08] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay" />
       </div>
 
       {/* --- MOBILE BACKGROUND (Image Fallback) --- */}
@@ -64,15 +52,16 @@ export default function Hero() {
           Embracing the soulful asymmetry of wabi-sabi.
         </p>
 
-        <button 
-          onClick={() => router.push('/shop')}
+        <Link 
+          href="/shop"
           className="group relative inline-flex items-center justify-center px-12 py-4 overflow-hidden border border-white/20 bg-white/5 backdrop-blur-md rounded-sm transition-all duration-500 hover:bg-white/10 hover:border-white/40 hover:scale-105 animate-fade-in-up delay-500 cursor-pointer"
+          suppressHydrationWarning
         >
           <span className="relative z-10 text-xs font-bold uppercase tracking-[0.25em] text-white group-hover:text-rice-paper">
             Discover Collection
           </span>
           <div className="absolute inset-0 bg-gradient-to-r from-clay/0 via-clay/40 to-clay/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
-        </button>
+        </Link>
       </div>
     </div>
   );

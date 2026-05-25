@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { 
   Building2, Mail, Phone, Calendar, CheckCircle, MessageSquare 
 } from "lucide-react";
+import toast from "react-hot-toast";
 import { fetchCorporateInquiries, updateCorporateStatus } from "../../lib/corporateService";
 import LottieLoader from "../LottieLoader";
 
@@ -11,25 +12,48 @@ export default function CorporateInquiryManagement() {
   const [inquiries, setInquiries] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const loadData = async () => {
+    setLoading(true);
+    const data = await fetchCorporateInquiries();
+    setInquiries(data);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      const data = await fetchCorporateInquiries();
-      setInquiries(data);
-      setLoading(false);
-    };
     loadData();
   }, []);
 
   const handleStatus = async (id, newStatus) => {
+    const inquiry = inquiries.find(item => item.id === id);
     setInquiries(prev => prev.map(item => 
       item.id === id ? { ...item, status: newStatus } : item
     ));
     
     try {
       await updateCorporateStatus(id, newStatus);
+
+      if (newStatus === 'contacted' || newStatus === 'closed') {
+        const res = await fetch('/api/send-corporate-status-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: inquiry.email,
+            companyName: inquiry.companyName,
+            contactPerson: inquiry.contactPerson,
+            status: newStatus
+          })
+        });
+
+        if (!res.ok) {
+          console.error("Failed to send status email");
+          toast?.error?.("Failed to send status update email");
+        } else {
+          toast?.success?.(`Inquiry marked as ${newStatus} and email sent!`);
+        }
+      }
     } catch (error) {
       console.error("Failed to update status");
+      toast?.error?.("Failed to update status");
       loadData();
     }
   };
