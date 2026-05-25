@@ -18,6 +18,16 @@ export default function WishlistPage() {
   const [notificationMessage, setNotificationMessage] = useState('');
   const [showNotification, setShowNotification] = useState(false);
 
+  const formatPrice = (price) => {
+    if (!price) return "₹0";
+    if (typeof price === 'string' && (price.includes('₹') || price.includes('$'))) {
+      return price;
+    }
+    const num = Number(price);
+    if (isNaN(num)) return price;
+    return `₹${num.toLocaleString('en-IN')}`;
+  };
+
   return (
     <div className="min-h-screen bg-charcoal">
       <Header />
@@ -73,9 +83,25 @@ export default function WishlistPage() {
                       {item.name}
                     </h3>
                     <p className="text-stone-warm text-sm mt-1">{item.category}</p>
+                    
+                    {/* Stock Status Indicator */}
+                    <div className="mt-2 flex items-center justify-between text-xs">
+                      {item.stock !== undefined && item.stock <= 0 ? (
+                        <span className="text-stone-600 text-[10px] uppercase tracking-wider flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-stone-600 inline-block" /> Out of Stock
+                        </span>
+                      ) : (
+                        <span className="text-emerald-500/60 text-[10px] uppercase tracking-wider flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" /> In Stock
+                        </span>
+                      )}
+                    </div>
+
                     <div className="mt-auto pt-3 flex flex-col gap-2">
                       <div className="flex justify-between items-center">
-                        <span className="text-lg font-light font-serif text-white transition-all duration-500 group-hover:scale-105 origin-left self-center">{item.price}</span>
+                        <span className="text-lg font-light font-serif text-white transition-all duration-500 group-hover:scale-105 origin-left self-center">
+                          {formatPrice(item.price)}
+                        </span>
                         <button
                           onClick={async (e) => {
                             e.preventDefault();
@@ -116,6 +142,8 @@ export default function WishlistPage() {
                       <button
                         onClick={async (e) => {
                           e.preventDefault();
+                          if (item.stock !== undefined && item.stock <= 0) return;
+                          
                           if (!addedToCart[item.id]) {
                             const result = await addToCart(item);
                             if (result && result.success) {
@@ -135,14 +163,21 @@ export default function WishlistPage() {
                             }
                           }
                         }}
-                        disabled={addedToCart[item.id]}
-                        className={`w-full py-2 px-3 rounded-lg font-medium text-sm transition-all duration-300 ${addedToCart[item.id]
+                        disabled={addedToCart[item.id] || (item.stock !== undefined && item.stock <= 0)}
+                        className={`w-full py-2 px-3 rounded-lg font-medium text-sm transition-all duration-300 ${
+                          addedToCart[item.id]
                             ? 'bg-green-600 text-white cursor-not-allowed'
+                            : item.stock !== undefined && item.stock <= 0
+                            ? 'bg-stone-800 text-stone-500 cursor-not-allowed border border-white/5'
                             : 'bg-clay hover:bg-clay/90 text-white shadow-lg hover:shadow-clay/20'
-                          }`}
+                        }`}
                         aria-label="Add to cart"
                       >
-                        {addedToCart[item.id] ? 'Added to cart' : 'Add to Cart'}
+                        {addedToCart[item.id]
+                          ? 'Added to cart'
+                          : item.stock !== undefined && item.stock <= 0
+                          ? 'Out of Stock'
+                          : 'Add to Cart'}
                       </button>
                     </div>
                   </div>

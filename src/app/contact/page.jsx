@@ -10,9 +10,6 @@ import {
   Mail, 
   Clock, 
   Send, 
-  Instagram, 
-  Facebook, 
-  Twitter,
   ArrowRight,
   Plus,
   Minus,
@@ -388,14 +385,7 @@ export default function Contact() {
             <div className="lg:col-span-7 opacity-0 animate-contact-fade-in" style={{ animationDelay: '0.15s', animationFillMode: 'forwards' }}>
               <ContactForm />
               
-              {/* Social Links Row */}
-              <div className="mt-12 flex items-center gap-8 justify-center lg:justify-start pl-8">
-                  <span className="text-stone-600 text-[10px] uppercase tracking-widest">Connect</span>
-                  <div className="h-px w-12 bg-white/10" />
-                  <a href="#" className="text-stone-500 hover:text-clay transition-all duration-200 hover:-translate-y-1"><Instagram className="w-5 h-5" /></a>
-                  <a href="#" className="text-stone-500 hover:text-clay transition-all duration-200 hover:-translate-y-1"><Facebook className="w-5 h-5" /></a>
-                  <a href="#" className="text-stone-500 hover:text-clay transition-all duration-200 hover:-translate-y-1"><Twitter className="w-5 h-5" /></a>
-              </div>
+
             </div>
             
           </div>
