@@ -168,7 +168,11 @@ export default function Header() {
               </Link>
 
               {/* Mobile Menu Toggle */}
-              <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="md:hidden relative w-10 h-10 flex flex-col items-center justify-center gap-1.5 group ml-1">
+              <button 
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
+                className="md:hidden relative w-10 h-10 flex flex-col items-center justify-center gap-1.5 group ml-1"
+                suppressHydrationWarning
+              >
                 <span className={`h-[1px] bg-stone-warm transition-all duration-500 ${isMobileMenuOpen ? "w-6 rotate-45 translate-y-[7px] bg-rice-paper" : "w-6 group-hover:w-8"}`} />
                 <span className={`h-[1px] bg-stone-warm transition-all duration-500 ${isMobileMenuOpen ? "w-0 opacity-0" : "w-4 group-hover:w-8"}`} />
                 <span className={`h-[1px] bg-stone-warm transition-all duration-500 ${isMobileMenuOpen ? "w-6 -rotate-45 -translate-y-[7px] bg-rice-paper" : "w-6 group-hover:w-8"}`} />
@@ -186,7 +190,11 @@ export default function Header() {
       <div className={`fixed top-0 right-0 z-50 h-full w-[85%] max-w-[360px] bg-charcoal/85 backdrop-blur-2xl border-l border-white/[0.08] shadow-[-20px_0_50px_rgba(0,0,0,0.5)] transform transition-transform duration-[800ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${isMobileMenuOpen ? "translate-x-0" : "translate-x-full"}`}>
         <div className="relative h-full flex flex-col px-8 py-10">
           <div className="flex justify-end mb-16">
-            <button onClick={() => setIsMobileMenuOpen(false)} className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center text-stone-warm hover:bg-white/5">
+            <button 
+              onClick={() => setIsMobileMenuOpen(false)} 
+              className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center text-stone-warm hover:bg-white/5"
+              suppressHydrationWarning
+            >
               <span className="material-symbols-outlined">close</span>
             </button>
           </div>

@@ -370,8 +370,8 @@ export default function WorkshopsPage() {
 
       <style jsx>{`
         @keyframes marquee {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-33.333%); }
+          0% { transform: translate3d(0, 0, 0); }
+          100% { transform: translate3d(-50%, 0, 0); }
         }
         .animate-marquee {
           display: flex;
@@ -383,11 +383,6 @@ export default function WorkshopsPage() {
           width: max-content;
           animation: marquee 22s linear infinite;
           animation-play-state: paused;
-        }
-        @media (max-width: 768px) {
-          .animate-marquee {
-            animation: none;
-          }
         }
       `}</style>
     </div>

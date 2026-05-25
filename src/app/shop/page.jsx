@@ -45,7 +45,16 @@ export default function Shop() {
   const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
   const [hoveredCard, setHoveredCard] = useState(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const sectionRef = useRef(null);
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 768px)");
+    setIsMobile(media.matches);
+    const listener = (e) => setIsMobile(e.matches);
+    media.addEventListener("change", listener);
+    return () => media.removeEventListener("change", listener);
+  }, []);
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -142,12 +151,23 @@ export default function Shop() {
   return (
     <div className="relative min-h-screen bg-charcoal overflow-x-hidden selection:bg-clay selection:text-charcoal">
       
-      {/* Background Ambience */}
-      {/* Orbs: blur reduced + explicit fast cycles (8s / 11s) so they match the snappier page pace */}
-      <div className="fixed top-[-15%] right-[-10%] w-[50vw] h-[50vw] bg-clay/5 rounded-full blur-[80px] pointer-events-none z-0"
-        style={{ willChange: 'transform', animation: 'float 8s ease-in-out infinite' }} />
-      <div className="fixed bottom-[-10%] left-[-10%] w-[40vw] h-[40vw] bg-stone-500/5 rounded-full blur-[80px] pointer-events-none z-0"
-        style={{ willChange: 'transform', animation: 'float 11s ease-in-out 3s infinite' }} />
+      {/* Background Ambience - optimized to use radial gradients instead of dynamic GPU blur filters */}
+      {!isMobile && (
+        <>
+          <div className="fixed top-[-15%] right-[-10%] w-[50vw] h-[50vw] pointer-events-none z-0"
+            style={{ 
+              willChange: 'transform', 
+              animation: 'float 8s ease-in-out infinite',
+              background: 'radial-gradient(circle, rgba(166, 93, 61, 0.05) 0%, rgba(166, 93, 61, 0) 70%)'
+            }} />
+          <div className="fixed bottom-[-10%] left-[-10%] w-[40vw] h-[40vw] pointer-events-none z-0"
+            style={{ 
+              willChange: 'transform', 
+              animation: 'float 11s ease-in-out 3s infinite',
+              background: 'radial-gradient(circle, rgba(140, 134, 130, 0.05) 0%, rgba(140, 134, 130, 0) 70%)'
+            }} />
+        </>
+      )}
 
       <Header />
 
@@ -287,10 +307,10 @@ export default function Shop() {
                         {/* Gradient Overlay */}
                         <div className="absolute inset-0 bg-gradient-to-t from-charcoal/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
 
-                        {/* Wishlist Button */}
+                        {/* Wishlist Button - removed backdrop-blur for performance */}
                         <button
                           onClick={(e) => handleWishlistToggle(e, product)}
-                          className={`absolute top-4 right-4 z-20 p-2.5 bg-charcoal/60 backdrop-blur-md rounded-full transition-all duration-150 border border-white/10 ${
+                          className={`absolute top-4 right-4 z-20 p-2.5 bg-charcoal/90 rounded-full transition-all duration-150 border border-white/10 ${
                             hoveredCard === product.id || isInWishlist(product.id)
                               ? 'opacity-100 translate-y-0 scale-100'
                               : 'opacity-0 translate-y-2 scale-90'

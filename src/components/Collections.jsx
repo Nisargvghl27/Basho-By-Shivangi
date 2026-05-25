@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image"; // ⚡ Optimize: Import Next.js Image
 import { useRouter } from 'next/navigation';
 import { getBestSellers } from "../lib/bestSellerService";
 import { fetchAllProducts } from "../lib/productService";
@@ -132,24 +133,21 @@ export default function Collections() {
   }, []);
 
   useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsVisible(true);
+          observer.disconnect(); // ⚡ Optimize: Disconnect observer on trigger
         }
       },
       { threshold: 0.1 }
     );
 
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
-    return () => {
-      if (sectionRef.current) {
-        observer.unobserve(sectionRef.current);
-      }
-    };
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
 
   return (  
@@ -157,17 +155,6 @@ export default function Collections() {
       ref={sectionRef}
       className="py-32 px-4 md:px-12 lg:px-24 bg-charcoal-light border-b border-border-subtle relative overflow-hidden"
     >
-      {/* Enhanced Grain Texture */}
-      <div className="absolute inset-0 opacity-[0.12] pointer-events-none">
-        <div 
-          className="absolute inset-0 animate-grain-shift" 
-          style={{ 
-            backgroundImage: 'url("https://upload.wikimedia.org/wikipedia/commons/7/76/Noise.png")',
-            backgroundSize: '200px 200px'
-          }}
-        />
-      </div>
-
       {/* Subtle Radial Gradient */}
       <div className="absolute inset-0 pointer-events-none" style={{
         background: 'radial-gradient(ellipse at center top, rgba(210,180,140,0.03) 0%, transparent 60%)'
@@ -220,13 +207,17 @@ export default function Collections() {
               style={{ transitionDelay: '200ms' }}
               onClick={() => router.push(`/shop/products/${bestSellers[0].id}`)}
             >
-              {/* Background Image with Enhanced Parallax */}
-              <div
-                className="absolute inset-0 bg-cover bg-center transition-all duration-[2500ms] ease-out group-hover:scale-110 opacity-85 group-hover:opacity-75"
-                style={{
-                  backgroundImage: `url("${bestSellers[0].image || 'https://via.placeholder.com/600x600'}")`,
-                }}
-              />
+              {/* Background Image using Next.js Image Component */}
+              <div className="absolute inset-0 transition-all duration-[2500ms] ease-out group-hover:scale-110 opacity-85 group-hover:opacity-75">
+                <Image
+                  src={bestSellers[0].image || 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?q=80&w=2000'}
+                  alt={bestSellers[0].name}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  className="object-cover"
+                  loading="lazy"
+                />
+              </div>
               
               {/* Gradient Overlay with Organic Transition */}
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-90 transition-all duration-700 group-hover:opacity-85 group-hover:from-charcoal/95" />
@@ -237,7 +228,7 @@ export default function Collections() {
               {/* Wishlist Button */}
               <button
                 onClick={(e) => handleWishlistToggle(e, bestSellers[0])}
-                className={`absolute top-4 right-4 bg-charcoal/80 backdrop-blur-md p-2.5 rounded-full transition-all duration-500 ${
+                className={`absolute top-4 right-4 bg-charcoal/90 p-2.5 rounded-full transition-all duration-500 ${
                   hoveredCard === bestSellers[0].id || isInWishlist(bestSellers[0].id)
                     ? 'opacity-100 translate-y-0 scale-100'
                     : 'opacity-0 translate-y-2 scale-75'
@@ -325,12 +316,16 @@ export default function Collections() {
 
               {/* Image Container */}
               <div className="h-[85%] sm:h-[75%] w-full overflow-hidden relative bg-black/20 group">
-                <div
-                  className="absolute inset-0 bg-contain sm:bg-cover bg-center bg-no-repeat transition-all duration-[1200ms] ease-out group-hover:scale-110 group-hover:rotate-1"
-                  style={{
-                    backgroundImage: `url(\"${bestSeller.image}\")`,
-                  }}
-                />
+                <div className="absolute inset-0 transition-all duration-[1200ms] ease-out group-hover:scale-110 group-hover:rotate-1">
+                  <Image
+                    src={bestSeller.image}
+                    alt={bestSeller.name}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 25vw"
+                    className="object-cover"
+                    loading="lazy"
+                  />
+                </div>
                 
                 {/* Overlay with Color Shift */}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-clay/10 transition-all duration-700" />
@@ -338,7 +333,7 @@ export default function Collections() {
                 {/* Favorite Button with Organic Reveal */}
                 <button 
                   onClick={(e) => handleWishlistToggle(e, bestSeller)}
-                  className={`absolute top-3 right-3 bg-charcoal/80 backdrop-blur-md p-2.5 rounded-full transition-all duration-500 z-20 ${
+                  className={`absolute top-3 right-3 bg-charcoal/90 p-2.5 rounded-full transition-all duration-500 z-20 ${
                     hoveredCard === bestSeller.id || isInWishlist(bestSeller.id)
                       ? 'opacity-100 translate-y-0 scale-100' 
                       : 'opacity-0 translate-y-2 scale-75'
@@ -359,7 +354,7 @@ export default function Collections() {
                     e.stopPropagation();
                     router.push(`/shop/products/${bestSeller.id}`);
                   }}
-                  className={`absolute inset-0 bg-charcoal/95 backdrop-blur-sm flex items-center justify-center transition-all duration-500 z-10 ${
+                  className={`absolute inset-0 bg-charcoal/95 flex items-center justify-center transition-all duration-500 z-10 ${
                     hoveredCard === bestSeller.id ? 'opacity-100' : 'opacity-0 pointer-events-none'
                   }`}
                 >
@@ -455,26 +450,9 @@ export default function Collections() {
       )}
 
       <style jsx>{`
-        @keyframes grain-shift {
-          0%, 100% { transform: translate(0, 0); }
-          10% { transform: translate(-5%, -5%); }
-          20% { transform: translate(-10%, 5%); }
-          30% { transform: translate(5%, -10%); }
-          40% { transform: translate(-5%, 15%); }
-          50% { transform: translate(-10%, 5%); }
-          60% { transform: translate(15%, 0); }
-          70% { transform: translate(0, 10%); }
-          80% { transform: translate(-15%, 0); }
-          90% { transform: translate(10%, 5%); }
-        }
-
         @keyframes subtle-float {
           0%, 100% { transform: translateY(0px); }
           50% { transform: translateY(-2px); }
-        }
-
-        .animate-grain-shift {
-          animation: grain-shift 12s ease-in-out infinite;
         }
 
         .animate-subtle-float {

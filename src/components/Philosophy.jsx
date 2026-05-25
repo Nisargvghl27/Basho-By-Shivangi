@@ -30,19 +30,30 @@ export default function Philosophy() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [scrollProgress, setScrollProgress] = useState(0);
   const [particles, setParticles] = useState([]);
+  const [isMobile, setIsMobile] = useState(false);
+  
   const sectionRef = useRef(null);
   const quoteRef = useRef(null);
+  const quoteRectRef = useRef(null);
 
   useEffect(() => {
-    // Generate particles only on client side to avoid hydration mismatch
-    setParticles(
-      Array.from({ length: 20 }, () => ({
-        left: Math.random() * 100,
-        top: Math.random() * 100,
-        animationDelay: Math.random() * 5,
-        animationDuration: 8 + Math.random() * 4
-      }))
-    );
+    // 📱 Check mobile viewport on client side
+    const media = window.matchMedia("(max-width: 768px)");
+    setIsMobile(media.matches);
+    const mediaListener = (e) => setIsMobile(e.matches);
+    media.addEventListener("change", mediaListener);
+
+    // Only generate particles for non-mobile viewports to save memory & performance
+    if (!media.matches) {
+      setParticles(
+        Array.from({ length: 20 }, () => ({
+          left: Math.random() * 100,
+          top: Math.random() * 100,
+          animationDelay: Math.random() * 5,
+          animationDuration: 8 + Math.random() * 4
+        }))
+      );
+    }
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -57,34 +68,65 @@ export default function Philosophy() {
       observer.observe(sectionRef.current);
     }
 
-    const handleScroll = () => {
+    // ⚡ Performance Refactor: Cache layout boundaries to avoid layout thrashing
+    let sectionTop = 0;
+    let sectionHeight = 0;
+
+    const calculateLayout = () => {
       if (sectionRef.current) {
         const rect = sectionRef.current.getBoundingClientRect();
-        const sectionHeight = rect.height;
-        const scrolled = -rect.top;
-        const progress = Math.min(Math.max(scrolled / sectionHeight, 0), 1);
-        setScrollProgress(progress);
+        sectionTop = rect.top + window.scrollY;
+        sectionHeight = rect.height;
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
+    // Calculate initial layout metrics once rendering finishes
+    const layoutTimeout = setTimeout(calculateLayout, 100);
+    window.addEventListener("resize", calculateLayout);
+
+    const handleScroll = () => {
+      // Direct arithmetic: window.scrollY is computed by compositor. No getBoundingClientRect()!
+      const scrolled = window.scrollY - sectionTop;
+      const progress = Math.min(Math.max(scrolled / (sectionHeight || 1), 0), 1);
+      setScrollProgress(progress);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    // Run once initially
     handleScroll();
 
     return () => {
       if (sectionRef.current) {
         observer.unobserve(sectionRef.current);
       }
+      clearTimeout(layoutTimeout);
+      media.removeEventListener("change", mediaListener);
+      window.removeEventListener("resize", calculateLayout);
       window.removeEventListener('scroll', handleScroll);
     };
   }, []);
 
   const handleMouseMove = (e) => {
-    if (quoteRef.current) {
-      const rect = quoteRef.current.getBoundingClientRect();
+    if (isMobile) return;
+    
+    // ⚡ Performance Refactor: Cache quote rect on first mouse movement within section,
+    // avoiding calling getBoundingClientRect() on every hover tick.
+    if (!quoteRectRef.current && quoteRef.current) {
+      quoteRectRef.current = quoteRef.current.getBoundingClientRect();
+    }
+    
+    const rect = quoteRectRef.current;
+    if (rect) {
       const x = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
       const y = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
       setMousePosition({ x, y });
     }
+  };
+
+  const handleMouseLeave = () => {
+    // Reset hover coordinates and invalidate layout cache
+    quoteRectRef.current = null;
+    setMousePosition({ x: 0, y: 0 });
   };
 
   return (
@@ -92,22 +134,25 @@ export default function Philosophy() {
       ref={sectionRef}
       className="py-32 px-6 md:px-20 lg:px-40 bg-charcoal relative overflow-hidden border-b border-border-subtle"
       onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
     >
       {/* Animated Background Particles */}
-      <div className="absolute inset-0 pointer-events-none">
-        {particles.map((particle, i) => (
-          <div
-            key={i}
-            className="absolute w-1 h-1 bg-clay/20 rounded-full animate-float-particle"
-            style={{
-              left: `${particle.left}%`,
-              top: `${particle.top}%`,
-              animationDelay: `${particle.animationDelay}s`,
-              animationDuration: `${particle.animationDuration}s`
-            }}
-          />
-        ))}
-      </div>
+      {!isMobile && (
+        <div className="absolute inset-0 pointer-events-none">
+          {particles.map((particle, i) => (
+            <div
+              key={i}
+              className="absolute w-1 h-1 bg-clay/20 rounded-full animate-float-particle"
+              style={{
+                left: `${particle.left}%`,
+                top: `${particle.top}%`,
+                animationDelay: `${particle.animationDelay}s`,
+                animationDuration: `${particle.animationDuration}s`
+              }}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Radial Gradient with Scroll Animation */}
       <div 
@@ -117,17 +162,6 @@ export default function Philosophy() {
           opacity: 0.4 + scrollProgress * 0.3
         }}
       />
-
-      {/* Grain Texture */}
-      <div className="absolute inset-0 opacity-[0.15] pointer-events-none mix-blend-overlay">
-        <div 
-          className="absolute inset-0 animate-grain-shift" 
-          style={{ 
-            backgroundImage: 'url("https://upload.wikimedia.org/wikipedia/commons/7/76/Noise.png")',
-            backgroundSize: '200px 200px'
-          }}
-        />
-      </div>
 
       <div className="max-w-[1024px] mx-auto text-center flex flex-col items-center gap-20 relative z-10">
         
@@ -286,13 +320,6 @@ export default function Philosophy() {
           }
         }
 
-        @keyframes grain-shift {
-          0%, 100% { transform: translate(0, 0); }
-          25% { transform: translate(-5%, -5%); }
-          50% { transform: translate(-10%, 5%); }
-          75% { transform: translate(5%, -10%); }
-        }
-
         @keyframes expand-line {
           0% { transform: scaleX(0); opacity: 0; }
           100% { transform: scaleX(1); opacity: 1; }
@@ -320,10 +347,6 @@ export default function Philosophy() {
 
         .animate-float-particle {
           animation: float-particle linear infinite;
-        }
-
-        .animate-grain-shift {
-          animation: grain-shift 15s ease-in-out infinite;
         }
 
         .animate-expand-line {

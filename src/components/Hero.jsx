@@ -1,38 +1,54 @@
 "use client";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 
 export default function Hero() {
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    // 🖥️ Check if client screen size matches desktop breakpoint
+    const media = window.matchMedia("(min-width: 768px)");
+    setIsDesktop(media.matches);
+
+    const listener = (e) => setIsDesktop(e.matches);
+    media.addEventListener("change", listener);
+    return () => media.removeEventListener("change", listener);
+  }, []);
+
   return (
     <div className="w-full relative h-screen overflow-hidden">
       {/* --- VIDEO BACKGROUND (Desktop) --- */}
-      <div className="absolute inset-0 z-0 hidden md:block">
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="object-cover w-full h-full"
-        >
-          <source src="/videos/hero-video.mp4" type="video/mp4" />
-        </video>
-        
-        {/* Overlays for readability and atmosphere */}
-        <div className="absolute inset-0 bg-black/60" />
-        <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-transparent to-black/50" />
-      </div>
+      {isDesktop && (
+        <div className="absolute inset-0 z-0 hidden md:block">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="object-cover w-full h-full"
+          >
+            <source src="/videos/hero-video.mp4" type="video/mp4" />
+          </video>
+          
+          {/* Overlays for readability and atmosphere */}
+          <div className="absolute inset-0 bg-black/60" />
+          <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-transparent to-black/50" />
+        </div>
+      )}
 
       {/* --- MOBILE BACKGROUND (Image Fallback) --- */}
-      <div className="absolute inset-0 z-0 md:hidden">
-        <div 
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ 
-            backgroundImage: `url('https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?q=80&w=2000&auto=format&fit=crop')` 
-          }}
-        />
-        <div className="absolute inset-0 bg-black/50" />
-        <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/40 to-black/30" />
-      </div>
+      {!isDesktop && (
+        <div className="absolute inset-0 z-0 md:hidden">
+          <div 
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ 
+              backgroundImage: `url('https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?q=80&w=2000&auto=format&fit=crop')` 
+            }}
+          />
+          <div className="absolute inset-0 bg-black/50" />
+          <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/40 to-black/30" />
+        </div>
+      )}
 
       {/* --- CONTENT --- */}
       <div className="relative z-10 flex flex-col items-center justify-center h-full text-center px-4">

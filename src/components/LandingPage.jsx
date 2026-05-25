@@ -130,10 +130,8 @@ const AmbientBackground = memo(function AmbientBackground() {
           width: "50vw",
           height: "50vw",
           borderRadius: "50%",
-          // Greatly reduced blur radius (80px vs 120px original) — still looks
-          // ambient but costs ~50% less GPU fill-rate.
-          filter: "blur(80px)",
-          background: "rgba(166, 93, 61, 0.04)",
+          // ⚡ Optimization: Use radial-gradient instead of heavy CSS blur filters
+          background: "radial-gradient(circle, rgba(166, 93, 61, 0.06) 0%, rgba(166, 93, 61, 0) 70%)",
           pointerEvents: "none",
           zIndex: 0,
           willChange: "transform",
@@ -152,8 +150,8 @@ const AmbientBackground = memo(function AmbientBackground() {
           width: "60vw",
           height: "60vw",
           borderRadius: "50%",
-          filter: "blur(100px)",
-          background: "rgba(100, 100, 100, 0.04)",
+          // ⚡ Optimization: Use radial-gradient instead of heavy CSS blur filters
+          background: "radial-gradient(circle, rgba(100, 100, 100, 0.06) 0%, rgba(100, 100, 100, 0) 70%)",
           pointerEvents: "none",
           zIndex: 0,
           willChange: "transform",
@@ -260,8 +258,11 @@ export default function LandingPage() {
           }
         }
 
-        .basho-grain {
-          animation: basho-grain 8s steps(10) infinite;
+        /* ⚡ Optimization: Disable film grain step animation on mobile viewports to prevent full-screen layout invalidation */
+        @media (min-width: 769px) {
+          .basho-grain {
+            animation: basho-grain 8s steps(10) infinite;
+          }
         }
 
         .basho-orb-slow {
