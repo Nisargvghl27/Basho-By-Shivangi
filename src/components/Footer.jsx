@@ -36,12 +36,6 @@ export default function Footer() {
     { label: "Contact us", href: "/contact" }
   ];
 
-  const socialLinks = [
-    { label: "Instagram", href: "#", icon: "instagram" },
-    { label: "Pinterest", href: "#", icon: "push_pin" },
-    { label: "Facebook", href: "#", icon: "facebook" }
-  ];
-
   // --- 3. Intersection Observer Effect ---
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -264,25 +258,6 @@ export default function Footer() {
           <p className="transition-all duration-500 hover:text-stone-400">
             © 2023 Clay & Soul. All rights reserved.
           </p>
-          
-          {/* Social Links */}
-          <div className="flex gap-8 items-center">
-            {socialLinks.map((social) => (
-              <a 
-                key={social.label}
-                className="group relative flex items-center gap-2 hover:text-white transition-all duration-500 hover:-translate-y-1"
-                href={social.href}
-              >
-                <span className="absolute -inset-2 bg-clay/0 rounded-full blur-xl transition-all duration-700 group-hover:bg-clay/10" />
-                <span className="relative transition-all duration-500 group-hover:text-clay">
-                  {social.label}
-                </span>
-                <span className="material-symbols-outlined text-[12px] opacity-0 -translate-x-2 transition-all duration-500 group-hover:opacity-100 group-hover:translate-x-0 text-clay">
-                  arrow_outward
-                </span>
-              </a>
-            ))}
-          </div>
         </div>
       </div>
 
